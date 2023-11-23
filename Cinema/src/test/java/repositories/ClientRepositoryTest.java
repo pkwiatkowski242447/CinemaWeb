@@ -5,7 +5,7 @@ import pl.pas.gr3.cinema.exceptions.repositories.*;
 import pl.pas.gr3.cinema.model.users.Admin;
 import pl.pas.gr3.cinema.model.users.Client;
 import pl.pas.gr3.cinema.model.users.Staff;
-import pl.pas.gr3.cinema.repositories.ClientRepository;
+import pl.pas.gr3.cinema.repositories.implementations.ClientRepository;
 
 import java.util.List;
 import java.util.UUID;

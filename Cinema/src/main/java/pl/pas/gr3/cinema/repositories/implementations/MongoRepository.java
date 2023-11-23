@@ -1,4 +1,4 @@
-package pl.pas.gr3.cinema.repositories;
+package pl.pas.gr3.cinema.repositories.implementations;
 
 import com.mongodb.*;
 import com.mongodb.client.*;
@@ -86,8 +86,6 @@ public abstract class MongoRepository<Type> implements Closeable {
         mongoDatabase = mongoClient.getDatabase(databaseName);
     }
 
-    // CRUD Methods
-
     // Read methods
 
     public abstract Type findByUUID(UUID elementID) throws GeneralRepositoryException;
@@ -97,10 +95,6 @@ public abstract class MongoRepository<Type> implements Closeable {
     // Update method
 
     public abstract void update(Type element) throws GeneralRepositoryException;
-
-    // Delete methods
-
-    // Other methods
 
     // Find certain collection methods
 

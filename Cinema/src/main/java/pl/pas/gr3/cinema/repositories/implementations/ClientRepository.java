@@ -1,8 +1,9 @@
-package pl.pas.gr3.cinema.repositories;
+package pl.pas.gr3.cinema.repositories.implementations;
 
 import com.mongodb.MongoException;
 import com.mongodb.client.ClientSession;
 import com.mongodb.client.model.*;
+import jakarta.enterprise.context.ApplicationScoped;
 import org.bson.Document;
 import org.bson.conversions.Bson;
 import pl.pas.gr3.cinema.exceptions.mapping.ClientDocNullReferenceException;
@@ -19,14 +20,90 @@ import pl.pas.gr3.cinema.model.users.Admin;
 import pl.pas.gr3.cinema.model.users.Client;
 import pl.pas.gr3.cinema.model.users.Staff;
 
+import javax.annotation.PostConstruct;
+import javax.annotation.PreDestroy;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
+@ApplicationScoped
 public class ClientRepository extends MongoRepository<Client> {
 
+    private final String databaseName;
+
+    public ClientRepository() {
+        this.databaseName = "default";
+        super.initDBConnection(this.databaseName);
+        ValidationOptions validationOptions = new ValidationOptions().validator(
+                Document.parse("""
+                            {
+                                $jsonSchema: {
+                                    "bsonType": "object",
+                                    "required": ["_id", "client_login", "client_password", "client_status_active"],
+                                    "properties": {
+                                        "_id": {
+                                            "description": "Id of the client object representation in the database.",
+                                            "bsonType": "binData",
+                                            "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}"
+                                        }
+                                        "client_login": {
+                                            "description": "String containing clients login to the cinema web app.",
+                                            "bsonType": "string",
+                                            "minLength": 8,
+                                            "maxLength": 20,
+                                            "pattern": "^[^\s]*$"
+                                        }
+                                        "client_password": {
+                                            "description": "String containing clients password to the cinema web app.",
+                                            "bsonType": "string",
+                                            "minLength": 8,
+                                            "maxLength": 40,
+                                            "pattern": "^[^\s]*$"
+                                        }
+                                        "client_status_active": {
+                                            "description": "Boolean flag indicating whether client is able to perform any action.",
+                                            "bsonType": "bool"
+                                        }
+                                    }
+                                }
+                            }
+                            """));
+        CreateCollectionOptions createCollectionOptions = new CreateCollectionOptions().validationOptions(validationOptions);
+        mongoDatabase.createCollection(clientCollectionName, createCollectionOptions);
+        IndexOptions indexOptions = new IndexOptions().unique(true);
+        mongoDatabase.getCollection(clientCollectionName).createIndex(Indexes.ascending("client_login"), indexOptions);
+    }
+
+    @PostConstruct
+    private void initializeDatabaseState() {
+        UUID clientIDNo1 = UUID.fromString("26c4727c-c791-4170-ab9d-faf7392e80b2");
+        UUID clientIDNo2 = UUID.fromString("0b08f526-b018-4d23-8baa-93f0fb884edf");
+        UUID clientIDNo3 = UUID.fromString("30392328-2cae-4e76-abb8-b1aa8f58a9e4");
+        UUID adminID = UUID.fromString("17dad3c7-7605-4808-bec5-d6f46abd23b8");
+        UUID staffID = UUID.fromString("3d8ef63c-f99d-445c-85d0-4b14e68fc5a1");
+        Client clientNo1 = new Client(clientIDNo1, "ClientLoginNo1", "ClientPasswordNo1");
+        Client clientNo2 = new Client(clientIDNo2, "ClientLoginNo2", "ClientPasswordNo2");
+        Client clientNo3 = new Client(clientIDNo3, "ClientLoginNo3", "ClientPasswordNo3");
+        Admin admin = new Admin(adminID, "AdminLogin", "AdminPassword");
+        Staff staff = new Staff(staffID, "StaffLogin", "StaffPassword");
+        this.getClientCollection().insertOne(ClientMapper.toClientDoc(clientNo1));
+        this.getClientCollection().insertOne(ClientMapper.toClientDoc(clientNo2));
+        this.getClientCollection().insertOne(ClientMapper.toClientDoc(clientNo3));
+        this.getClientCollection().insertOne(AdminMapper.toAdminDoc(admin));
+        this.getClientCollection().insertOne(StaffMapper.toStaffDoc(staff));
+    }
+
+    @PreDestroy
+    private void restoreDatabaseState() throws ClientRepositoryException {
+        List<UUID> listOfAllUUIDs = this.findAllUUIDs();
+        for (UUID clientID : listOfAllUUIDs) {
+            this.delete(clientID);
+        }
+    }
+
     public ClientRepository(String databaseName) {
-        super.initDBConnection(databaseName);
+        this.databaseName = databaseName;
+        super.initDBConnection(this.databaseName);
 
         boolean collectionExists = false;
         for (String collectionName : mongoDatabase.listCollectionNames()) {
@@ -90,10 +167,10 @@ public class ClientRepository extends MongoRepository<Client> {
         return client;
     }
 
-    public Admin createAdmin(String clientLogin, String clientPassword) throws ClientRepositoryException {
+    public Admin createAdmin(String adminLogin, String adminPassword) throws ClientRepositoryException {
         Admin admin;
         try {
-            admin = new Admin(UUID.randomUUID(), clientLogin, clientPassword);
+            admin = new Admin(UUID.randomUUID(), adminLogin, adminPassword);
             AdminDoc adminDoc = AdminMapper.toAdminDoc(admin);
             getClientCollection().insertOne(adminDoc);
         } catch (MongoException exception) {

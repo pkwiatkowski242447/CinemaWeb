@@ -7,7 +7,9 @@ import pl.pas.gr3.cinema.model.Movie;
 import pl.pas.gr3.cinema.model.Ticket;
 import pl.pas.gr3.cinema.model.TicketType;
 import pl.pas.gr3.cinema.model.users.Client;
-import pl.pas.gr3.cinema.repositories.*;
+import pl.pas.gr3.cinema.repositories.implementations.ClientRepository;
+import pl.pas.gr3.cinema.repositories.implementations.MovieRepository;
+import pl.pas.gr3.cinema.repositories.implementations.TicketRepository;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -114,7 +116,7 @@ public class TicketRepositoryTest {
     }
 
     @Test
-    public void ticketRepositoryCreateTicketWithInactiveClientTestNegative() throws TicketRepositoryException, ClientRepositoryException {
+    public void ticketRepositoryCreateTicketWithInactiveClientTestNegative() throws ClientRepositoryException {
         LocalDateTime localDateTime = LocalDateTime.of(2023, 11, 4, 20, 10, 0);
         clientRepositoryForTests.deactivate(clientNo1);
         assertThrows(TicketRepositoryCreateException.class, () -> ticketRepositoryForTests.create(localDateTime, clientNo1.getClientID(), movieNo1.getMovieID(), TicketType.NORMAL));
@@ -253,17 +255,5 @@ public class TicketRepositoryTest {
         assertNotNull(listOfActiveTicketsNo2);
         assertFalse(listOfActiveTicketsNo2.isEmpty());
         assertEquals(2, listOfActiveTicketsNo2.size());
-    }
-
-
-    @Test
-    public void getAllActiveTickets() throws TicketRepositoryException {
-        List<Ticket> listOfActiveTicketsNo1 = ticketRepositoryForTests.findAllActiveTickets();
-        assertNotNull(listOfActiveTicketsNo1);
-        assertEquals(2, listOfActiveTicketsNo1.size());
-        ticketRepositoryForTests.create(ticketNo2.getMovieTime(), clientNo2.getClientID(), movieNo1.getMovieID(), TicketType.NORMAL);
-        listOfActiveTicketsNo1 = ticketRepositoryForTests.findAllActiveTickets();
-        assertNotNull(listOfActiveTicketsNo1);
-        assertEquals(3, listOfActiveTicketsNo1.size());
     }
 }

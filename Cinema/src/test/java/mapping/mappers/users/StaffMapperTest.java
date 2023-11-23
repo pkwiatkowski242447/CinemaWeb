@@ -5,6 +5,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import pl.pas.gr3.cinema.mapping.docs.users.StaffDoc;
 import pl.pas.gr3.cinema.mapping.mappers.users.StaffMapper;
+import pl.pas.gr3.cinema.model.users.Admin;
 import pl.pas.gr3.cinema.model.users.Staff;
 
 import java.util.UUID;
@@ -20,7 +21,7 @@ public class StaffMapperTest {
     private static boolean clientStatusActiveNo1;
 
     private StaffDoc staffDocNo1;
-    private Staff staffNo1;
+    private Admin staffNo1;
 
     @BeforeAll
     public static void initializeVariables() {
@@ -33,7 +34,7 @@ public class StaffMapperTest {
     @BeforeEach
     public void initializeClientDocsAndClients() {
         staffDocNo1 = new StaffDoc(uuidNo1, loginNo1, passwordNo1, clientStatusActiveNo1);
-        staffNo1 = new Staff(uuidNo1, loginNo1, passwordNo1, clientStatusActiveNo1);
+        staffNo1 = new Admin(uuidNo1, loginNo1, passwordNo1, clientStatusActiveNo1);
     }
 
     @SuppressWarnings("InstantiationOfUtilityClass")

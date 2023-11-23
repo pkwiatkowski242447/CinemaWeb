@@ -3,7 +3,7 @@ package repositories;
 import org.junit.jupiter.api.*;
 import pl.pas.gr3.cinema.exceptions.repositories.*;
 import pl.pas.gr3.cinema.model.Movie;
-import pl.pas.gr3.cinema.repositories.MovieRepository;
+import pl.pas.gr3.cinema.repositories.implementations.MovieRepository;
 
 import java.util.List;
 import java.util.UUID;
