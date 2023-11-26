@@ -2,6 +2,10 @@ package repositories;
 
 import org.junit.jupiter.api.*;
 import pl.pas.gr3.cinema.exceptions.repositories.*;
+import pl.pas.gr3.cinema.exceptions.repositories.crud.movie.MovieRepositoryCreateException;
+import pl.pas.gr3.cinema.exceptions.repositories.crud.movie.MovieRepositoryDeleteException;
+import pl.pas.gr3.cinema.exceptions.repositories.crud.movie.MovieRepositoryReadException;
+import pl.pas.gr3.cinema.exceptions.repositories.crud.movie.MovieRepositoryUpdateException;
 import pl.pas.gr3.cinema.model.Movie;
 import pl.pas.gr3.cinema.repositories.implementations.MovieRepository;
 

@@ -5,7 +5,9 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import pl.pas.gr3.cinema.mapping.docs.MovieDoc;
 import pl.pas.gr3.cinema.mapping.docs.TicketDoc;
+import pl.pas.gr3.cinema.mapping.docs.users.AdminDoc;
 import pl.pas.gr3.cinema.mapping.docs.users.ClientDoc;
+import pl.pas.gr3.cinema.mapping.docs.users.StaffDoc;
 import pl.pas.gr3.cinema.mapping.mappers.TicketMapper;
 import pl.pas.gr3.cinema.model.Movie;
 import pl.pas.gr3.cinema.model.Ticket;
@@ -36,6 +38,8 @@ public class TicketMapperTest {
     private TicketDoc ticketDocNo1;
     private Ticket ticketNo1;
     private ClientDoc clientDocNo1;
+    private AdminDoc adminDocNo1;
+    private StaffDoc staffDocNo1;
     private Client clientNo1;
     private MovieDoc movieDocNo1;
     private Movie movieNo1;
@@ -62,6 +66,8 @@ public class TicketMapperTest {
     public void initializeTicketDocsAndTickets() {
         ticketDocNo1 = new TicketDoc(uuidNo1, movieTimeNo1, ticketFinalPriceNo1, clientId, movieId);
         clientDocNo1 = new ClientDoc(clientId, loginNo1, passwordNo1, clientStatusActiveNo1);
+        adminDocNo1 = new AdminDoc(clientId, loginNo1, passwordNo1, clientStatusActiveNo1);
+        staffDocNo1 = new StaffDoc(clientId, loginNo1, passwordNo1, clientStatusActiveNo1);
         movieDocNo1 = new MovieDoc(movieId, movieTitleNo1, movieBasePriceNo1, scrRoomNumberNo1, numberOfAvailableSeatsNo1);
         clientNo1 = new Client(clientId, loginNo1, passwordNo1, clientStatusActiveNo1);
         movieNo1 = new Movie(movieId, movieTitleNo1, movieBasePriceNo1, scrRoomNumberNo1, numberOfAvailableSeatsNo1);
@@ -87,7 +93,7 @@ public class TicketMapperTest {
     }
 
     @Test
-    public void ticketMapperTicketDocToTicketTestPositive() {
+    public void ticketMapperTicketDocToTicketWithClientDocTestPositive() {
         Ticket ticket = TicketMapper.toTicket(ticketDocNo1, clientDocNo1, movieDocNo1);
         assertNotNull(ticket);
         assertEquals(ticketDocNo1.getTicketID(), ticket.getTicketID());
@@ -98,6 +104,46 @@ public class TicketMapperTest {
         assertEquals(clientDocNo1.getClientLogin(), ticket.getClient().getClientLogin());
         assertEquals(clientDocNo1.getClientPassword(), ticket.getClient().getClientPassword());
         assertEquals(clientDocNo1.isClientStatusActive(), ticket.getClient().isClientStatusActive());
+        assertEquals(ticketDocNo1.getMovieID(), ticket.getMovie().getMovieID());
+        assertEquals(movieDocNo1.getMovieID(), ticket.getMovie().getMovieID());
+        assertEquals(movieDocNo1.getMovieTitle(), ticket.getMovie().getMovieTitle());
+        assertEquals(movieDocNo1.getMovieBasePrice(), ticket.getMovie().getMovieBasePrice());
+        assertEquals(movieDocNo1.getScrRoomNumber(), ticket.getMovie().getScrRoomNumber());
+        assertEquals(movieDocNo1.getNumberOfAvailableSeats(), ticket.getMovie().getNumberOfAvailableSeats());
+    }
+
+    @Test
+    public void ticketMapperTicketDocToTicketWithAdminDocTestPositive() {
+        Ticket ticket = TicketMapper.toTicket(ticketDocNo1, adminDocNo1, movieDocNo1);
+        assertNotNull(ticket);
+        assertEquals(ticketDocNo1.getTicketID(), ticket.getTicketID());
+        assertEquals(ticketDocNo1.getMovieTime(), ticket.getMovieTime());
+        assertEquals(ticketDocNo1.getTicketFinalPrice(), ticket.getTicketFinalPrice());
+        assertEquals(ticketDocNo1.getClientID(), ticket.getClient().getClientID());
+        assertEquals(adminDocNo1.getClientID(), ticket.getClient().getClientID());
+        assertEquals(adminDocNo1.getClientLogin(), ticket.getClient().getClientLogin());
+        assertEquals(adminDocNo1.getClientPassword(), ticket.getClient().getClientPassword());
+        assertEquals(adminDocNo1.isClientStatusActive(), ticket.getClient().isClientStatusActive());
+        assertEquals(ticketDocNo1.getMovieID(), ticket.getMovie().getMovieID());
+        assertEquals(movieDocNo1.getMovieID(), ticket.getMovie().getMovieID());
+        assertEquals(movieDocNo1.getMovieTitle(), ticket.getMovie().getMovieTitle());
+        assertEquals(movieDocNo1.getMovieBasePrice(), ticket.getMovie().getMovieBasePrice());
+        assertEquals(movieDocNo1.getScrRoomNumber(), ticket.getMovie().getScrRoomNumber());
+        assertEquals(movieDocNo1.getNumberOfAvailableSeats(), ticket.getMovie().getNumberOfAvailableSeats());
+    }
+
+    @Test
+    public void ticketMapperTicketDocToTicketWithStaffDocTestPositive() {
+        Ticket ticket = TicketMapper.toTicket(ticketDocNo1, staffDocNo1, movieDocNo1);
+        assertNotNull(ticket);
+        assertEquals(ticketDocNo1.getTicketID(), ticket.getTicketID());
+        assertEquals(ticketDocNo1.getMovieTime(), ticket.getMovieTime());
+        assertEquals(ticketDocNo1.getTicketFinalPrice(), ticket.getTicketFinalPrice());
+        assertEquals(ticketDocNo1.getClientID(), ticket.getClient().getClientID());
+        assertEquals(staffDocNo1.getClientID(), ticket.getClient().getClientID());
+        assertEquals(staffDocNo1.getClientLogin(), ticket.getClient().getClientLogin());
+        assertEquals(staffDocNo1.getClientPassword(), ticket.getClient().getClientPassword());
+        assertEquals(staffDocNo1.isClientStatusActive(), ticket.getClient().isClientStatusActive());
         assertEquals(ticketDocNo1.getMovieID(), ticket.getMovie().getMovieID());
         assertEquals(movieDocNo1.getMovieID(), ticket.getMovie().getMovieID());
         assertEquals(movieDocNo1.getMovieTitle(), ticket.getMovie().getMovieTitle());

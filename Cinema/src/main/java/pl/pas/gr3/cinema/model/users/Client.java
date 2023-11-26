@@ -1,9 +1,12 @@
 package pl.pas.gr3.cinema.model.users;
 
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Size;
 import lombok.*;
 import org.apache.commons.lang3.builder.EqualsBuilder;
 import org.apache.commons.lang3.builder.HashCodeBuilder;
 import org.apache.commons.lang3.builder.ToStringBuilder;
+import pl.pas.gr3.cinema.validation.UserValidationMessages;
 
 import java.util.UUID;
 
@@ -12,10 +15,17 @@ import java.util.UUID;
 public class Client {
 
     @Setter(AccessLevel.NONE)
+    @NotNull(message = UserValidationMessages.NULL_IDENTIFIER)
     protected UUID clientID;
 
+    @NotNull(message = UserValidationMessages.NULL_LOGIN)
+    @Size(min = 8, message = UserValidationMessages.LOGIN_TOO_SHORT)
+    @Size(max = 20, message = UserValidationMessages.LOGIN_TOO_LONG)
     protected String clientLogin;
 
+    @NotNull(message = UserValidationMessages.NULL_PASSWORD)
+    @Size(min = 8, message = UserValidationMessages.PASSWORD_TOO_SHORT)
+    @Size(max = 40, message = UserValidationMessages.PASSWORD_TOO_LONG)
     protected String clientPassword;
 
     protected boolean clientStatusActive;

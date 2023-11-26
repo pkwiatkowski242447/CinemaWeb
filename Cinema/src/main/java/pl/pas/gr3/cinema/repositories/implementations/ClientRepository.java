@@ -9,6 +9,12 @@ import org.bson.conversions.Bson;
 import pl.pas.gr3.cinema.exceptions.mapping.ClientDocNullReferenceException;
 import pl.pas.gr3.cinema.exceptions.mapping.DocNullReferenceException;
 import pl.pas.gr3.cinema.exceptions.repositories.*;
+import pl.pas.gr3.cinema.exceptions.repositories.crud.client.ClientRepositoryCreateException;
+import pl.pas.gr3.cinema.exceptions.repositories.crud.client.ClientRepositoryDeleteException;
+import pl.pas.gr3.cinema.exceptions.repositories.crud.client.ClientRepositoryReadException;
+import pl.pas.gr3.cinema.exceptions.repositories.crud.client.ClientRepositoryUpdateException;
+import pl.pas.gr3.cinema.exceptions.repositories.other.client.ClientActivationException;
+import pl.pas.gr3.cinema.exceptions.repositories.other.client.ClientDeactivationException;
 import pl.pas.gr3.cinema.mapping.docs.users.AdminDoc;
 import pl.pas.gr3.cinema.mapping.docs.users.ClientDoc;
 import pl.pas.gr3.cinema.mapping.docs.users.StaffDoc;
@@ -19,6 +25,7 @@ import pl.pas.gr3.cinema.model.Ticket;
 import pl.pas.gr3.cinema.model.users.Admin;
 import pl.pas.gr3.cinema.model.users.Client;
 import pl.pas.gr3.cinema.model.users.Staff;
+import pl.pas.gr3.cinema.repositories.interfaces.ClientRepositoryInterface;
 
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
@@ -27,15 +34,11 @@ import java.util.List;
 import java.util.UUID;
 
 @ApplicationScoped
-public class ClientRepository extends MongoRepository<Client> {
+public class ClientRepository extends MongoRepository implements ClientRepositoryInterface {
 
     private final String databaseName;
-
-    public ClientRepository() {
-        this.databaseName = "default";
-        super.initDBConnection(this.databaseName);
-        ValidationOptions validationOptions = new ValidationOptions().validator(
-                Document.parse("""
+    private final ValidationOptions validationOptions = new ValidationOptions().validator(
+            Document.parse("""
                             {
                                 $jsonSchema: {
                                     "bsonType": "object",
@@ -68,6 +71,10 @@ public class ClientRepository extends MongoRepository<Client> {
                                 }
                             }
                             """));
+
+    public ClientRepository() {
+        this.databaseName = "default";
+        super.initDBConnection(this.databaseName);
         CreateCollectionOptions createCollectionOptions = new CreateCollectionOptions().validationOptions(validationOptions);
         mongoDatabase.createCollection(clientCollectionName, createCollectionOptions);
         IndexOptions indexOptions = new IndexOptions().unique(true);
@@ -104,57 +111,14 @@ public class ClientRepository extends MongoRepository<Client> {
     public ClientRepository(String databaseName) {
         this.databaseName = databaseName;
         super.initDBConnection(this.databaseName);
-
-        boolean collectionExists = false;
-        for (String collectionName : mongoDatabase.listCollectionNames()) {
-            if (collectionName.equals(clientCollectionName)) {
-                collectionExists = true;
-                break;
-            }
-        }
-
-        if (!collectionExists) {
-            ValidationOptions validationOptions = new ValidationOptions().validator(
-                    Document.parse("""
-                            {
-                                $jsonSchema: {
-                                    "bsonType": "object",
-                                    "required": ["_id", "client_login", "client_password", "client_status_active"],
-                                    "properties": {
-                                        "_id": {
-                                            "description": "Id of the client object representation in the database.",
-                                            "bsonType": "binData",
-                                            "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}"
-                                        }
-                                        "client_login": {
-                                            "description": "String containing clients login to the cinema web app.",
-                                            "bsonType": "string",
-                                            "minLength": 8,
-                                            "maxLength": 20,
-                                            "pattern": "^[^\s]*$"
-                                        }
-                                        "client_password": {
-                                            "description": "String containing clients password to the cinema web app.",
-                                            "bsonType": "string",
-                                            "minLength": 8,
-                                            "maxLength": 40,
-                                            "pattern": "^[^\s]*$"
-                                        }
-                                        "client_status_active": {
-                                            "description": "Boolean flag indicating whether client is able to perform any action.",
-                                            "bsonType": "bool"
-                                        }
-                                    }
-                                }
-                            }
-                            """));
-            CreateCollectionOptions createCollectionOptions = new CreateCollectionOptions().validationOptions(validationOptions);
-            mongoDatabase.createCollection(clientCollectionName, createCollectionOptions);
-            IndexOptions indexOptions = new IndexOptions().unique(true);
-            mongoDatabase.getCollection(clientCollectionName).createIndex(Indexes.ascending("client_login"), indexOptions);
-        }
+        this.getClientCollection().drop();
+        CreateCollectionOptions createCollectionOptions = new CreateCollectionOptions().validationOptions(validationOptions);
+        mongoDatabase.createCollection(clientCollectionName, createCollectionOptions);
+        IndexOptions indexOptions = new IndexOptions().unique(true);
+        mongoDatabase.getCollection(clientCollectionName).createIndex(Indexes.ascending("client_login"), indexOptions);
     }
 
+    @Override
     public Client createClient(String clientLogin, String clientPassword) throws ClientRepositoryException {
         Client client;
         try {
@@ -167,6 +131,7 @@ public class ClientRepository extends MongoRepository<Client> {
         return client;
     }
 
+    @Override
     public Admin createAdmin(String adminLogin, String adminPassword) throws ClientRepositoryException {
         Admin admin;
         try {
@@ -179,6 +144,7 @@ public class ClientRepository extends MongoRepository<Client> {
         return admin;
     }
 
+    @Override
     public Staff createStaff(String clientLogin, String clientPassword) throws ClientRepositoryException {
         Staff staff;
         try {
@@ -219,11 +185,11 @@ public class ClientRepository extends MongoRepository<Client> {
     }
 
     @Override
-    public List<Client> findAll() throws ClientRepositoryException {
+    public List<Client> findAllClients() throws ClientRepositoryException {
         List<Client> listOfAllClients = new ArrayList<>();
         try (ClientSession clientSession = mongoClient.startSession()) {
             clientSession.startTransaction();
-            Bson filter = Filters.empty();
+            Bson filter = Filters.eq("_clazz", "client");
             for (ClientDoc clientDoc : getClientCollection().find(filter)) {
                 listOfAllClients.add(super.findClient(clientDoc.getClientID()));
             }
@@ -234,6 +200,38 @@ public class ClientRepository extends MongoRepository<Client> {
         return listOfAllClients;
     }
 
+    @Override
+    public List<Client> findAllAdmins() throws ClientRepositoryException {
+        List<Client> listOfAllAdmins = new ArrayList<>();
+        try (ClientSession clientSession = mongoClient.startSession()) {
+            clientSession.startTransaction();
+            Bson filter = Filters.eq("_clazz", "admin");
+            for (ClientDoc clientDoc : getClientCollection().find(filter)) {
+                listOfAllAdmins.add(super.findClient(clientDoc.getClientID()));
+            }
+            clientSession.commitTransaction();
+        } catch (MongoException | DocNullReferenceException exception) {
+            throw new ClientRepositoryReadException(exception.getMessage(), exception);
+        }
+        return listOfAllAdmins;
+    }
+
+    @Override
+    public List<Client> findAllStaffs() throws ClientRepositoryException {
+        List<Client> listOfAllStaff = new ArrayList<>();
+        try (ClientSession clientSession = mongoClient.startSession()) {
+            clientSession.startTransaction();
+            Bson filter = Filters.eq("_clazz", "staff");
+            for (ClientDoc clientDoc : getClientCollection().find(filter)) {
+                listOfAllStaff.add(super.findClient(clientDoc.getClientID()));
+            }
+            clientSession.commitTransaction();
+        } catch (MongoException | DocNullReferenceException exception) {
+            throw new ClientRepositoryReadException(exception.getMessage(), exception);
+        }
+        return listOfAllStaff;
+    }
+
     public List<Ticket> getListOfTicketsForClient(UUID clientID) {
         List<Ticket> listOfActiveTickets;
         List<Bson> listOfFilters = List.of(Aggregates.match(Filters.eq("client_id", clientID)));
@@ -241,13 +239,15 @@ public class ClientRepository extends MongoRepository<Client> {
         return listOfActiveTickets;
     }
 
-    public Client findByLogin(String loginValue) throws ClientRepositoryException {
+    @Override
+    public Client findClientByLogin(String loginValue) throws ClientRepositoryException {
         Client client;
         try {
-            Bson clientFilter = Filters.eq("client_login", loginValue);
-            ClientDoc foundClientDoc = getClientCollection().find(clientFilter).first();
+            List<Bson> listOfFilters = List.of(Aggregates.match(Filters.eq("_clazz", "client")),
+                    Aggregates.match(Filters.eq("client_login", loginValue)));
+            ClientDoc foundClientDoc = getClientCollection().aggregate(listOfFilters).first();
             if (foundClientDoc != null) {
-                client = super.findClient(foundClientDoc.getClientID());
+                client = ClientMapper.toClient(foundClientDoc);
             } else {
                 throw new ClientDocNullReferenceException("Client object with given login could not be found in the database.");
             }
@@ -257,11 +257,15 @@ public class ClientRepository extends MongoRepository<Client> {
         return client;
     }
 
-    public List<Client> findAllMatchingLogin(String loginValue) throws ClientRepositoryException {
+    @Override
+    public List<Client> findAllClientsMatchingLogin(String loginValue) throws ClientRepositoryException {
         List<Client> listOfMatchingClients;
-        try {
-            Bson clientFilter = Filters.regex("client_login", "^" + loginValue + ".*$");
-            listOfMatchingClients = getClients(clientFilter);
+        try(ClientSession clientSession = mongoClient.startSession()) {
+            clientSession.startTransaction();
+            List<Bson> listOfFilters = List.of(Aggregates.match(Filters.eq("_clazz", "client")),
+                    Aggregates.match(Filters.regex("client_login", "^" + loginValue + ".*$")));
+            listOfMatchingClients = getClients(listOfFilters);
+            clientSession.commitTransaction();
         } catch (MongoException exception) {
             throw new ClientRepositoryReadException(exception.getMessage(), exception);
         }
@@ -269,7 +273,73 @@ public class ClientRepository extends MongoRepository<Client> {
     }
 
     @Override
-    public void update(Client client) throws ClientRepositoryException {
+    public Admin findAdminByLogin(String loginValue) throws ClientRepositoryException {
+        Admin admin;
+        try {
+            List<Bson> listOfFilters = List.of(Aggregates.match(Filters.eq("_clazz", "admin")),
+                    Aggregates.match(Filters.eq("client_login", loginValue)));
+            ClientDoc foundAdminDoc = getClientCollection().aggregate(listOfFilters).first();
+            if (foundAdminDoc != null) {
+                admin = AdminMapper.toAdmin(foundAdminDoc);
+            } else {
+                throw new ClientDocNullReferenceException("Admin object with given login could not be found in the database.");
+            }
+        } catch (MongoException | DocNullReferenceException exception) {
+            throw new ClientRepositoryReadException(exception.getMessage(), exception);
+        }
+        return admin;
+    }
+
+    @Override
+    public List<Client> findAllAdminsMatchingLogin(String loginValue) throws ClientRepositoryException {
+        List<Client> listOfMatchingAdmins;
+        try(ClientSession clientSession = mongoClient.startSession()) {
+            clientSession.startTransaction();
+            List<Bson> listOfFilters = List.of(Aggregates.match(Filters.eq("_clazz", "admin")),
+                    Aggregates.match(Filters.regex("client_login", "^" + loginValue + ".*$")));
+            listOfMatchingAdmins = getClients(listOfFilters);
+            clientSession.commitTransaction();
+        } catch (MongoException exception) {
+            throw new ClientRepositoryReadException(exception.getMessage(), exception);
+        }
+        return listOfMatchingAdmins;
+    }
+
+    @Override
+    public Staff findStaffByLogin(String loginValue) throws ClientRepositoryException {
+        Staff staff;
+        try {
+            List<Bson> listOfFilters = List.of(Aggregates.match(Filters.eq("_clazz", "staff")),
+                    Aggregates.match(Filters.eq("client_login", loginValue)));
+            ClientDoc foundStaffDoc = getClientCollection().aggregate(listOfFilters).first();
+            if (foundStaffDoc != null) {
+                staff = StaffMapper.toStaff(foundStaffDoc);
+            } else {
+                throw new ClientDocNullReferenceException("Staff object with given login could not be found in the database.");
+            }
+        } catch (MongoException | DocNullReferenceException exception) {
+            throw new ClientRepositoryReadException(exception.getMessage(), exception);
+        }
+        return staff;
+    }
+
+    @Override
+    public List<Client> findAllStaffsMatchingLogin(String loginValue) throws ClientRepositoryException {
+        List<Client> listOfMatchingStaffs;
+        try(ClientSession clientSession = mongoClient.startSession()) {
+            clientSession.startTransaction();
+            List<Bson> listOfFilters = List.of(Aggregates.match(Filters.eq("_clazz", "staff")),
+                    Aggregates.match(Filters.regex("client_login", "^" + loginValue + ".*$")));
+            listOfMatchingStaffs = getClients(listOfFilters);
+            clientSession.commitTransaction();
+        } catch (MongoException exception) {
+            throw new ClientRepositoryReadException(exception.getMessage(), exception);
+        }
+        return listOfMatchingStaffs;
+    }
+
+    @Override
+    public void updateClient(Client client) throws ClientRepositoryException {
         try {
             ClientDoc newClientDoc = ClientMapper.toClientDoc(client);
             Bson clientFilter = Filters.eq("_id", client.getClientID());
@@ -282,6 +352,35 @@ public class ClientRepository extends MongoRepository<Client> {
         }
     }
 
+    @Override
+    public void updateAdmin(Admin admin) throws ClientRepositoryException {
+        try {
+            ClientDoc newAdminDoc = AdminMapper.toAdminDoc(admin);
+            Bson adminFilter = Filters.eq("_id", admin.getClientID());
+            ClientDoc updatedAdminDoc = getClientCollection().findOneAndReplace(adminFilter, newAdminDoc);
+            if (updatedAdminDoc == null) {
+                throw new ClientDocNullReferenceException("Admin object representation for given client object could not be found in the database.");
+            }
+        } catch (MongoException | ClientDocNullReferenceException exception) {
+            throw new ClientRepositoryUpdateException(exception.getMessage(), exception);
+        }
+    }
+
+    @Override
+    public void updateStaff(Staff staff) throws ClientRepositoryException {
+        try {
+            ClientDoc newStaffDoc = StaffMapper.toStaffDoc(staff);
+            Bson staffFilter = Filters.eq("_id", staff.getClientID());
+            ClientDoc updatedStaffDoc = getClientCollection().findOneAndReplace(staffFilter, newStaffDoc);
+            if (updatedStaffDoc == null) {
+                throw new ClientDocNullReferenceException("Staff object representation for given client object could not be found in the database.");
+            }
+        } catch (MongoException | ClientDocNullReferenceException exception) {
+            throw new ClientRepositoryUpdateException(exception.getMessage(), exception);
+        }
+    }
+
+    @Override
     public void delete(UUID clientID) throws ClientRepositoryException {
         try {
             Bson filter = Filters.eq("_id", clientID);
@@ -294,27 +393,41 @@ public class ClientRepository extends MongoRepository<Client> {
         }
     }
 
+    @Override
     public void activate(Client client) throws ClientRepositoryException {
         client.setClientStatusActive(true);
         try {
-            this.update(client);
+            if (client.getClass().equals(Admin.class)) {
+                this.updateAdmin(AdminMapper.toAdmin(ClientMapper.toClientDoc(client)));
+            } else if (client.getClass().equals(Staff.class)) {
+                this.updateStaff(StaffMapper.toStaff(ClientMapper.toClientDoc(client)));
+            } else {
+                this.updateClient(client);
+            }
         } catch (ClientRepositoryException exception) {
             throw new ClientActivationException("Client object representation for given client object could not be found in the database.");
         }
     }
 
+    @Override
     public void deactivate(Client client) throws ClientRepositoryException {
         client.setClientStatusActive(false);
         try {
-            this.update(client);
+            if (client.getClass().equals(Admin.class)) {
+                this.updateAdmin(AdminMapper.toAdmin(ClientMapper.toClientDoc(client)));
+            } else if (client.getClass().equals(Staff.class)) {
+                this.updateStaff(StaffMapper.toStaff(ClientMapper.toClientDoc(client)));
+            } else {
+                this.updateClient(client);
+            }
         } catch (ClientRepositoryException exception) {
             throw new ClientDeactivationException("Client object representation for given client object could not be found in the database.");
         }
     }
 
-    private List<Client> getClients(Bson clientFilter) throws ClientDocNullReferenceException {
+    private List<Client> getClients(List<Bson> clientFilters) throws ClientDocNullReferenceException {
         List<Client> listOfFoundClients = new ArrayList<>();
-        for (ClientDoc clientDoc : getClientCollection().find(clientFilter)) {
+        for (ClientDoc clientDoc : getClientCollection().aggregate(clientFilters)) {
             listOfFoundClients.add(super.findClient(clientDoc.getClientID()));
         }
         return listOfFoundClients;

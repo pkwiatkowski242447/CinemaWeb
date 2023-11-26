@@ -1,13 +1,16 @@
 package pl.pas.gr3.cinema.model;
 
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.PositiveOrZero;
 import lombok.Data;
 import org.apache.commons.lang3.builder.EqualsBuilder;
 import org.apache.commons.lang3.builder.HashCodeBuilder;
 import org.apache.commons.lang3.builder.ToStringBuilder;
 import pl.pas.gr3.cinema.exceptions.model.MovieNullReferenceException;
 import pl.pas.gr3.cinema.exceptions.model.TicketCreateException;
-import pl.pas.gr3.cinema.exceptions.model.TicketTypeNullReferenceException;
 import pl.pas.gr3.cinema.model.users.Client;
+import pl.pas.gr3.cinema.errors.ModelErrorMessages;
+import pl.pas.gr3.cinema.validation.TicketValidationMessages;
 
 import java.time.LocalDateTime;
 import java.util.UUID;
@@ -15,19 +18,24 @@ import java.util.UUID;
 @Data
 public class Ticket {
 
+    @NotNull(message = TicketValidationMessages.NULL_IDENTIFIER)
     private final UUID ticketID;
 
     private LocalDateTime movieTime;
 
+    @PositiveOrZero(message = TicketValidationMessages.INVALID_TICKET_FINAL_PRICE)
     private final double ticketFinalPrice;
 
+    @NotNull(message = TicketValidationMessages.NULL_CLIENT_REFERENCE)
     private final Client client;
 
+    @NotNull(message = TicketValidationMessages.NULL_MOVIE_REFERENCE)
     private final Movie movie;
 
     // Constructors
 
-    public Ticket(UUID ticketID, LocalDateTime movieTime, Client client, Movie movie, TicketType ticketType)
+    public Ticket(UUID ticketID, LocalDateTime movieTime, Client client, Movie movie,
+                  @NotNull(message = TicketValidationMessages.TICKET_TYPE_NULL) TicketType ticketType)
     throws TicketCreateException {
         this.ticketID = ticketID;
         this.movieTime = movieTime;
@@ -35,10 +43,6 @@ public class Ticket {
         this.movie = movie;
         try {
             movie.setNumberOfAvailableSeats(movie.getNumberOfAvailableSeats() - 1);
-        } catch (NullPointerException exception) {
-            throw new MovieNullReferenceException("Reference to movie object is null.");
-        }
-        try {
             switch (ticketType) {
                 case REDUCED: {
                     this.ticketFinalPrice = movie.getMovieBasePrice() * 0.75;
@@ -49,7 +53,7 @@ public class Ticket {
                 }
             }
         } catch (NullPointerException exception) {
-            throw new TicketTypeNullReferenceException("Reference to ticket type object is null found.");
+            throw new MovieNullReferenceException(ModelErrorMessages.MOVIE_NULL_EX);
         }
     }
 

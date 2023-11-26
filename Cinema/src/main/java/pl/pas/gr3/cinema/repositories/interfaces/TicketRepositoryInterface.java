@@ -1,5 +1,6 @@
 package pl.pas.gr3.cinema.repositories.interfaces;
 
+import pl.pas.gr3.cinema.exceptions.repositories.TicketRepositoryException;
 import pl.pas.gr3.cinema.model.Ticket;
 import pl.pas.gr3.cinema.model.TicketType;
 
@@ -11,8 +12,13 @@ public interface TicketRepositoryInterface extends RepositoryInterface<Ticket> {
 
     // Create methods
 
-    Ticket create(LocalDateTime movieTime, UUID clientID, UUID movieID, TicketType ticketType);
+    Ticket create(LocalDateTime movieTime, UUID clientID, UUID movieID, TicketType ticketType) throws TicketRepositoryException;
 
-    // Other methods
-    List<Ticket> findAllTickets();
+    // Read methods
+
+    List<Ticket> findAll() throws TicketRepositoryException;
+
+    // Update methods
+
+    void update(Ticket ticket) throws TicketRepositoryException;
 }

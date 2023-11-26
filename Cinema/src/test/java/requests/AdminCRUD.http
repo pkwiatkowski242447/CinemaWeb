@@ -1,7 +1,0 @@
-GET http://localhost:8080/Cinema-1.0-SNAPSHOT/api/admins
-
-###
-POST http://localhost:8080/Cinema-1.0-SNAPSHOT/api/admins/create=uniqueAdminLoginNo1&password=uniqueAdminPasswordNo1
-
-###
-GET http://localhost:8080/Cinema-1.0-SNAPSHOT/api/admins

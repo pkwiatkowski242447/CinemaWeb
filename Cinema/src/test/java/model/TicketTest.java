@@ -5,7 +5,6 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import pl.pas.gr3.cinema.exceptions.model.MovieNullReferenceException;
 import pl.pas.gr3.cinema.exceptions.model.TicketCreateException;
-import pl.pas.gr3.cinema.exceptions.model.TicketTypeNullReferenceException;
 import pl.pas.gr3.cinema.model.Movie;
 import pl.pas.gr3.cinema.model.Ticket;
 import pl.pas.gr3.cinema.model.TicketType;
@@ -110,7 +109,7 @@ public class TicketTest {
 
     @Test
     public void ticketModelLayerConstructorWithNullTicketTypeTestNegative() {
-        assertThrows(TicketTypeNullReferenceException.class, () -> new Ticket(ticketIDNo1, movieTimeNo1, clientNo1, movieNo1, null));
+        assertThrows(MovieNullReferenceException.class, () -> new Ticket(ticketIDNo1, movieTimeNo1, clientNo1, movieNo1, null));
     }
 
     @Test

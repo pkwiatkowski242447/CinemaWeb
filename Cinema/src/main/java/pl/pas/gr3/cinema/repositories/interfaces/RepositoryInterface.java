@@ -1,5 +1,7 @@
 package pl.pas.gr3.cinema.repositories.interfaces;
 
+import pl.pas.gr3.cinema.exceptions.repositories.GeneralRepositoryException;
+
 import java.util.List;
 import java.util.UUID;
 
@@ -9,15 +11,10 @@ public interface RepositoryInterface<Type> {
 
     // Read methods
 
-    Type findByUUID(UUID elementID);
-    List<Type> findAll();
-    List<UUID> findAllUUIDs();
-
-    // Update methods
-
-    void update(Type element);
+    Type findByUUID(UUID elementID) throws GeneralRepositoryException;
+    List<UUID> findAllUUIDs() throws GeneralRepositoryException;
 
     // Delete methods
 
-    void delete(UUID elementID);
+    void delete(UUID elementID) throws GeneralRepositoryException;
 }

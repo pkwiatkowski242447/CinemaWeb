@@ -1,5 +1,6 @@
 package pl.pas.gr3.cinema.repositories.interfaces;
 
+import pl.pas.gr3.cinema.exceptions.repositories.ClientRepositoryException;
 import pl.pas.gr3.cinema.model.Ticket;
 import pl.pas.gr3.cinema.model.users.Admin;
 import pl.pas.gr3.cinema.model.users.Client;
@@ -12,19 +13,31 @@ public interface ClientRepositoryInterface extends RepositoryInterface<Client> {
 
     // Create methods
 
-    Client createClient(String clientLogin, String clientPassword);
-    Admin createAdmin(String adminLogin, String adminPassword);
-    Staff createStaff(String staffLogin, String staffPassword);
+    Client createClient(String clientLogin, String clientPassword) throws ClientRepositoryException;
+    Admin createAdmin(String adminLogin, String adminPassword) throws ClientRepositoryException;
+    Staff createStaff(String staffLogin, String staffPassword) throws ClientRepositoryException;
 
     // Read methods
 
-    Client findByLogin(String loginValue);
-    List<Client> findAllMatchingLogin(String loginValue);
+    Client findClientByLogin(String loginValue) throws ClientRepositoryException;
+    List<Client> findAllClientsMatchingLogin(String loginValue) throws ClientRepositoryException;
+    Admin findAdminByLogin(String loginValue) throws ClientRepositoryException;
+    List<Client> findAllAdminsMatchingLogin(String loginValue) throws ClientRepositoryException;
+    Staff findStaffByLogin(String loginValue) throws ClientRepositoryException;
+    List<Client> findAllStaffsMatchingLogin(String loginValue) throws ClientRepositoryException;
+
+    List<Client> findAllClients() throws ClientRepositoryException;
+    List<Client> findAllAdmins() throws ClientRepositoryException;
+    List<Client> findAllStaffs() throws ClientRepositoryException;
 
     // Update methods
 
-    void activate(Client client);
-    void deactivate(Client client);
+    void updateClient(Client client) throws ClientRepositoryException;
+    void updateAdmin(Admin admin) throws ClientRepositoryException;
+    void updateStaff(Staff staff) throws ClientRepositoryException;
+
+    void activate(Client client) throws ClientRepositoryException;
+    void deactivate(Client client) throws ClientRepositoryException;
 
     // Other required methods
 

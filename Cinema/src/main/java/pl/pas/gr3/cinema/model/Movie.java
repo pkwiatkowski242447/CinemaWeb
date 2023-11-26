@@ -1,10 +1,12 @@
 package pl.pas.gr3.cinema.model;
 
+import jakarta.validation.constraints.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import org.apache.commons.lang3.builder.EqualsBuilder;
 import org.apache.commons.lang3.builder.HashCodeBuilder;
 import org.apache.commons.lang3.builder.ToStringBuilder;
+import pl.pas.gr3.cinema.validation.MovieValidationMessages;
 
 import java.util.UUID;
 
@@ -12,14 +14,24 @@ import java.util.UUID;
 @AllArgsConstructor
 public class Movie {
 
+    @NotNull(message = MovieValidationMessages.NULL_IDENTIFIER)
     private final UUID movieID;
 
+    @NotNull(message = MovieValidationMessages.NULL_MOVIE_TITLE)
+    @Size(min = 1, message = MovieValidationMessages.MOVIE_TITLE_TOO_SHORT)
+    @Size(max = 150, message = MovieValidationMessages.MOVIE_TITLE_TOO_LONG)
     private String movieTitle;
 
+    @Min(value = 0, message = MovieValidationMessages.MOVIE_BASE_PRICE_TOO_LOW)
+    @Max(value = 100, message = MovieValidationMessages.MOVIE_BASE_PRICE_TOO_HIGH)
     private double movieBasePrice;
 
+    @Min(value = 1, message = MovieValidationMessages.SCREENING_ROOM_NUMBER_TOO_LOW)
+    @Max(value = 30, message = MovieValidationMessages.SCREENING_ROOM_NUMBER_TOO_HIGH)
     private int scrRoomNumber;
 
+    @Min(value = 0, message = MovieValidationMessages.NUMBER_OF_AVAILABLE_SEATS_NEGATIVE)
+    @Max(value = 120, message = MovieValidationMessages.NUMBER_OF_AVAILABLE_SEATS_ABOVE_LIMIT)
     private int numberOfAvailableSeats;
 
     // Constructors

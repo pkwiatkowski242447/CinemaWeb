@@ -3,6 +3,11 @@ package repositories;
 import org.junit.jupiter.api.*;
 import pl.pas.gr3.cinema.exceptions.model.TicketCreateException;
 import pl.pas.gr3.cinema.exceptions.repositories.*;
+import pl.pas.gr3.cinema.exceptions.repositories.crud.movie.MovieRepositoryDeleteException;
+import pl.pas.gr3.cinema.exceptions.repositories.crud.ticket.TicketRepositoryCreateException;
+import pl.pas.gr3.cinema.exceptions.repositories.crud.ticket.TicketRepositoryDeleteException;
+import pl.pas.gr3.cinema.exceptions.repositories.crud.ticket.TicketRepositoryReadException;
+import pl.pas.gr3.cinema.exceptions.repositories.crud.ticket.TicketRepositoryUpdateException;
 import pl.pas.gr3.cinema.model.Movie;
 import pl.pas.gr3.cinema.model.Ticket;
 import pl.pas.gr3.cinema.model.TicketType;
@@ -80,7 +85,7 @@ public class TicketRepositoryTest {
         }
 
         try {
-            List<Client> listOfAllClients = clientRepositoryForTests.findAll();
+            List<Client> listOfAllClients = clientRepositoryForTests.findAllClients();
             for (Client client : listOfAllClients) {
                 clientRepositoryForTests.delete(client.getClientID());
             }

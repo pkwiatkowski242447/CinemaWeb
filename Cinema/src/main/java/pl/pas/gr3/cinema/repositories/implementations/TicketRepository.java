@@ -7,12 +7,16 @@ import com.mongodb.client.model.Filters;
 import com.mongodb.client.model.Updates;
 import com.mongodb.client.model.ValidationOptions;
 import jakarta.enterprise.context.ApplicationScoped;
-import org.bson.BsonNull;
 import org.bson.Document;
 import org.bson.conversions.Bson;
 import pl.pas.gr3.cinema.exceptions.mapping.*;
 import pl.pas.gr3.cinema.exceptions.model.TicketCreateException;
 import pl.pas.gr3.cinema.exceptions.repositories.*;
+import pl.pas.gr3.cinema.exceptions.repositories.crud.ticket.TicketRepositoryCreateException;
+import pl.pas.gr3.cinema.exceptions.repositories.crud.ticket.TicketRepositoryDeleteException;
+import pl.pas.gr3.cinema.exceptions.repositories.crud.ticket.TicketRepositoryReadException;
+import pl.pas.gr3.cinema.exceptions.repositories.crud.ticket.TicketRepositoryUpdateException;
+import pl.pas.gr3.cinema.exceptions.repositories.other.client.ClientNotActiveException;
 import pl.pas.gr3.cinema.mapping.docs.MovieDoc;
 import pl.pas.gr3.cinema.mapping.docs.TicketDoc;
 import pl.pas.gr3.cinema.mapping.docs.users.ClientDoc;
@@ -21,9 +25,8 @@ import pl.pas.gr3.cinema.mapping.mappers.TicketMapper;
 import pl.pas.gr3.cinema.model.Movie;
 import pl.pas.gr3.cinema.model.Ticket;
 import pl.pas.gr3.cinema.model.TicketType;
-import pl.pas.gr3.cinema.model.users.Admin;
 import pl.pas.gr3.cinema.model.users.Client;
-import pl.pas.gr3.cinema.model.users.Staff;
+import pl.pas.gr3.cinema.repositories.interfaces.TicketRepositoryInterface;
 
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
@@ -34,19 +37,11 @@ import java.util.List;
 import java.util.UUID;
 
 @ApplicationScoped
-public class TicketRepository extends MongoRepository<Ticket> {
+public class TicketRepository extends MongoRepository implements TicketRepositoryInterface {
 
     private final String databaseName;
-
-    public TicketRepository() {
-        this.databaseName = "default";
-        super.initDBConnection(databaseName);
-        // Restore default state - that is no ticket collection in the database (after all it one of the
-        // requirements).
-        super.getTicketCollection().drop();
-        // Create collection:
-        ValidationOptions validationOptions = new ValidationOptions().validator(
-                Document.parse("""
+    private final ValidationOptions validationOptions = new ValidationOptions().validator(
+            Document.parse("""
                             {
                                 $jsonSchema: {
                                     "bsonType": "object",
@@ -79,6 +74,10 @@ public class TicketRepository extends MongoRepository<Ticket> {
                                 }
                             }
                             """));
+
+    public TicketRepository() {
+        this.databaseName = "default";
+        super.initDBConnection(databaseName);
         CreateCollectionOptions createCollectionOptions = new CreateCollectionOptions().validationOptions(validationOptions);
         mongoDatabase.createCollection(ticketCollectionName, createCollectionOptions);
     }
@@ -114,55 +113,12 @@ public class TicketRepository extends MongoRepository<Ticket> {
     public TicketRepository(String databaseName) {
         this.databaseName = databaseName;
         super.initDBConnection(this.databaseName);
-
-        boolean collectionExists = false;
-        for (String collectionName : mongoDatabase.listCollectionNames()) {
-            if (collectionName.equals(ticketCollectionName)) {
-                collectionExists = true;
-                break;
-            }
-        }
-
-        if (!collectionExists) {
-            ValidationOptions validationOptions = new ValidationOptions().validator(
-                    Document.parse("""
-                            {
-                                $jsonSchema: {
-                                    "bsonType": "object",
-                                    "required": ["_id", "movie_time", "movie_final_price", "client_id", "movie_id"],
-                                    "properties": {
-                                        "_id": {
-                                            "description": "Id of the ticket object representation in the database.",
-                                            "bsonType": "binData",
-                                            "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}"
-                                        }
-                                        "movie_time": {
-                                            "description": "Variable holding value of the date, when movie will air.",
-                                            "bsonType": "date"
-                                        }
-                                        "movie_final_price": {
-                                            "description": "Double value holding final price of the ticket, that is after applying all discounts.",
-                                            "bsonType": "double"
-                                        }
-                                        "client_id": {
-                                            "description": "Id of the client object representation in the database.",
-                                            "bsonType": "binData",
-                                            "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}"
-                                        }
-                                        "movie_id": {
-                                            "description": "Id of the movie object representation in the database.",
-                                            "bsonType": "binData",
-                                            "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}"
-                                        }
-                                    }
-                                }
-                            }
-                            """));
-            CreateCollectionOptions createCollectionOptions = new CreateCollectionOptions().validationOptions(validationOptions);
-            mongoDatabase.createCollection(ticketCollectionName, createCollectionOptions);
-        }
+        this.getTicketCollection().drop();
+        CreateCollectionOptions createCollectionOptions = new CreateCollectionOptions().validationOptions(validationOptions);
+        mongoDatabase.createCollection(ticketCollectionName, createCollectionOptions);
     }
 
+    @Override
     public Ticket create(LocalDateTime movieTime, UUID clientID, UUID movieID, TicketType ticketType) throws TicketRepositoryException {
         Ticket ticket;
         try (ClientSession clientSession = mongoClient.startSession()) {
@@ -259,6 +215,7 @@ public class TicketRepository extends MongoRepository<Ticket> {
         }
     }
 
+    @Override
     public void delete(UUID ticketID) throws TicketRepositoryException {
         try (ClientSession clientSession = mongoClient.startSession()) {
             clientSession.startTransaction();

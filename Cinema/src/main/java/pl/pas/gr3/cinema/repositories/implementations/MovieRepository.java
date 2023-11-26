@@ -11,11 +11,17 @@ import org.bson.Document;
 import org.bson.conversions.Bson;
 import pl.pas.gr3.cinema.exceptions.mapping.MovieDocNullReferenceException;
 import pl.pas.gr3.cinema.exceptions.repositories.*;
+import pl.pas.gr3.cinema.exceptions.repositories.crud.movie.MovieRepositoryCreateException;
+import pl.pas.gr3.cinema.exceptions.repositories.crud.movie.MovieRepositoryDeleteException;
+import pl.pas.gr3.cinema.exceptions.repositories.crud.movie.MovieRepositoryReadException;
+import pl.pas.gr3.cinema.exceptions.repositories.crud.movie.MovieRepositoryUpdateException;
+import pl.pas.gr3.cinema.exceptions.repositories.other.movie.ResourceIsCurrentlyUsedDeleteException;
 import pl.pas.gr3.cinema.mapping.docs.MovieDoc;
 import pl.pas.gr3.cinema.mapping.docs.TicketDoc;
 import pl.pas.gr3.cinema.mapping.mappers.MovieMapper;
 import pl.pas.gr3.cinema.model.Movie;
 import pl.pas.gr3.cinema.model.Ticket;
+import pl.pas.gr3.cinema.repositories.interfaces.MovieRepositoryInterface;
 
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
@@ -24,19 +30,11 @@ import java.util.List;
 import java.util.UUID;
 
 @ApplicationScoped
-public class MovieRepository extends MongoRepository<Movie> {
+public class MovieRepository extends MongoRepository implements MovieRepositoryInterface {
 
     private final String databaseName;
-
-    public MovieRepository() {
-        this.databaseName = "default";
-        super.initDBConnection(this.databaseName);
-        // Restore default state - that is no ticket collection in the database (after all it one of the
-        // requirements).
-        super.getMovieCollection().drop();
-        // Create collection:
-        ValidationOptions validationOptions = new ValidationOptions().validator(
-                Document.parse("""
+    private final ValidationOptions validationOptions = new ValidationOptions().validator(
+            Document.parse("""
                             {
                                 $jsonSchema: {
                                     "bsonType": "object",
@@ -75,7 +73,11 @@ public class MovieRepository extends MongoRepository<Movie> {
                                 }
                             }
                             """));
-        CreateCollectionOptions createCollectionOptions = new CreateCollectionOptions().validationOptions(validationOptions);
+
+    public MovieRepository() {
+        this.databaseName = "default";
+        super.initDBConnection(this.databaseName);
+        CreateCollectionOptions createCollectionOptions = new CreateCollectionOptions().validationOptions(this.validationOptions);
         mongoDatabase.createCollection(movieCollectionName, createCollectionOptions);
     }
 
@@ -103,63 +105,14 @@ public class MovieRepository extends MongoRepository<Movie> {
     public MovieRepository(String databaseName) {
         this.databaseName = databaseName;
         super.initDBConnection(this.databaseName);
-
-        boolean collectionExists = false;
-        for (String collectionName : mongoDatabase.listCollectionNames()) {
-            if (collectionName.equals(movieCollectionName)) {
-                collectionExists = true;
-                break;
-            }
-        }
-
-        if (!collectionExists) {
-            ValidationOptions validationOptions = new ValidationOptions().validator(
-                    Document.parse("""
-                            {
-                                $jsonSchema: {
-                                    "bsonType": "object",
-                                    "required": ["_id", "movie_title", "movie_base_price", "scr_room_number", "number_of_available_seats"],
-                                    "properties": {
-                                        "_id": {
-                                            "description": "Id of the movie object representation in the database.",
-                                            "bsonType": "binData",
-                                            "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$"
-                                        }
-                                        "movie_title": {
-                                            "description": "String containing the name / title of the movie.",
-                                            "bsonType": "string",
-                                            "minLength": 1,
-                                            "maxLength": 150
-                                        }
-                                        "movie_base_price": {
-                                            "description": "Double value representing movie base price - before taking ticketType into account.",
-                                            "bsonType": "double",
-                                            "minimum": 0,
-                                            "maximum": 100
-                                        }
-                                        "scr_room_number": {
-                                            "description": "Integer value representing number of the screening room which movie is aired in.",
-                                            "bsonType": "int",
-                                            "minimum": 1,
-                                            "maximum": 30
-                                        }
-                                        "number_of_available_seats": {
-                                            "description": "Integer value representing maximum number of available seats inside screening room.",
-                                            "bsonType": "int",
-                                            "minimum": 0,
-                                            "maximum": 120
-                                        }
-                                    }
-                                }
-                            }
-                            """));
-            CreateCollectionOptions createCollectionOptions = new CreateCollectionOptions().validationOptions(validationOptions);
-            mongoDatabase.createCollection(movieCollectionName, createCollectionOptions);
-        }
+        this.getMovieCollection().drop();
+        CreateCollectionOptions createCollectionOptions = new CreateCollectionOptions().validationOptions(this.validationOptions);
+        mongoDatabase.createCollection(movieCollectionName, createCollectionOptions);
     }
 
     // Create methods
 
+    @Override
     public Movie create(String movieTitle, double movieBasePrice, int scrRoomNumber, int numberOfAvailableSeats) throws MovieRepositoryException {
         Movie movie;
         try {

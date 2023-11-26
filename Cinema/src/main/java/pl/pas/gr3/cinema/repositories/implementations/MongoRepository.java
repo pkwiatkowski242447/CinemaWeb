@@ -15,7 +15,6 @@ import pl.pas.gr3.cinema.exceptions.mapping.ClientDocNullReferenceException;
 import pl.pas.gr3.cinema.exceptions.mapping.DocNullReferenceException;
 import pl.pas.gr3.cinema.exceptions.mapping.MovieDocNullReferenceException;
 import pl.pas.gr3.cinema.exceptions.mapping.TicketDocNullReferenceException;
-import pl.pas.gr3.cinema.exceptions.repositories.GeneralRepositoryException;
 import pl.pas.gr3.cinema.mapping.docs.MovieDoc;
 import pl.pas.gr3.cinema.mapping.docs.TicketDoc;
 import pl.pas.gr3.cinema.mapping.docs.users.AdminDoc;
@@ -33,7 +32,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
-public abstract class MongoRepository<Type> implements Closeable {
+public abstract class MongoRepository implements Closeable {
 
     private final static ConnectionString connectionString = new ConnectionString("mongodb://mongodbnode1:27017, mongodbnode2:27018, mongodbnode3:27019");
     private final static MongoCredential mongoCredentials = MongoCredential.createCredential("admin", "admin", "adminpassword".toCharArray());
@@ -85,19 +84,6 @@ public abstract class MongoRepository<Type> implements Closeable {
         mongoClient = MongoClients.create(mongoClientSettings);
         mongoDatabase = mongoClient.getDatabase(databaseName);
     }
-
-    // Read methods
-
-    public abstract Type findByUUID(UUID elementID) throws GeneralRepositoryException;
-    public abstract List<UUID> findAllUUIDs() throws GeneralRepositoryException;
-    public abstract List<Type> findAll() throws GeneralRepositoryException;
-
-    // Update method
-
-    public abstract void update(Type element) throws GeneralRepositoryException;
-
-    // Find certain collection methods
-
     protected MongoCollection<ClientDoc> getClientCollection() {
         return mongoDatabase.getCollection(clientCollectionName, clientCollectionType);
     }
