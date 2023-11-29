@@ -32,7 +32,6 @@ public class TicketManager extends Manager<Ticket> {
     private TicketRepository ticketRepository;
 
     @POST
-    @Path("/create")
     @Consumes(MediaType.TEXT_PLAIN)
     @Produces(MediaType.APPLICATION_JSON)
     public Response create(@QueryParam("time") String movieTime,
@@ -78,7 +77,6 @@ public class TicketManager extends Manager<Ticket> {
     }
 
     @GET
-    @Path("/")
     @Produces(MediaType.APPLICATION_JSON)
     @Override
     public Response findAll() {
@@ -95,7 +93,6 @@ public class TicketManager extends Manager<Ticket> {
     }
 
     @PUT
-    @Path("/update")
     @Consumes(MediaType.APPLICATION_JSON)
     @Produces(MediaType.APPLICATION_JSON)
     @Override
@@ -109,7 +106,7 @@ public class TicketManager extends Manager<Ticket> {
     }
 
     @DELETE
-    @Path("/delete/{id}")
+    @Path("/{id}")
     @Consumes(MediaType.TEXT_PLAIN)
     public Response delete(@PathParam("id") UUID ticketID) {
         try {

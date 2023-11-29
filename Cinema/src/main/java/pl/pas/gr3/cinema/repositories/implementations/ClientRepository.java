@@ -6,6 +6,8 @@ import com.mongodb.client.model.*;
 import jakarta.enterprise.context.ApplicationScoped;
 import org.bson.Document;
 import org.bson.conversions.Bson;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import pl.pas.gr3.cinema.exceptions.mapping.ClientDocNullReferenceException;
 import pl.pas.gr3.cinema.exceptions.mapping.DocNullReferenceException;
 import pl.pas.gr3.cinema.exceptions.repositories.*;
@@ -27,8 +29,9 @@ import pl.pas.gr3.cinema.model.users.Client;
 import pl.pas.gr3.cinema.model.users.Staff;
 import pl.pas.gr3.cinema.repositories.interfaces.ClientRepositoryInterface;
 
-import javax.annotation.PostConstruct;
-import javax.annotation.PreDestroy;
+import jakarta.annotation.PostConstruct;
+import jakarta.annotation.PreDestroy;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
@@ -37,6 +40,7 @@ import java.util.UUID;
 public class ClientRepository extends MongoRepository implements ClientRepositoryInterface {
 
     private final String databaseName;
+    private final static Logger logger = LoggerFactory.getLogger(ClientRepository.class);
     private final ValidationOptions validationOptions = new ValidationOptions().validator(
             Document.parse("""
                             {
@@ -75,24 +79,35 @@ public class ClientRepository extends MongoRepository implements ClientRepositor
     public ClientRepository() {
         this.databaseName = "default";
         super.initDBConnection(this.databaseName);
-        CreateCollectionOptions createCollectionOptions = new CreateCollectionOptions().validationOptions(validationOptions);
-        mongoDatabase.createCollection(clientCollectionName, createCollectionOptions);
-        IndexOptions indexOptions = new IndexOptions().unique(true);
-        mongoDatabase.getCollection(clientCollectionName).createIndex(Indexes.ascending("client_login"), indexOptions);
+
+        boolean collectionExists = false;
+        for (String collectionName : mongoDatabase.listCollectionNames()) {
+            if (collectionName.equals(clientCollectionName)) {
+                collectionExists = true;
+                break;
+            }
+        }
+
+        if (!collectionExists) {
+            CreateCollectionOptions createCollectionOptions = new CreateCollectionOptions().validationOptions(validationOptions);
+            mongoDatabase.createCollection(clientCollectionName, createCollectionOptions);
+            IndexOptions indexOptions = new IndexOptions().unique(true);
+            mongoDatabase.getCollection(clientCollectionName).createIndex(Indexes.ascending("client_login"), indexOptions);
+        }
     }
 
     @PostConstruct
-    private void initializeDatabaseState() {
+    public void initializeDatabaseState() {
         UUID clientIDNo1 = UUID.fromString("26c4727c-c791-4170-ab9d-faf7392e80b2");
         UUID clientIDNo2 = UUID.fromString("0b08f526-b018-4d23-8baa-93f0fb884edf");
         UUID clientIDNo3 = UUID.fromString("30392328-2cae-4e76-abb8-b1aa8f58a9e4");
         UUID adminID = UUID.fromString("17dad3c7-7605-4808-bec5-d6f46abd23b8");
         UUID staffID = UUID.fromString("3d8ef63c-f99d-445c-85d0-4b14e68fc5a1");
-        Client clientNo1 = new Client(clientIDNo1, "ClientLoginNo1", "ClientPasswordNo1");
-        Client clientNo2 = new Client(clientIDNo2, "ClientLoginNo2", "ClientPasswordNo2");
-        Client clientNo3 = new Client(clientIDNo3, "ClientLoginNo3", "ClientPasswordNo3");
-        Admin admin = new Admin(adminID, "AdminLogin", "AdminPassword");
-        Staff staff = new Staff(staffID, "StaffLogin", "StaffPassword");
+        Client clientNo1 = new Client(clientIDNo1, "NewFirstClientLogin", "ClientPasswordNo1");
+        Client clientNo2 = new Client(clientIDNo2, "NewSecondClientLogin", "ClientPasswordNo2");
+        Client clientNo3 = new Client(clientIDNo3, "NewThirdClientLogin", "ClientPasswordNo3");
+        Admin admin = new Admin(adminID, "NewSecretAdminLogin", "AdminPassword");
+        Staff staff = new Staff(staffID, "NewSecretStaffLogin", "StaffPassword");
         this.getClientCollection().insertOne(ClientMapper.toClientDoc(clientNo1));
         this.getClientCollection().insertOne(ClientMapper.toClientDoc(clientNo2));
         this.getClientCollection().insertOne(ClientMapper.toClientDoc(clientNo3));
@@ -101,10 +116,14 @@ public class ClientRepository extends MongoRepository implements ClientRepositor
     }
 
     @PreDestroy
-    private void restoreDatabaseState() throws ClientRepositoryException {
-        List<UUID> listOfAllUUIDs = this.findAllUUIDs();
-        for (UUID clientID : listOfAllUUIDs) {
-            this.delete(clientID);
+    public void restoreDatabaseState() {
+        try {
+            List<UUID> listOfAllUUIDs = this.findAllUUIDs();
+            for (UUID clientID : listOfAllUUIDs) {
+                this.delete(clientID);
+            }
+        } catch (ClientRepositoryException exception) {
+            logger.debug(exception.getMessage());
         }
     }
 
@@ -189,9 +208,10 @@ public class ClientRepository extends MongoRepository implements ClientRepositor
         List<Client> listOfAllClients = new ArrayList<>();
         try (ClientSession clientSession = mongoClient.startSession()) {
             clientSession.startTransaction();
-            Bson filter = Filters.eq("_clazz", "client");
-            for (ClientDoc clientDoc : getClientCollection().find(filter)) {
-                listOfAllClients.add(super.findClient(clientDoc.getClientID()));
+            List<Bson> aggregate = List.of(Aggregates.match(Filters.eq("_clazz", "client")));
+            List<Document> listOfClientDocs = getClientCollectionWithoutType().aggregate(aggregate).into(new ArrayList<>());
+            for (Document clientDoc : listOfClientDocs) {
+                listOfAllClients.add(super.findClient((UUID) clientDoc.get("id")));
             }
             clientSession.commitTransaction();
         } catch (MongoException | DocNullReferenceException exception) {
@@ -206,8 +226,9 @@ public class ClientRepository extends MongoRepository implements ClientRepositor
         try (ClientSession clientSession = mongoClient.startSession()) {
             clientSession.startTransaction();
             Bson filter = Filters.eq("_clazz", "admin");
-            for (ClientDoc clientDoc : getClientCollection().find(filter)) {
-                listOfAllAdmins.add(super.findClient(clientDoc.getClientID()));
+            List<Document> listOfAdminsDocs = getClientCollectionWithoutType().find(filter).into(new ArrayList<>());
+            for (Document adminDoc : listOfAdminsDocs) {
+                listOfAllAdmins.add(super.findClient(UUID.fromString(adminDoc.getString("id"))));
             }
             clientSession.commitTransaction();
         } catch (MongoException | DocNullReferenceException exception) {
@@ -222,8 +243,9 @@ public class ClientRepository extends MongoRepository implements ClientRepositor
         try (ClientSession clientSession = mongoClient.startSession()) {
             clientSession.startTransaction();
             Bson filter = Filters.eq("_clazz", "staff");
-            for (ClientDoc clientDoc : getClientCollection().find(filter)) {
-                listOfAllStaff.add(super.findClient(clientDoc.getClientID()));
+            List<Document> listOfStaffDocs = getClientCollectionWithoutType().find(filter).into(new ArrayList<>());
+            for (Document staffDoc : listOfStaffDocs) {
+                listOfAllStaff.add(super.findClient(UUID.fromString(staffDoc.getString("id"))));
             }
             clientSession.commitTransaction();
         } catch (MongoException | DocNullReferenceException exception) {

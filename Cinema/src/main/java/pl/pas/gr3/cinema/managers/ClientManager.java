@@ -11,6 +11,7 @@ import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 import pl.pas.gr3.cinema.dto.TicketDTO;
 import pl.pas.gr3.cinema.dto.users.ClientDTO;
+import pl.pas.gr3.cinema.dto.users.ClientTestDTO;
 import pl.pas.gr3.cinema.exceptions.repositories.ClientRepositoryException;
 import pl.pas.gr3.cinema.model.Ticket;
 import pl.pas.gr3.cinema.model.users.Client;
@@ -33,19 +34,31 @@ public class ClientManager extends Manager<Client> {
     private ClientRepository clientRepository;
 
     @POST
-    @Path("/create")
-    @Consumes(MediaType.TEXT_PLAIN)
+    @Consumes(MediaType.APPLICATION_JSON)
     @Produces(MediaType.APPLICATION_JSON)
-    public Response create(@QueryParam("login") String clientLogin, @QueryParam("password") String clientPassword) {
+    public Response create(ClientTestDTO clientTestDTO) {
         try {
-            Client client = this.clientRepository.createClient(clientLogin, clientPassword);
+            Client client = this.clientRepository.createClient(clientTestDTO.getClientLogin(), clientTestDTO.getClientPassword());
             Set<ConstraintViolation<Client>> violationSet = validator.validate(client);
             List<String> messages = violationSet.stream().map(ConstraintViolation::getMessage).toList();
             if (!violationSet.isEmpty()) {
                 return Response.status(Response.Status.BAD_REQUEST).entity(messages).build();
             }
             ClientDTO clientDTO = new ClientDTO(client.getClientID(), client.getClientLogin(), client.isClientStatusActive());
-            return Response.status(Response.Status.CREATED).entity(clientDTO).location(URI.create("/" + clientDTO.getClientID().toString())).build();
+            return Response.status(Response.Status.CREATED).entity(clientDTO).contentLocation(URI.create("/" + clientDTO.getClientID().toString())).build();
+        } catch (ClientRepositoryException exception) {
+            return Response.status(Response.Status.BAD_REQUEST).entity(exception.getMessage()).build();
+        }
+    }
+
+    @GET
+    @Path("/all")
+    @Produces(MediaType.APPLICATION_JSON)
+    @Override
+    public Response findAll() {
+        try {
+            List<ClientDTO> listOfDTOs = this.getListOfClientDTOs(this.clientRepository.findAllClients());
+            return this.generateResponseForListOfDTOs(listOfDTOs);
         } catch (ClientRepositoryException exception) {
             return Response.status(Response.Status.BAD_REQUEST).entity(exception.getMessage()).build();
         }
@@ -62,15 +75,15 @@ public class ClientManager extends Manager<Client> {
             ClientDTO clientDTO = new ClientDTO(client.getClientID(), client.getClientLogin(), client.isClientStatusActive());
             return this.generateResponseForDTO(clientDTO);
         } catch (ClientRepositoryException exception) {
-            return Response.status(Response.Status.NOT_FOUND).entity(exception.getMessage()).build();
+            return Response.status(Response.Status.BAD_REQUEST).entity(exception.getMessage()).build();
         }
     }
 
     @GET
-    @Path("/")
+    @Path("/login/{login}")
     @Consumes(MediaType.TEXT_PLAIN)
     @Produces(MediaType.APPLICATION_JSON)
-    public Response findByLogin(@QueryParam("login") String clientLogin) {
+    public Response findByLogin(@PathParam("login") String clientLogin) {
         try {
             Client client = this.clientRepository.findClientByLogin(clientLogin);
             ClientDTO clientDTO = new ClientDTO(client.getClientID(), client.getClientLogin(), client.isClientStatusActive());
@@ -81,12 +94,11 @@ public class ClientManager extends Manager<Client> {
     }
 
     @GET
-    @Path("/")
     @Consumes(MediaType.TEXT_PLAIN)
     @Produces(MediaType.APPLICATION_JSON)
     public Response findAllWithMatchingLogin(@QueryParam("match") String clientLogin) {
         try {
-            List<ClientDTO> listOfDTOs = this.getListOfClientDTOs(this.clientRepository.findAllStaffsMatchingLogin(clientLogin));
+            List<ClientDTO> listOfDTOs = this.getListOfClientDTOs(this.clientRepository.findAllClientsMatchingLogin(clientLogin));
             return this.generateResponseForListOfDTOs(listOfDTOs);
         } catch (ClientRepositoryException exception) {
             return Response.status(Response.Status.BAD_REQUEST).entity(exception.getMessage()).build();
@@ -110,21 +122,7 @@ public class ClientManager extends Manager<Client> {
         }
     }
 
-    @GET
-    @Path("/")
-    @Produces(MediaType.APPLICATION_JSON)
-    @Override
-    public Response findAll() {
-        try {
-            List<ClientDTO> listOfDTOs = this.getListOfClientDTOs(this.clientRepository.findAllClients());
-            return this.generateResponseForListOfDTOs(listOfDTOs);
-        } catch (ClientRepositoryException exception) {
-            return Response.status(Response.Status.BAD_REQUEST).entity(exception.getMessage()).build();
-        }
-    }
-
     @PUT
-    @Path("/update")
     @Consumes(MediaType.APPLICATION_JSON)
     @Override
     public Response update(Client client) {
@@ -170,7 +168,7 @@ public class ClientManager extends Manager<Client> {
 
     private Response generateResponseForDTO(ClientDTO clientDTO) {
         if (clientDTO == null) {
-            return Response.status(Response.Status.NO_CONTENT).build();
+            return Response.status(Response.Status.NOT_FOUND).build();
         } else {
             return Response.status(Response.Status.OK).entity(clientDTO).build();
         }

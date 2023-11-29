@@ -17,6 +17,7 @@ import pl.pas.gr3.cinema.model.users.Client;
 import pl.pas.gr3.cinema.model.users.Staff;
 import pl.pas.gr3.cinema.repositories.implementations.ClientRepository;
 
+import java.net.URI;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
@@ -33,7 +34,6 @@ public class StaffManager extends Manager<Staff> {
     private ClientRepository clientRepository;
 
     @POST
-    @Path("/create")
     @Consumes(MediaType.TEXT_PLAIN)
     @Produces(MediaType.APPLICATION_JSON)
     public Response create(@QueryParam("login") String staffLogin, @QueryParam("password") String staffPassword) {
@@ -45,7 +45,7 @@ public class StaffManager extends Manager<Staff> {
                 return Response.status(Response.Status.BAD_REQUEST).entity(messages).build();
             }
             StaffDTO staffDTO = new StaffDTO(staff.getClientID(), staff.getClientLogin(), staff.isClientStatusActive());
-            return Response.status(Response.Status.CREATED).entity(staffDTO).build();
+            return Response.status(Response.Status.CREATED).contentLocation(URI.create("/" + staffDTO.getStaffID().toString())).entity(staffDTO).build();
         } catch (ClientRepositoryException exception) {
             return Response.status(Response.Status.BAD_REQUEST).entity(exception.getMessage()).build();
         }
@@ -67,10 +67,10 @@ public class StaffManager extends Manager<Staff> {
     }
 
     @GET
-    @Path("/")
+    @Path("/login/{login}")
     @Consumes(MediaType.TEXT_PLAIN)
     @Produces(MediaType.APPLICATION_JSON)
-    public Response findByLogin(@QueryParam("login") String staffLogin) {
+    public Response findByLogin(@PathParam("login") String staffLogin) {
         try {
             Staff staff = this.clientRepository.findStaffByLogin(staffLogin);
             StaffDTO staffDTO = new StaffDTO(staff.getClientID(), staff.getClientLogin(), staff.isClientStatusActive());
@@ -81,12 +81,11 @@ public class StaffManager extends Manager<Staff> {
     }
 
     @GET
-    @Path("/")
     @Consumes(MediaType.TEXT_PLAIN)
     @Produces(MediaType.APPLICATION_JSON)
     public Response findAllWithMatchingLogin(@QueryParam("match") String staffLogin) {
         try {
-            List<StaffDTO> listOfDTOs = this.getListOfStaffDTOs(this.clientRepository.findAllClientsMatchingLogin(staffLogin));
+            List<StaffDTO> listOfDTOs = this.getListOfStaffDTOs(this.clientRepository.findAllStaffsMatchingLogin(staffLogin));
             return this.generateResponseForListOfDTOs(listOfDTOs);
         } catch (ClientRepositoryException exception) {
             return Response.status(Response.Status.BAD_REQUEST).entity(exception.getMessage()).build();
@@ -111,8 +110,6 @@ public class StaffManager extends Manager<Staff> {
     }
 
     @GET
-    @Path("/")
-    @Consumes(MediaType.TEXT_PLAIN)
     @Produces(MediaType.APPLICATION_JSON)
     @Override
     public Response findAll() {
@@ -125,7 +122,6 @@ public class StaffManager extends Manager<Staff> {
     }
 
     @PUT
-    @Path("/update")
     @Consumes(MediaType.APPLICATION_JSON)
     @Override
     public Response update(Staff staff) {

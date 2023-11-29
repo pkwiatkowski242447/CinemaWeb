@@ -9,6 +9,8 @@ import com.mongodb.client.model.ValidationOptions;
 import jakarta.enterprise.context.ApplicationScoped;
 import org.bson.Document;
 import org.bson.conversions.Bson;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import pl.pas.gr3.cinema.exceptions.mapping.MovieDocNullReferenceException;
 import pl.pas.gr3.cinema.exceptions.repositories.*;
 import pl.pas.gr3.cinema.exceptions.repositories.crud.movie.MovieRepositoryCreateException;
@@ -23,8 +25,8 @@ import pl.pas.gr3.cinema.model.Movie;
 import pl.pas.gr3.cinema.model.Ticket;
 import pl.pas.gr3.cinema.repositories.interfaces.MovieRepositoryInterface;
 
-import javax.annotation.PostConstruct;
-import javax.annotation.PreDestroy;
+import jakarta.annotation.PostConstruct;
+import jakarta.annotation.PreDestroy;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
@@ -33,6 +35,7 @@ import java.util.UUID;
 public class MovieRepository extends MongoRepository implements MovieRepositoryInterface {
 
     private final String databaseName;
+    private static final Logger logger = LoggerFactory.getLogger(MovieRepository.class);
     private final ValidationOptions validationOptions = new ValidationOptions().validator(
             Document.parse("""
                             {
@@ -77,8 +80,19 @@ public class MovieRepository extends MongoRepository implements MovieRepositoryI
     public MovieRepository() {
         this.databaseName = "default";
         super.initDBConnection(this.databaseName);
-        CreateCollectionOptions createCollectionOptions = new CreateCollectionOptions().validationOptions(this.validationOptions);
-        mongoDatabase.createCollection(movieCollectionName, createCollectionOptions);
+
+        boolean collectionExists = false;
+        for (String collectionName : mongoDatabase.listCollectionNames()) {
+            if (collectionName.equals(movieCollectionName)) {
+                collectionExists = true;
+                break;
+            }
+        }
+
+        if (!collectionExists) {
+            CreateCollectionOptions createCollectionOptions = new CreateCollectionOptions().validationOptions(this.validationOptions);
+            mongoDatabase.createCollection(movieCollectionName, createCollectionOptions);
+        }
     }
 
     @PostConstruct
@@ -95,10 +109,14 @@ public class MovieRepository extends MongoRepository implements MovieRepositoryI
     }
 
     @PreDestroy
-    private void restoreDatabaseState() throws MovieRepositoryException {
-        List<UUID> listOfAllUUIDs = this.findAllUUIDs();
-        for (UUID movieID : listOfAllUUIDs) {
-            this.delete(movieID);
+    private void restoreDatabaseState() {
+        try {
+            List<UUID> listOfAllUUIDs = this.findAllUUIDs();
+            for (UUID movieID : listOfAllUUIDs) {
+                this.delete(movieID);
+            }
+        } catch (MovieRepositoryException exception) {
+            logger.debug(exception.getMessage());
         }
     }
 

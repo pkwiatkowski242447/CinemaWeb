@@ -1,6 +1,9 @@
 package repositories;
 
+import org.checkerframework.checker.units.qual.C;
 import org.junit.jupiter.api.*;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import pl.pas.gr3.cinema.exceptions.repositories.*;
 import pl.pas.gr3.cinema.exceptions.repositories.crud.client.ClientRepositoryCreateException;
 import pl.pas.gr3.cinema.exceptions.repositories.crud.client.ClientRepositoryDeleteException;
@@ -8,6 +11,9 @@ import pl.pas.gr3.cinema.exceptions.repositories.crud.client.ClientRepositoryRea
 import pl.pas.gr3.cinema.exceptions.repositories.crud.client.ClientRepositoryUpdateException;
 import pl.pas.gr3.cinema.exceptions.repositories.other.client.ClientActivationException;
 import pl.pas.gr3.cinema.exceptions.repositories.other.client.ClientDeactivationException;
+import pl.pas.gr3.cinema.mapping.mappers.users.AdminMapper;
+import pl.pas.gr3.cinema.mapping.mappers.users.ClientMapper;
+import pl.pas.gr3.cinema.mapping.mappers.users.StaffMapper;
 import pl.pas.gr3.cinema.model.users.Admin;
 import pl.pas.gr3.cinema.model.users.Client;
 import pl.pas.gr3.cinema.model.users.Staff;
@@ -21,7 +27,7 @@ import static org.junit.jupiter.api.Assertions.*;
 public class ClientRepositoryTest {
 
     private final static String databaseName = "test";
-
+    private final static Logger logger = LoggerFactory.getLogger(ClientRepositoryTest.class);
     private static ClientRepository clientRepositoryForTests;
 
     private Client clientNo1;

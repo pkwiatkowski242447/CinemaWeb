@@ -30,7 +30,6 @@ public class MovieManager extends Manager<Movie> {
     private MovieRepository movieRepository;
 
     @POST
-    @Path("/create")
     @Consumes(MediaType.TEXT_PLAIN)
     @Produces(MediaType.APPLICATION_JSON)
     public Response create(@QueryParam("title") String movieTitle, @QueryParam("price") double movieBasePrice, @QueryParam("scr-room") int screeningRoomNumber, @QueryParam("number") int numberOfAvailableSeats) {
@@ -68,7 +67,6 @@ public class MovieManager extends Manager<Movie> {
     }
 
     @GET
-    @Path("/")
     @Produces(MediaType.APPLICATION_JSON)
     @Override
     public Response findAll() {
@@ -89,7 +87,6 @@ public class MovieManager extends Manager<Movie> {
     }
 
     @PUT
-    @Path("/update")
     @Consumes(MediaType.APPLICATION_JSON)
     @Override
     public Response update(Movie movie) {
@@ -102,7 +99,7 @@ public class MovieManager extends Manager<Movie> {
     }
 
     @DELETE
-    @Path("/delete/{id}")
+    @Path("/{id}")
     public Response delete(@PathParam("id") UUID movieID) {
         try {
             this.movieRepository.delete(movieID);

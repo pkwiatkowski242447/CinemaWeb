@@ -2,11 +2,13 @@ package pl.pas.gr3.cinema.model.users;
 
 import lombok.Data;
 import lombok.EqualsAndHashCode;
+import lombok.ToString;
 
 import java.util.UUID;
 
 @Data
 @EqualsAndHashCode(callSuper = true)
+@ToString(callSuper = true)
 public class Admin extends Client {
 
     public Admin(UUID clientID, String clientLogin, String clientPassword) {

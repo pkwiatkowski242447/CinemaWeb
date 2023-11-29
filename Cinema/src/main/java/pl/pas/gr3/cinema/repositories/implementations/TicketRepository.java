@@ -9,6 +9,8 @@ import com.mongodb.client.model.ValidationOptions;
 import jakarta.enterprise.context.ApplicationScoped;
 import org.bson.Document;
 import org.bson.conversions.Bson;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import pl.pas.gr3.cinema.exceptions.mapping.*;
 import pl.pas.gr3.cinema.exceptions.model.TicketCreateException;
 import pl.pas.gr3.cinema.exceptions.repositories.*;
@@ -28,8 +30,8 @@ import pl.pas.gr3.cinema.model.TicketType;
 import pl.pas.gr3.cinema.model.users.Client;
 import pl.pas.gr3.cinema.repositories.interfaces.TicketRepositoryInterface;
 
-import javax.annotation.PostConstruct;
-import javax.annotation.PreDestroy;
+import jakarta.annotation.PostConstruct;
+import jakarta.annotation.PreDestroy;
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
@@ -40,6 +42,7 @@ import java.util.UUID;
 public class TicketRepository extends MongoRepository implements TicketRepositoryInterface {
 
     private final String databaseName;
+    private final static Logger logger = LoggerFactory.getLogger(TicketRepository.class);
     private final ValidationOptions validationOptions = new ValidationOptions().validator(
             Document.parse("""
                             {
@@ -78,12 +81,23 @@ public class TicketRepository extends MongoRepository implements TicketRepositor
     public TicketRepository() {
         this.databaseName = "default";
         super.initDBConnection(databaseName);
-        CreateCollectionOptions createCollectionOptions = new CreateCollectionOptions().validationOptions(validationOptions);
-        mongoDatabase.createCollection(ticketCollectionName, createCollectionOptions);
+
+        boolean collectionExists = false;
+        for (String collectionName : mongoDatabase.listCollectionNames()) {
+            if (collectionName.equals(ticketCollectionName)) {
+                collectionExists = true;
+                break;
+            }
+        }
+
+        if (!collectionExists) {
+            CreateCollectionOptions createCollectionOptions = new CreateCollectionOptions().validationOptions(validationOptions);
+            mongoDatabase.createCollection(ticketCollectionName, createCollectionOptions);
+        }
     }
 
     @PostConstruct
-    private void initializeDatabaseState() throws TicketCreateException {
+    private void initializeDatabaseState() {
         UUID clientIDNo1 = UUID.fromString("26c4727c-c791-4170-ab9d-faf7392e80b2");
         UUID clientIDNo2 = UUID.fromString("0b08f526-b018-4d23-8baa-93f0fb884edf");
         Client clientNo1 = new Client(clientIDNo1, "ClientLoginNo1", "ClientPasswordNo1");
@@ -96,17 +110,25 @@ public class TicketRepository extends MongoRepository implements TicketRepositor
         UUID ticketIDNo2 = UUID.fromString("1caa19c8-12c5-45ae-8019-ba93ba83a927");
         LocalDateTime movieTimeNo1 = LocalDateTime.now().plusDays(2).plusHours(4).truncatedTo(ChronoUnit.SECONDS);
         LocalDateTime movieTimeNo2 = LocalDateTime.now().plusDays(4).plusHours(2).plusMinutes(30).truncatedTo(ChronoUnit.SECONDS);
-        Ticket ticketNo1 = new Ticket(ticketIDNo1, movieTimeNo1, clientNo1, movieNo1, TicketType.NORMAL);
-        Ticket ticketNo2 = new Ticket(ticketIDNo2, movieTimeNo2, clientNo2, movieNo2, TicketType.REDUCED);
-        this.getTicketCollection().insertOne(TicketMapper.toTicketDoc(ticketNo1));
-        this.getTicketCollection().insertOne(TicketMapper.toTicketDoc(ticketNo2));
+        try {
+            Ticket ticketNo1 = new Ticket(ticketIDNo1, movieTimeNo1, clientNo1, movieNo1, TicketType.NORMAL);
+            Ticket ticketNo2 = new Ticket(ticketIDNo2, movieTimeNo2, clientNo2, movieNo2, TicketType.REDUCED);
+            this.getTicketCollection().insertOne(TicketMapper.toTicketDoc(ticketNo1));
+            this.getTicketCollection().insertOne(TicketMapper.toTicketDoc(ticketNo2));
+        } catch (TicketCreateException exception) {
+            logger.debug(exception.getMessage());
+        }
     }
 
     @PreDestroy
-    private void restoreDatabaseState() throws TicketRepositoryException {
-        List<UUID> listOfAllUUIDs = this.findAllUUIDs();
-        for (UUID ticketID : listOfAllUUIDs) {
-            this.delete(ticketID);
+    private void restoreDatabaseState() {
+        try {
+            List<UUID> listOfAllUUIDs = this.findAllUUIDs();
+            for (UUID ticketID : listOfAllUUIDs) {
+                this.delete(ticketID);
+            }
+        } catch (TicketRepositoryException exception) {
+            logger.debug(exception.getMessage());
         }
     }
 

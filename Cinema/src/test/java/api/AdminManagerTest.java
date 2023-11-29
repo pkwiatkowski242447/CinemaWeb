@@ -1,12 +1,11 @@
 package api;
 
-import jakarta.ws.rs.client.Client;
-import jakarta.ws.rs.client.ClientBuilder;
-import jakarta.ws.rs.client.WebTarget;
-import jakarta.ws.rs.core.MediaType;
+import jakarta.ws.rs.client.*;
+import jakarta.ws.rs.core.*;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class AdminManagerTest {
 
@@ -28,8 +27,12 @@ public class AdminManagerTest {
 
     @Test
     public void adminManagerCreateAdminTestPositive() {
-        WebTarget webTarget = client.target(baseURL).path("create").queryParam("login", "secretLoginNo1").queryParam("password", "secretPasswordNo1");
-        webTarget.request(MediaType.APPLICATION_JSON);
+//        AdminTestDTO adminCredentials = new AdminTestDTO("secretLoginNo1", "secretPasswordNo1");
+//        WebTarget adminResource = client.target(baseURL);
+//        try (Response createAdminResponse = adminResource.request(MediaType.APPLICATION_JSON).post(Entity.json(adminCredentials))) {
+//            assertEquals(Response.Status.CREATED.getStatusCode(), createAdminResponse.getStatus());
+//            assertEquals(createAdminResponse.getEntity(), Entity.entity(adminCredentials, MediaType.APPLICATION_JSON));
+//        }
     }
 
     @Test
@@ -71,5 +74,13 @@ public class AdminManagerTest {
     @Test
     public void adminManagerDeleteAdminTestPositive() {
 
+    }
+
+    @Test
+    public void adminManagerFindAdminByLogin() {
+        String searchedLogin = "AdminLogin";
+        WebTarget adminResource = client.target(baseURL).path("/login/{login}").resolveTemplate("login", searchedLogin);
+        Response response = adminResource.request(MediaType.APPLICATION_JSON).accept(MediaType.APPLICATION_JSON).get();
+        assertEquals(Response.Status.OK.getStatusCode(), response.getStatus());
     }
 }
