@@ -21,4 +21,8 @@ public interface TicketRepositoryInterface extends RepositoryInterface<Ticket> {
     // Update methods
 
     void update(Ticket ticket) throws TicketRepositoryException;
+
+    // Delete methods
+
+    void delete(UUID ticketID) throws TicketRepositoryException;
 }

@@ -155,7 +155,7 @@ public abstract class MongoRepository implements Closeable {
                 }
             }
         } else {
-            throw new DocNullReferenceException("Document object with given ID: " + clientID + "  could not be found in client collection in the database.");
+            throw new DocNullReferenceException("Document object with given ID could not be found in client collection in the database.");
         }
         return client;
     }

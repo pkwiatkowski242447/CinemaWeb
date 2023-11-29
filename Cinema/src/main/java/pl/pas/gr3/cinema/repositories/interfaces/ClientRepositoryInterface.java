@@ -1,6 +1,7 @@
 package pl.pas.gr3.cinema.repositories.interfaces;
 
 import pl.pas.gr3.cinema.exceptions.repositories.ClientRepositoryException;
+import pl.pas.gr3.cinema.exceptions.repositories.GeneralRepositoryException;
 import pl.pas.gr3.cinema.model.Ticket;
 import pl.pas.gr3.cinema.model.users.Admin;
 import pl.pas.gr3.cinema.model.users.Client;
@@ -20,15 +21,16 @@ public interface ClientRepositoryInterface extends RepositoryInterface<Client> {
     // Read methods
 
     Client findClientByLogin(String loginValue) throws ClientRepositoryException;
-    List<Client> findAllClientsMatchingLogin(String loginValue) throws ClientRepositoryException;
     Admin findAdminByLogin(String loginValue) throws ClientRepositoryException;
-    List<Client> findAllAdminsMatchingLogin(String loginValue) throws ClientRepositoryException;
     Staff findStaffByLogin(String loginValue) throws ClientRepositoryException;
-    List<Client> findAllStaffsMatchingLogin(String loginValue) throws ClientRepositoryException;
+
+    List<Client> findAllClientsMatchingLogin(String loginValue) throws ClientRepositoryException;
+    List<Admin> findAllAdminsMatchingLogin(String loginValue) throws ClientRepositoryException;
+    List<Staff> findAllStaffsMatchingLogin(String loginValue) throws ClientRepositoryException;
 
     List<Client> findAllClients() throws ClientRepositoryException;
-    List<Client> findAllAdmins() throws ClientRepositoryException;
-    List<Client> findAllStaffs() throws ClientRepositoryException;
+    List<Admin> findAllAdmins() throws ClientRepositoryException;
+    List<Staff> findAllStaffs() throws ClientRepositoryException;
 
     // Update methods
 
@@ -36,10 +38,14 @@ public interface ClientRepositoryInterface extends RepositoryInterface<Client> {
     void updateAdmin(Admin admin) throws ClientRepositoryException;
     void updateStaff(Staff staff) throws ClientRepositoryException;
 
-    void activate(Client client) throws ClientRepositoryException;
-    void deactivate(Client client) throws ClientRepositoryException;
+    void activate(Client client, String name) throws ClientRepositoryException;
+    void deactivate(Client client, String name) throws ClientRepositoryException;
+
+    // Delete methods
+
+    void delete(UUID elementID, String name) throws GeneralRepositoryException;
 
     // Other required methods
 
-    List<Ticket> getListOfTicketsForClient(UUID clientID);
+    List<Ticket> getListOfTicketsForClient(UUID clientID, String name) throws ClientRepositoryException;
 }

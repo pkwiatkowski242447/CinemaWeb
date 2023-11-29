@@ -1,4 +1,4 @@
-package pl.pas.gr3.cinema.managers;
+package pl.pas.gr3.cinema.services.implementations;
 
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
@@ -11,11 +11,11 @@ import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 import pl.pas.gr3.cinema.dto.TicketDTO;
 import pl.pas.gr3.cinema.dto.users.ClientDTO;
-import pl.pas.gr3.cinema.dto.users.ClientTestDTO;
-import pl.pas.gr3.cinema.exceptions.repositories.ClientRepositoryException;
+import pl.pas.gr3.cinema.exceptions.managers.GeneralManagerException;
+import pl.pas.gr3.cinema.managers.implementations.ClientManager;
 import pl.pas.gr3.cinema.model.Ticket;
 import pl.pas.gr3.cinema.model.users.Client;
-import pl.pas.gr3.cinema.repositories.implementations.ClientRepository;
+import pl.pas.gr3.cinema.services.interfaces.UserServiceInterface;
 
 import java.net.URI;
 import java.util.ArrayList;
@@ -26,19 +26,20 @@ import java.util.UUID;
 @ApplicationScoped
 @Path("/clients")
 @Named
-public class ClientManager extends Manager<Client> {
+public class ClientService implements UserServiceInterface<Client> {
 
-    private final Validator validator = Validation.buildDefaultValidatorFactory().getValidator();
+    private static final Validator validator = Validation.buildDefaultValidatorFactory().getValidator();
 
     @Inject
-    private ClientRepository clientRepository;
+    private ClientManager clientManager;
 
     @POST
     @Consumes(MediaType.APPLICATION_JSON)
     @Produces(MediaType.APPLICATION_JSON)
-    public Response create(ClientTestDTO clientTestDTO) {
+    @Override
+    public Response create(String clientLogin, String clientPassword) {
         try {
-            Client client = this.clientRepository.createClient(clientTestDTO.getClientLogin(), clientTestDTO.getClientPassword());
+            Client client = this.clientManager.create(clientLogin, clientPassword);
             Set<ConstraintViolation<Client>> violationSet = validator.validate(client);
             List<String> messages = violationSet.stream().map(ConstraintViolation::getMessage).toList();
             if (!violationSet.isEmpty()) {
@@ -46,7 +47,7 @@ public class ClientManager extends Manager<Client> {
             }
             ClientDTO clientDTO = new ClientDTO(client.getClientID(), client.getClientLogin(), client.isClientStatusActive());
             return Response.status(Response.Status.CREATED).entity(clientDTO).contentLocation(URI.create("/" + clientDTO.getClientID().toString())).build();
-        } catch (ClientRepositoryException exception) {
+        } catch (GeneralManagerException exception) {
             return Response.status(Response.Status.BAD_REQUEST).entity(exception.getMessage()).build();
         }
     }
@@ -57,9 +58,9 @@ public class ClientManager extends Manager<Client> {
     @Override
     public Response findAll() {
         try {
-            List<ClientDTO> listOfDTOs = this.getListOfClientDTOs(this.clientRepository.findAllClients());
+            List<ClientDTO> listOfDTOs = this.getListOfClientDTOs(this.clientManager.findAll());
             return this.generateResponseForListOfDTOs(listOfDTOs);
-        } catch (ClientRepositoryException exception) {
+        } catch (GeneralManagerException exception) {
             return Response.status(Response.Status.BAD_REQUEST).entity(exception.getMessage()).build();
         }
     }
@@ -71,10 +72,10 @@ public class ClientManager extends Manager<Client> {
     @Override
     public Response findByUUID(@PathParam("id") UUID clientID) {
         try {
-            Client client = this.clientRepository.findByUUID(clientID);
+            Client client = this.clientManager.findByUUID(clientID);
             ClientDTO clientDTO = new ClientDTO(client.getClientID(), client.getClientLogin(), client.isClientStatusActive());
             return this.generateResponseForDTO(clientDTO);
-        } catch (ClientRepositoryException exception) {
+        } catch (GeneralManagerException exception) {
             return Response.status(Response.Status.BAD_REQUEST).entity(exception.getMessage()).build();
         }
     }
@@ -83,12 +84,13 @@ public class ClientManager extends Manager<Client> {
     @Path("/login/{login}")
     @Consumes(MediaType.TEXT_PLAIN)
     @Produces(MediaType.APPLICATION_JSON)
+    @Override
     public Response findByLogin(@PathParam("login") String clientLogin) {
         try {
-            Client client = this.clientRepository.findClientByLogin(clientLogin);
+            Client client = this.clientManager.findByLogin(clientLogin);
             ClientDTO clientDTO = new ClientDTO(client.getClientID(), client.getClientLogin(), client.isClientStatusActive());
             return this.generateResponseForDTO(clientDTO);
-        } catch (ClientRepositoryException exception) {
+        } catch (GeneralManagerException exception) {
             return Response.status(Response.Status.BAD_REQUEST).entity(exception.getMessage()).build();
         }
     }
@@ -96,11 +98,12 @@ public class ClientManager extends Manager<Client> {
     @GET
     @Consumes(MediaType.TEXT_PLAIN)
     @Produces(MediaType.APPLICATION_JSON)
+    @Override
     public Response findAllWithMatchingLogin(@QueryParam("match") String clientLogin) {
         try {
-            List<ClientDTO> listOfDTOs = this.getListOfClientDTOs(this.clientRepository.findAllClientsMatchingLogin(clientLogin));
+            List<ClientDTO> listOfDTOs = this.getListOfClientDTOs(this.clientManager.findAllMatchingLogin(clientLogin));
             return this.generateResponseForListOfDTOs(listOfDTOs);
-        } catch (ClientRepositoryException exception) {
+        } catch (GeneralManagerException exception) {
             return Response.status(Response.Status.BAD_REQUEST).entity(exception.getMessage()).build();
         }
     }
@@ -109,16 +112,21 @@ public class ClientManager extends Manager<Client> {
     @Path("/{id}/tickets")
     @Consumes(MediaType.TEXT_PLAIN)
     @Produces(MediaType.APPLICATION_JSON)
-    public Response getTicketsForCertainClient(@PathParam("id") UUID clientID) {
-        List<Ticket> listOfTicketsForAClient = this.clientRepository.getListOfTicketsForClient(clientID);
-        List<TicketDTO> listOfDTOs = new ArrayList<>();
-        for (Ticket ticket : listOfTicketsForAClient) {
-            listOfDTOs.add(new TicketDTO(ticket.getTicketID(), ticket.getMovieTime(), ticket.getTicketFinalPrice(), ticket.getClient().getClientID(), ticket.getMovie().getMovieID()));
-        }
-        if (listOfTicketsForAClient.isEmpty()) {
-            return Response.status(Response.Status.NO_CONTENT).build();
-        } else {
-            return Response.status(Response.Status.OK).entity(listOfDTOs).build();
+    @Override
+    public Response getTicketsForCertainUser(@PathParam("id") UUID clientID) {
+        try {
+            List<Ticket> listOfTicketsForAClient = this.clientManager.getTicketsForClient(clientID);
+            List<TicketDTO> listOfDTOs = new ArrayList<>();
+            for (Ticket ticket : listOfTicketsForAClient) {
+                listOfDTOs.add(new TicketDTO(ticket.getTicketID(), ticket.getMovieTime(), ticket.getTicketFinalPrice(), ticket.getClient().getClientID(), ticket.getMovie().getMovieID()));
+            }
+            if (listOfTicketsForAClient.isEmpty()) {
+                return Response.status(Response.Status.NO_CONTENT).build();
+            } else {
+                return Response.status(Response.Status.OK).entity(listOfDTOs).build();
+            }
+        } catch (GeneralManagerException exception) {
+            return Response.status(Response.Status.BAD_REQUEST).entity(exception.getMessage()).build();
         }
     }
 
@@ -127,9 +135,9 @@ public class ClientManager extends Manager<Client> {
     @Override
     public Response update(Client client) {
         try {
-            this.clientRepository.updateClient(client);
+            this.clientManager.update(client);
             return Response.status(Response.Status.OK).entity("Client object was modified.").build();
-        } catch (ClientRepositoryException exception) {
+        } catch (GeneralManagerException exception) {
             return Response.status(Response.Status.BAD_REQUEST).entity(exception.getMessage()).build();
         }
     }
@@ -137,11 +145,12 @@ public class ClientManager extends Manager<Client> {
     @POST
     @Path("/{id}/activate")
     @Consumes(MediaType.TEXT_PLAIN)
+    @Override
     public Response activate(@PathParam("id") UUID clientID) {
         try {
-            this.clientRepository.activate(this.clientRepository.findByUUID(clientID));
+            this.clientManager.activate(clientID);
             return Response.status(Response.Status.NO_CONTENT).build();
-        } catch (ClientRepositoryException exception) {
+        } catch (GeneralManagerException exception) {
             return Response.status(Response.Status.BAD_REQUEST).entity(exception.getMessage()).build();
         }
     }
@@ -149,11 +158,12 @@ public class ClientManager extends Manager<Client> {
     @POST
     @Path("/{id}/deactivate")
     @Consumes(MediaType.TEXT_PLAIN)
+    @Override
     public Response deactivate(@PathParam("id") UUID clientID) {
         try {
-            this.clientRepository.deactivate(this.clientRepository.findByUUID(clientID));
+            this.clientManager.deactivate(clientID);
             return Response.status(Response.Status.NO_CONTENT).build();
-        } catch (ClientRepositoryException exception) {
+        } catch (GeneralManagerException exception) {
             return Response.status(Response.Status.BAD_REQUEST).entity(exception.getMessage()).build();
         }
     }

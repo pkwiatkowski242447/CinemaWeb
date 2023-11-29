@@ -3,6 +3,7 @@ package repositories;
 import org.junit.jupiter.api.*;
 import pl.pas.gr3.cinema.exceptions.model.TicketCreateException;
 import pl.pas.gr3.cinema.exceptions.repositories.*;
+import pl.pas.gr3.cinema.exceptions.repositories.crud.client.ClientRepositoryReadException;
 import pl.pas.gr3.cinema.exceptions.repositories.crud.movie.MovieRepositoryDeleteException;
 import pl.pas.gr3.cinema.exceptions.repositories.crud.ticket.TicketRepositoryCreateException;
 import pl.pas.gr3.cinema.exceptions.repositories.crud.ticket.TicketRepositoryDeleteException;
@@ -11,6 +12,7 @@ import pl.pas.gr3.cinema.exceptions.repositories.crud.ticket.TicketRepositoryUpd
 import pl.pas.gr3.cinema.model.Movie;
 import pl.pas.gr3.cinema.model.Ticket;
 import pl.pas.gr3.cinema.model.TicketType;
+import pl.pas.gr3.cinema.model.users.Admin;
 import pl.pas.gr3.cinema.model.users.Client;
 import pl.pas.gr3.cinema.repositories.implementations.ClientRepository;
 import pl.pas.gr3.cinema.repositories.implementations.MovieRepository;
@@ -87,7 +89,7 @@ public class TicketRepositoryTest {
         try {
             List<Client> listOfAllClients = clientRepositoryForTests.findAllClients();
             for (Client client : listOfAllClients) {
-                clientRepositoryForTests.delete(client.getClientID());
+                clientRepositoryForTests.delete(client.getClientID(), "client");
             }
         } catch (ClientRepositoryException exception) {
             throw new RuntimeException("Could not remove all clients from the test database after ticket repository tests.", exception);
@@ -123,7 +125,7 @@ public class TicketRepositoryTest {
     @Test
     public void ticketRepositoryCreateTicketWithInactiveClientTestNegative() throws ClientRepositoryException {
         LocalDateTime localDateTime = LocalDateTime.of(2023, 11, 4, 20, 10, 0);
-        clientRepositoryForTests.deactivate(clientNo1);
+        clientRepositoryForTests.deactivate(clientNo1, "client");
         assertThrows(TicketRepositoryCreateException.class, () -> ticketRepositoryForTests.create(localDateTime, clientNo1.getClientID(), movieNo1.getMovieID(), TicketType.NORMAL));
     }
 
@@ -237,16 +239,30 @@ public class TicketRepositoryTest {
     }
 
     @Test
-    public void clientRepositoryFindAllTicketsWithGivenClient() throws TicketRepositoryException {
-        List<Ticket> listOfActiveTicketsNo1 = clientRepositoryForTests.getListOfTicketsForClient(clientNo1.getClientID());
+    public void clientRepositoryFindAllTicketsWithGivenClient() throws TicketRepositoryException, ClientRepositoryException {
+        List<Ticket> listOfActiveTicketsNo1 = clientRepositoryForTests.getListOfTicketsForClient(clientNo1.getClientID(), "client");
         assertNotNull(listOfActiveTicketsNo1);
         assertFalse(listOfActiveTicketsNo1.isEmpty());
         assertEquals(1, listOfActiveTicketsNo1.size());
         ticketRepositoryForTests.create(ticketNo2.getMovieTime(), clientNo1.getClientID(), movieNo2.getMovieID(), TicketType.NORMAL);
-        List<Ticket> listOfActiveTicketsNo2 = clientRepositoryForTests.getListOfTicketsForClient(clientNo1.getClientID());
+        List<Ticket> listOfActiveTicketsNo2 = clientRepositoryForTests.getListOfTicketsForClient(clientNo1.getClientID(), "client");
         assertNotNull(listOfActiveTicketsNo2);
         assertFalse(listOfActiveTicketsNo2.isEmpty());
         assertEquals(2, listOfActiveTicketsNo2.size());
+    }
+
+    @Test
+    public void clientRepositoryFindALlTicketsWithGivenClientThatIsNotInTheDatabaseTestNegative() {
+        Client client = new Client(UUID.randomUUID(), "SomeRandomLogin", "SomeRandomPassword");
+        assertNotNull(client);
+        assertThrows(ClientRepositoryReadException.class, () -> clientRepositoryForTests.getListOfTicketsForClient(client.getClientID(), "client"));
+    }
+
+    @Test
+    public void clientRepositoryFindALlTicketsWithGivenClientThatIsInTheDatabaseAndIncorrectNameTestNegative() throws ClientRepositoryException{
+        Admin admin = clientRepositoryForTests.createAdmin("SomeLogin", "SomePassword");
+        assertNotNull(admin);
+        assertThrows(ClientRepositoryReadException.class, () -> clientRepositoryForTests.getListOfTicketsForClient(admin.getClientID(), "client"));
     }
 
     @Test

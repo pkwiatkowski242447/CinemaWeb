@@ -21,6 +21,10 @@ public interface MovieRepositoryInterface extends RepositoryInterface<Movie> {
 
     void update(Movie movie) throws MovieRepositoryException;
 
+    // Delete methods
+
+    void delete(UUID movieID) throws MovieRepositoryException;
+
     // Other methods
 
     List<Ticket> getListOfTicketsForMovie(UUID movieID);

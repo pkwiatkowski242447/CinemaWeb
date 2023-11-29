@@ -1,6 +1,5 @@
 package repositories;
 
-import org.checkerframework.checker.units.qual.C;
 import org.junit.jupiter.api.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -11,9 +10,6 @@ import pl.pas.gr3.cinema.exceptions.repositories.crud.client.ClientRepositoryRea
 import pl.pas.gr3.cinema.exceptions.repositories.crud.client.ClientRepositoryUpdateException;
 import pl.pas.gr3.cinema.exceptions.repositories.other.client.ClientActivationException;
 import pl.pas.gr3.cinema.exceptions.repositories.other.client.ClientDeactivationException;
-import pl.pas.gr3.cinema.mapping.mappers.users.AdminMapper;
-import pl.pas.gr3.cinema.mapping.mappers.users.ClientMapper;
-import pl.pas.gr3.cinema.mapping.mappers.users.StaffMapper;
 import pl.pas.gr3.cinema.model.users.Admin;
 import pl.pas.gr3.cinema.model.users.Client;
 import pl.pas.gr3.cinema.model.users.Staff;
@@ -61,17 +57,17 @@ public class ClientRepositoryTest {
         try {
             List<Client> listOfAllClients = clientRepositoryForTests.findAllClients();
             for (Client client : listOfAllClients) {
-                clientRepositoryForTests.delete(client.getClientID());
+                clientRepositoryForTests.delete(client.getClientID(), "client");
             }
 
-            List<Client> listOfAllAdmins = clientRepositoryForTests.findAllAdmins();
-            for (Client admin : listOfAllAdmins) {
-                clientRepositoryForTests.delete(admin.getClientID());
+            List<Admin> listOfAllAdmins = clientRepositoryForTests.findAllAdmins();
+            for (Admin admin : listOfAllAdmins) {
+                clientRepositoryForTests.delete(admin.getClientID(), "admin");
             }
 
-            List<Client> listOfAllStaffs = clientRepositoryForTests.findAllStaffs();
-            for (Client staff : listOfAllStaffs) {
-                clientRepositoryForTests.delete(staff.getClientID());
+            List<Staff> listOfAllStaffs = clientRepositoryForTests.findAllStaffs();
+            for (Staff staff : listOfAllStaffs) {
+                clientRepositoryForTests.delete(staff.getClientID(), "staff");
             }
         } catch (ClientRepositoryException exception) {
             throw new RuntimeException("Could not remove all clients from the test database after client repository tests.", exception);
@@ -83,14 +79,7 @@ public class ClientRepositoryTest {
         clientRepositoryForTests.close();
     }
 
-    @Test
-    public void clientRepositoryCreateClientTestPositive() throws ClientRepositoryException {
-        Client client = clientRepositoryForTests.createClient("SomeLogin", "SomePassword");
-        assertNotNull(client);
-        Client foundClient = clientRepositoryForTests.findByUUID(client.getClientID());
-        assertNotNull(foundClient);
-        assertEquals(client, foundClient);
-    }
+    // Some mongo tests
 
     @Test
     public void mongoRepositoryFindClientWithClientIDTestPositive() throws ClientRepositoryException {
@@ -134,10 +123,21 @@ public class ClientRepositoryTest {
     }
 
     @Test
-    public void mongoRepositoryFindStaffThatIsNotInTheDatabaseWithStaffIDTestNegative() throws ClientRepositoryException {
+    public void mongoRepositoryFindStaffThatIsNotInTheDatabaseWithStaffIDTestNegative() {
         Staff staff = new Staff(UUID.randomUUID(), clientNo1.getClientLogin(), clientNo1.getClientPassword(), clientNo1.isClientStatusActive());
         assertNotNull(staff);
         assertThrows(ClientRepositoryReadException.class, () -> clientRepositoryForTests.findByUUID(staff.getClientID()));
+    }
+
+    // Client create tests
+
+    @Test
+    public void clientRepositoryCreateClientTestPositive() throws ClientRepositoryException {
+        Client client = clientRepositoryForTests.createClient("SomeLogin", "SomePassword");
+        assertNotNull(client);
+        Client foundClient = clientRepositoryForTests.findClientByUUID(client.getClientID());
+        assertNotNull(foundClient);
+        assertEquals(client, foundClient);
     }
 
     @Test
@@ -173,7 +173,7 @@ public class ClientRepositoryTest {
         String clientLogin = "dddfdddf";
         Client client = clientRepositoryForTests.createClient(clientLogin, "SomePassword");
         assertNotNull(client);
-        Client foundClient = clientRepositoryForTests.findByUUID(client.getClientID());
+        Client foundClient = clientRepositoryForTests.findClientByUUID(client.getClientID());
         assertNotNull(foundClient);
         assertEquals(client, foundClient);
     }
@@ -183,7 +183,7 @@ public class ClientRepositoryTest {
         String clientLogin = "dddfdddfdddfdddfdddf";
         Client client = clientRepositoryForTests.createClient(clientLogin, "SomePassword");
         assertNotNull(client);
-        Client foundClient = clientRepositoryForTests.findByUUID(client.getClientID());
+        Client foundClient = clientRepositoryForTests.findClientByUUID(client.getClientID());
         assertNotNull(foundClient);
         assertEquals(client, foundClient);
     }
@@ -222,7 +222,7 @@ public class ClientRepositoryTest {
         String clientPassword = "dddfdddf";
         Client client = clientRepositoryForTests.createClient("SomeLogin", clientPassword);
         assertNotNull(client);
-        Client foundClient = clientRepositoryForTests.findByUUID(client.getClientID());
+        Client foundClient = clientRepositoryForTests.findClientByUUID(client.getClientID());
         assertNotNull(foundClient);
         assertEquals(client, foundClient);
     }
@@ -232,7 +232,7 @@ public class ClientRepositoryTest {
         String clientPassword = "dddfdddfdddfdddfdddfdddfdddfdddfdddfdddf";
         Client client = clientRepositoryForTests.createClient("SomeLogin", clientPassword);
         assertNotNull(client);
-        Client foundClient = clientRepositoryForTests.findByUUID(client.getClientID());
+        Client foundClient = clientRepositoryForTests.findClientByUUID(client.getClientID());
         assertNotNull(foundClient);
         assertEquals(client, foundClient);
     }
@@ -241,6 +241,17 @@ public class ClientRepositoryTest {
     public void clientRepositoryCreateClientWithPasswordThatViolatesRegExTestNegative() {
         String clientPassword = "Some Password";
         assertThrows(ClientRepositoryCreateException.class, () -> clientRepositoryForTests.createClient("SomeLogin", clientPassword));
+    }
+
+    // Admin create tests
+
+    @Test
+    public void clientRepositoryCreateAdminTestPositive() throws ClientRepositoryException {
+        Admin admin = clientRepositoryForTests.createAdmin("SomeLogin", "SomePassword");
+        assertNotNull(admin);
+        Admin foundAdmin = clientRepositoryForTests.findAdminByUUID(admin.getClientID());
+        assertNotNull(foundAdmin);
+        assertEquals(admin, foundAdmin);
     }
 
     @Test
@@ -274,9 +285,9 @@ public class ClientRepositoryTest {
     @Test
     public void clientRepositoryCreateAdminWithLoginLengthEqualTo8TestNegative() throws ClientRepositoryException {
         String adminLogin = "dddfdddf";
-        Client admin = clientRepositoryForTests.createAdmin(adminLogin, "SomePassword");
+        Admin admin = clientRepositoryForTests.createAdmin(adminLogin, "SomePassword");
         assertNotNull(admin);
-        Client foundAdmin = clientRepositoryForTests.findByUUID(admin.getClientID());
+        Admin foundAdmin = clientRepositoryForTests.findAdminByUUID(admin.getClientID());
         assertNotNull(foundAdmin);
         assertEquals(admin, foundAdmin);
     }
@@ -284,9 +295,9 @@ public class ClientRepositoryTest {
     @Test
     public void clientRepositoryCreateAdminWithLoginLengthEqualTo20TestNegative() throws ClientRepositoryException {
         String adminLogin = "dddfdddfdddfdddfdddf";
-        Client admin = clientRepositoryForTests.createAdmin(adminLogin, "SomePassword");
+        Admin admin = clientRepositoryForTests.createAdmin(adminLogin, "SomePassword");
         assertNotNull(admin);
-        Client foundAdmin = clientRepositoryForTests.findByUUID(admin.getClientID());
+        Admin foundAdmin = clientRepositoryForTests.findAdminByUUID(admin.getClientID());
         assertNotNull(foundAdmin);
         assertEquals(admin, foundAdmin);
     }
@@ -323,9 +334,9 @@ public class ClientRepositoryTest {
     @Test
     public void clientRepositoryCreateAdminWithPasswordLengthEqualTo8TestNegative() throws ClientRepositoryException {
         String adminPassword = "dddfdddf";
-        Client admin = clientRepositoryForTests.createAdmin("SomeLogin", adminPassword);
+        Admin admin = clientRepositoryForTests.createAdmin("SomeLogin", adminPassword);
         assertNotNull(admin);
-        Client foundAdmin = clientRepositoryForTests.findByUUID(admin.getClientID());
+        Admin foundAdmin = clientRepositoryForTests.findAdminByUUID(admin.getClientID());
         assertNotNull(foundAdmin);
         assertEquals(admin, foundAdmin);
     }
@@ -333,9 +344,9 @@ public class ClientRepositoryTest {
     @Test
     public void clientRepositoryCreateAdminWithPasswordLengthEqualTo40TestNegative() throws ClientRepositoryException {
         String adminPassword = "dddfdddfdddfdddfdddfdddfdddfdddfdddfdddf";
-        Client admin = clientRepositoryForTests.createAdmin("SomeLogin", adminPassword);
+        Admin admin = clientRepositoryForTests.createAdmin("SomeLogin", adminPassword);
         assertNotNull(admin);
-        Client foundAdmin = clientRepositoryForTests.findByUUID(admin.getClientID());
+        Admin foundAdmin = clientRepositoryForTests.findAdminByUUID(admin.getClientID());
         assertNotNull(foundAdmin);
         assertEquals(admin, foundAdmin);
     }
@@ -344,6 +355,17 @@ public class ClientRepositoryTest {
     public void clientRepositoryCreateAdminWithPasswordThatViolatesRegExTestNegative() {
         String adminPassword = "Some Password";
         assertThrows(ClientRepositoryCreateException.class, () -> clientRepositoryForTests.createAdmin("SomeLogin", adminPassword));
+    }
+
+    // Staff create tests
+
+    @Test
+    public void clientRepositoryCreateStaffTestPositive() throws ClientRepositoryException {
+        Staff staff = clientRepositoryForTests.createStaff("SomeLogin", "SomePassword");
+        assertNotNull(staff);
+        Staff foundStaff = clientRepositoryForTests.findStaffByUUID(staff.getClientID());
+        assertNotNull(foundStaff);
+        assertEquals(staff, foundStaff);
     }
 
     @Test
@@ -377,9 +399,9 @@ public class ClientRepositoryTest {
     @Test
     public void clientRepositoryCreateStaffWithLoginLengthEqualTo8TestNegative() throws ClientRepositoryException {
         String staffLogin = "dddfdddf";
-        Client staff = clientRepositoryForTests.createStaff(staffLogin, "SomePassword");
+        Staff staff = clientRepositoryForTests.createStaff(staffLogin, "SomePassword");
         assertNotNull(staff);
-        Client foundStaff = clientRepositoryForTests.findByUUID(staff.getClientID());
+        Staff foundStaff = clientRepositoryForTests.findStaffByUUID(staff.getClientID());
         assertNotNull(foundStaff);
         assertEquals(staff, foundStaff);
     }
@@ -387,9 +409,9 @@ public class ClientRepositoryTest {
     @Test
     public void clientRepositoryCreateStaffWithLoginLengthEqualTo20TestNegative() throws ClientRepositoryException {
         String staffLogin = "dddfdddfdddfdddfdddf";
-        Client staff = clientRepositoryForTests.createStaff(staffLogin, "SomePassword");
+        Staff staff = clientRepositoryForTests.createStaff(staffLogin, "SomePassword");
         assertNotNull(staff);
-        Client foundStaff = clientRepositoryForTests.findByUUID(staff.getClientID());
+        Staff foundStaff = clientRepositoryForTests.findStaffByUUID(staff.getClientID());
         assertNotNull(foundStaff);
         assertEquals(staff, foundStaff);
     }
@@ -426,9 +448,9 @@ public class ClientRepositoryTest {
     @Test
     public void clientRepositoryCreateStaffWithPasswordLengthEqualTo8TestNegative() throws ClientRepositoryException {
         String staffPassword = "dddfdddf";
-        Client staff = clientRepositoryForTests.createStaff("SomeLogin", staffPassword);
+        Staff staff = clientRepositoryForTests.createStaff("SomeLogin", staffPassword);
         assertNotNull(staff);
-        Client foundStaff = clientRepositoryForTests.findByUUID(staff.getClientID());
+        Staff foundStaff = clientRepositoryForTests.findStaffByUUID(staff.getClientID());
         assertNotNull(foundStaff);
         assertEquals(staff, foundStaff);
     }
@@ -436,9 +458,9 @@ public class ClientRepositoryTest {
     @Test
     public void clientRepositoryCreateStaffWithPasswordLengthEqualTo40TestNegative() throws ClientRepositoryException {
         String staffPassword = "dddfdddfdddfdddfdddfdddfdddfdddfdddfdddf";
-        Client staff = clientRepositoryForTests.createStaff("SomeLogin", staffPassword);
+        Staff staff = clientRepositoryForTests.createStaff("SomeLogin", staffPassword);
         assertNotNull(staff);
-        Client foundStaff = clientRepositoryForTests.findByUUID(staff.getClientID());
+        Staff foundStaff = clientRepositoryForTests.findStaffByUUID(staff.getClientID());
         assertNotNull(foundStaff);
         assertEquals(staff, foundStaff);
     }
@@ -449,27 +471,51 @@ public class ClientRepositoryTest {
         assertThrows(ClientRepositoryCreateException.class, () -> clientRepositoryForTests.createStaff("SomeLogin", staffPassword));
     }
 
+    // Find client by ID tests
+
     @Test
-    public void clientRepositoryFindClientTestPositive() throws ClientRepositoryException {
-        Client foundClient = clientRepositoryForTests.findByUUID(clientNo1.getClientID());
+    public void clientRepositoryFindClientByIDTestPositive() throws ClientRepositoryException {
+        Client foundClient = clientRepositoryForTests.findClientByUUID(clientNo1.getClientID());
         assertNotNull(foundClient);
         assertEquals(clientNo1, foundClient);
     }
 
     @Test
-    public void clientRepositoryFindClientThatIsNotInTheDatabaseTestNegative() {
+    public void clientRepositoryFindClientByIDThatIsNotInTheDatabaseTestNegative() {
         Client client = new Client(UUID.randomUUID(), "SomeLogin", "SomePassword");
         assertNotNull(client);
-        assertThrows(ClientRepositoryReadException.class, () -> clientRepositoryForTests.findByUUID(client.getClientID()));
+        assertThrows(ClientRepositoryReadException.class, () -> clientRepositoryForTests.findClientByUUID(client.getClientID()));
     }
 
     @Test
-    public void clientRepositoryFindAllClientUUIDsTestPositive() throws ClientRepositoryException {
-        List<UUID> listOfAllUUIDs = clientRepositoryForTests.findAllUUIDs();
-        assertNotNull(listOfAllUUIDs);
-        assertFalse(listOfAllUUIDs.isEmpty());
-        assertEquals(6, listOfAllUUIDs.size());
+    public void clientRepositoryFindAdminByIDTestPositive() throws ClientRepositoryException {
+        Admin foundAdmin = clientRepositoryForTests.findAdminByUUID(adminNo1.getClientID());
+        assertNotNull(foundAdmin);
+        assertEquals(adminNo1, foundAdmin);
     }
+
+    @Test
+    public void clientRepositoryFindAdminByIDThatIsNotInTheDatabaseTestNegative() {
+        Admin admin = new Admin(UUID.randomUUID(), "SomeLogin", "SomePassword");
+        assertNotNull(admin);
+        assertThrows(ClientRepositoryReadException.class, () -> clientRepositoryForTests.findAdminByUUID(admin.getClientID()));
+    }
+
+    @Test
+    public void clientRepositoryFindStaffByIDTestPositive() throws ClientRepositoryException {
+        Staff foundStaff = clientRepositoryForTests.findStaffByUUID(staffNo1.getClientID());
+        assertNotNull(foundStaff);
+        assertEquals(staffNo1, foundStaff);
+    }
+
+    @Test
+    public void clientRepositoryFindStaffByIDThatIsNotInTheDatabaseTestNegative() {
+        Staff staff = new Staff(UUID.randomUUID(), "SomeLogin", "SomePassword");
+        assertNotNull(staff);
+        assertThrows(ClientRepositoryReadException.class, () -> clientRepositoryForTests.findStaffByUUID(staff.getClientID()));
+    }
+
+    // Find all users
 
     @Test
     public void clientRepositoryFindAllClientsTestPositive() throws ClientRepositoryException {
@@ -481,7 +527,7 @@ public class ClientRepositoryTest {
 
     @Test
     public void clientRepositoryFindAllAdminsTestPositive() throws ClientRepositoryException {
-        List<Client> listOfAllAdmins = clientRepositoryForTests.findAllAdmins();
+        List<Admin> listOfAllAdmins = clientRepositoryForTests.findAllAdmins();
         assertNotNull(listOfAllAdmins);
         assertFalse(listOfAllAdmins.isEmpty());
         assertEquals(2, listOfAllAdmins.size());
@@ -489,11 +535,13 @@ public class ClientRepositoryTest {
 
     @Test
     public void clientRepositoryFindAllStaffsTestPositive() throws ClientRepositoryException {
-        List<Client> listOfAllStaffs = clientRepositoryForTests.findAllStaffs();
+        List<Staff> listOfAllStaffs = clientRepositoryForTests.findAllStaffs();
         assertNotNull(listOfAllStaffs);
         assertFalse(listOfAllStaffs.isEmpty());
         assertEquals(2, listOfAllStaffs.size());
     }
+
+    // Find users by logins
 
     @Test
     public void clientRepositoryFindClientByLoginTestPositive() throws ClientRepositoryException {
@@ -519,6 +567,8 @@ public class ClientRepositoryTest {
         assertEquals(staffNo1, foundStaff);
     }
 
+    // Find users by login that is not in the database
+
     @Test
     public void clientRepositoryFindClientByLoginThatIsNotInTheDatabaseTestNegative() {
         Client client = new Client(UUID.randomUUID(), "SomeLogin", "SomePassword");
@@ -540,6 +590,8 @@ public class ClientRepositoryTest {
         assertThrows(ClientRepositoryReadException.class, () -> clientRepositoryForTests.findStaffByLogin(staff.getClientLogin()));
     }
 
+    // Find all users matching login
+
     @Test
     public void clientRepositoryFindAllClientsMatchingLoginTestPositive() throws ClientRepositoryException {
         String clientLogin = "Client";
@@ -558,30 +610,60 @@ public class ClientRepositoryTest {
     }
 
     @Test
+    public void clientRepositoryFindAllAdminsMatchingLoginTestPositive() throws ClientRepositoryException {
+        String adminLogin = "Admin";
+        List<Admin> listOfFoundAdmins = clientRepositoryForTests.findAllAdminsMatchingLogin(adminLogin);
+        assertNotNull(listOfFoundAdmins);
+        assertFalse(listOfFoundAdmins.isEmpty());
+        assertEquals(2, listOfFoundAdmins.size());
+    }
+
+    @Test
     public void clientRepositoryFindAllAdminsMatchingLoginWhenLoginIsNotInTheDatabaseTestPositive() throws ClientRepositoryException {
         String adminLogin = "NonExistentLogin";
-        List<Client> listOfFoundAdmins = clientRepositoryForTests.findAllAdminsMatchingLogin(adminLogin);
+        List<Admin> listOfFoundAdmins = clientRepositoryForTests.findAllAdminsMatchingLogin(adminLogin);
         assertNotNull(listOfFoundAdmins);
         assertTrue(listOfFoundAdmins.isEmpty());
     }
 
     @Test
+    public void clientRepositoryFindAllStaffsMatchingLoginTestPositive() throws ClientRepositoryException {
+        String staffLogin = "Staff";
+        List<Staff> listOfFoundStaffs = clientRepositoryForTests.findAllStaffsMatchingLogin(staffLogin);
+        assertNotNull(listOfFoundStaffs);
+        assertFalse(listOfFoundStaffs.isEmpty());
+        assertEquals(2, listOfFoundStaffs.size());
+    }
+
+    @Test
     public void clientRepositoryFindAllStaffsMatchingLoginWhenLoginIsNotInTheDatabaseTestPositive() throws ClientRepositoryException {
         String staffLogin = "NonExistentLogin";
-        List<Client> listOfFoundStaffs = clientRepositoryForTests.findAllStaffsMatchingLogin(staffLogin);
+        List<Staff> listOfFoundStaffs = clientRepositoryForTests.findAllStaffsMatchingLogin(staffLogin);
         assertNotNull(listOfFoundStaffs);
         assertTrue(listOfFoundStaffs.isEmpty());
     }
+
+    // Find all clients UUIDs
+
+    @Test
+    public void clientRepositoryFindAllClientUUIDsTestPositive() throws ClientRepositoryException {
+        List<UUID> listOfAllUUIDs = clientRepositoryForTests.findAllUUIDs();
+        assertNotNull(listOfAllUUIDs);
+        assertFalse(listOfAllUUIDs.isEmpty());
+        assertEquals(6, listOfAllUUIDs.size());
+    }
+
+    // Activate users tests positive
 
     @Test
     public void clientRepositoryActivateClientTestPositive() throws ClientRepositoryException {
         clientNo1.setClientStatusActive(false);
         clientRepositoryForTests.updateClient(clientNo1);
-        Client foundClient = clientRepositoryForTests.findByUUID(clientNo1.getClientID());
+        Client foundClient = clientRepositoryForTests.findClientByUUID(clientNo1.getClientID());
         assertNotNull(foundClient);
         assertFalse(foundClient.isClientStatusActive());
-        clientRepositoryForTests.activate(clientNo1);
-        foundClient = clientRepositoryForTests.findByUUID(clientNo1.getClientID());
+        clientRepositoryForTests.activate(clientNo1, "client");
+        foundClient = clientRepositoryForTests.findClientByUUID(clientNo1.getClientID());
         assertNotNull(foundClient);
         assertTrue(foundClient.isClientStatusActive());
     }
@@ -590,11 +672,11 @@ public class ClientRepositoryTest {
     public void clientRepositoryActivateAdminTestPositive() throws ClientRepositoryException {
         adminNo1.setClientStatusActive(false);
         clientRepositoryForTests.updateAdmin(adminNo1);
-        Client foundAdmin = clientRepositoryForTests.findByUUID(adminNo1.getClientID());
+        Admin foundAdmin = clientRepositoryForTests.findAdminByUUID(adminNo1.getClientID());
         assertNotNull(foundAdmin);
         assertFalse(foundAdmin.isClientStatusActive());
-        clientRepositoryForTests.activate(adminNo1);
-        foundAdmin = clientRepositoryForTests.findByUUID(adminNo1.getClientID());
+        clientRepositoryForTests.activate(adminNo1, "admin");
+        foundAdmin = clientRepositoryForTests.findAdminByUUID(adminNo1.getClientID());
         assertNotNull(foundAdmin);
         assertTrue(foundAdmin.isClientStatusActive());
     }
@@ -603,59 +685,91 @@ public class ClientRepositoryTest {
     public void clientRepositoryActivateStaffTestPositive() throws ClientRepositoryException {
         staffNo1.setClientStatusActive(false);
         clientRepositoryForTests.updateStaff(staffNo1);
-        Client foundStaff = clientRepositoryForTests.findByUUID(staffNo1.getClientID());
+        Staff foundStaff = clientRepositoryForTests.findStaffByUUID(staffNo1.getClientID());
         assertNotNull(foundStaff);
         assertFalse(foundStaff.isClientStatusActive());
-        clientRepositoryForTests.activate(staffNo1);
-        foundStaff = clientRepositoryForTests.findByUUID(staffNo1.getClientID());
+        clientRepositoryForTests.activate(staffNo1, "staff");
+        foundStaff = clientRepositoryForTests.findStaffByUUID(staffNo1.getClientID());
         assertNotNull(foundStaff);
         assertTrue(foundStaff.isClientStatusActive());
     }
 
+    // Deactivate users test negative
+
     @Test
     public void clientRepositoryActivateClientThatIsNotInTheDatabaseTestNegative() {
         Client client = new Client(UUID.randomUUID(), "SomeLogin", "SomePassword");
-        assertThrows(ClientActivationException.class, () -> clientRepositoryForTests.activate(client));
+        assertThrows(ClientActivationException.class, () -> clientRepositoryForTests.activate(client, "client"));
     }
 
     @Test
+    public void clientRepositoryActivateAdminThatIsNotInTheDatabaseTestNegative() {
+        Admin admin = new Admin(UUID.randomUUID(), "SomeLogin", "SomePassword");
+        assertThrows(ClientActivationException.class, () -> clientRepositoryForTests.activate(admin, "admin"));
+    }
+
+    @Test
+    public void clientRepositoryActivateStaffThatIsNotInTheDatabaseTestNegative() {
+        Staff staff = new Staff(UUID.randomUUID(), "SomeLogin", "SomePassword");
+        assertThrows(ClientActivationException.class, () -> clientRepositoryForTests.activate(staff, "staff"));
+    }
+
+    // Deactivate users tests positive
+
+    @Test
     public void clientRepositoryDeactivateClientTestPositive() throws ClientRepositoryException {
-        Client foundClient = clientRepositoryForTests.findByUUID(clientNo1.getClientID());
+        Client foundClient = clientRepositoryForTests.findClientByUUID(clientNo1.getClientID());
         assertNotNull(foundClient);
         assertTrue(foundClient.isClientStatusActive());
-        clientRepositoryForTests.deactivate(clientNo1);
-        foundClient = clientRepositoryForTests.findByUUID(clientNo1.getClientID());
+        clientRepositoryForTests.deactivate(clientNo1, "client");
+        foundClient = clientRepositoryForTests.findClientByUUID(clientNo1.getClientID());
         assertNotNull(foundClient);
         assertFalse(foundClient.isClientStatusActive());
     }
 
     @Test
     public void clientRepositoryDeactivateAdminTestPositive() throws ClientRepositoryException {
-        Client foundAdmin = clientRepositoryForTests.findByUUID(adminNo1.getClientID());
+        Admin foundAdmin = clientRepositoryForTests.findAdminByUUID(adminNo1.getClientID());
         assertNotNull(foundAdmin);
         assertTrue(foundAdmin.isClientStatusActive());
-        clientRepositoryForTests.deactivate(adminNo1);
-        foundAdmin = clientRepositoryForTests.findByUUID(adminNo1.getClientID());
+        clientRepositoryForTests.deactivate(adminNo1, "admin");
+        foundAdmin = clientRepositoryForTests.findAdminByUUID(adminNo1.getClientID());
         assertNotNull(foundAdmin);
         assertFalse(foundAdmin.isClientStatusActive());
     }
 
     @Test
     public void clientRepositoryDeactivateStaffTestPositive() throws ClientRepositoryException {
-        Client foundStaff = clientRepositoryForTests.findByUUID(staffNo1.getClientID());
+        Staff foundStaff = clientRepositoryForTests.findStaffByUUID(staffNo1.getClientID());
         assertNotNull(foundStaff);
         assertTrue(foundStaff.isClientStatusActive());
-        clientRepositoryForTests.deactivate(staffNo1);
-        foundStaff = clientRepositoryForTests.findByUUID(staffNo1.getClientID());
+        clientRepositoryForTests.deactivate(staffNo1, "staff");
+        foundStaff = clientRepositoryForTests.findStaffByUUID(staffNo1.getClientID());
         assertNotNull(foundStaff);
         assertFalse(foundStaff.isClientStatusActive());
     }
 
+    // Deactivate users test negative
+
     @Test
     public void clientRepositoryDeactivateClientThatIsNotInTheDatabaseTestNegative() {
         Client client = new Client(UUID.randomUUID(), "SomeLogin", "SomePassword");
-        assertThrows(ClientDeactivationException.class, () -> clientRepositoryForTests.deactivate(client));
+        assertThrows(ClientDeactivationException.class, () -> clientRepositoryForTests.deactivate(client, "client"));
     }
+
+    @Test
+    public void clientRepositoryDeactivateAdminThatIsNotInTheDatabaseTestNegative() {
+        Admin admin = new Admin(UUID.randomUUID(), "SomeLogin", "SomePassword");
+        assertThrows(ClientDeactivationException.class, () -> clientRepositoryForTests.deactivate(admin, "admin"));
+    }
+
+    @Test
+    public void clientRepositoryDeactivateStaffThatIsNotInTheDatabaseTestNegative() {
+        Staff staff = new Staff(UUID.randomUUID(), "SomeLogin", "SomePassword");
+        assertThrows(ClientDeactivationException.class, () -> clientRepositoryForTests.deactivate(staff, "staff"));
+    }
+
+    // Update client tests
 
     @Test
     public void clientRepositoryUpdateClientTestPositive() throws ClientRepositoryException {
@@ -666,8 +780,9 @@ public class ClientRepositoryTest {
         clientNo1.setClientLogin(newLogin);
         clientNo1.setClientPassword(newPassword);
         clientRepositoryForTests.updateClient(clientNo1);
-        String loginAfter = clientNo1.getClientLogin();
-        String passwordAfter = clientNo1.getClientPassword();
+        Client foundClient = clientRepositoryForTests.findClientByUUID(clientNo1.getClientID());
+        String loginAfter = foundClient.getClientLogin();
+        String passwordAfter = foundClient.getClientPassword();
         assertNotNull(loginAfter);
         assertNotNull(passwordAfter);
         assertEquals(newLogin, loginAfter);
@@ -716,7 +831,8 @@ public class ClientRepositoryTest {
         String loginBefore = clientNo1.getClientLogin();
         clientNo1.setClientLogin(newLogin);
         clientRepositoryForTests.updateClient(clientNo1);
-        String loginAfter = clientNo1.getClientLogin();
+        Client foundClient = clientRepositoryForTests.findClientByUUID(clientNo1.getClientID());
+        String loginAfter = foundClient.getClientLogin();
         assertNotNull(loginAfter);
         assertEquals(newLogin, loginAfter);
         assertNotEquals(loginBefore, loginAfter);
@@ -728,7 +844,8 @@ public class ClientRepositoryTest {
         String loginBefore = clientNo1.getClientLogin();
         clientNo1.setClientLogin(newLogin);
         clientRepositoryForTests.updateClient(clientNo1);
-        String loginAfter = clientNo1.getClientLogin();
+        Client foundClient = clientRepositoryForTests.findClientByUUID(clientNo1.getClientID());
+        String loginAfter = foundClient.getClientLogin();
         assertNotNull(loginAfter);
         assertEquals(newLogin, loginAfter);
         assertNotEquals(loginBefore, loginAfter);
@@ -774,7 +891,8 @@ public class ClientRepositoryTest {
         String passwordBefore = clientNo1.getClientPassword();
         clientNo1.setClientPassword(newPassword);
         clientRepositoryForTests.updateClient(clientNo1);
-        String passwordAfter = clientNo1.getClientPassword();
+        Client foundClient = clientRepositoryForTests.findClientByUUID(clientNo1.getClientID());
+        String passwordAfter = foundClient.getClientPassword();
         assertNotNull(passwordAfter);
         assertEquals(newPassword, passwordAfter);
         assertNotEquals(passwordBefore, passwordAfter);
@@ -786,7 +904,8 @@ public class ClientRepositoryTest {
         String passwordBefore = clientNo1.getClientPassword();
         clientNo1.setClientPassword(newPassword);
         clientRepositoryForTests.updateClient(clientNo1);
-        String passwordAfter = clientNo1.getClientPassword();
+        Client foundClient = clientRepositoryForTests.findClientByUUID(clientNo1.getClientID());
+        String passwordAfter = foundClient.getClientPassword();
         assertNotNull(passwordAfter);
         assertEquals(newPassword, passwordAfter);
         assertNotEquals(passwordBefore, passwordAfter);
@@ -799,6 +918,8 @@ public class ClientRepositoryTest {
         assertThrows(ClientRepositoryUpdateException.class, () -> clientRepositoryForTests.updateClient(clientNo1));
     }
 
+    // Update admin tests
+
     @Test
     public void clientRepositoryUpdateAdminTestPositive() throws ClientRepositoryException {
         String newLogin = "NewLogin";
@@ -808,8 +929,9 @@ public class ClientRepositoryTest {
         adminNo1.setClientLogin(newLogin);
         adminNo1.setClientPassword(newPassword);
         clientRepositoryForTests.updateAdmin(adminNo1);
-        String loginAfter = adminNo1.getClientLogin();
-        String passwordAfter = adminNo1.getClientPassword();
+        Admin foundAdmin = clientRepositoryForTests.findAdminByUUID(adminNo1.getClientID());
+        String loginAfter = foundAdmin.getClientLogin();
+        String passwordAfter = foundAdmin.getClientPassword();
         assertNotNull(loginAfter);
         assertNotNull(passwordAfter);
         assertEquals(newLogin, loginAfter);
@@ -858,7 +980,8 @@ public class ClientRepositoryTest {
         String loginBefore = adminNo1.getClientLogin();
         adminNo1.setClientLogin(newLogin);
         clientRepositoryForTests.updateAdmin(adminNo1);
-        String loginAfter = adminNo1.getClientLogin();
+        Admin foundAdmin = clientRepositoryForTests.findAdminByUUID(adminNo1.getClientID());
+        String loginAfter = foundAdmin.getClientLogin();
         assertNotNull(loginAfter);
         assertEquals(newLogin, loginAfter);
         assertNotEquals(loginBefore, loginAfter);
@@ -870,7 +993,8 @@ public class ClientRepositoryTest {
         String loginBefore = adminNo1.getClientLogin();
         adminNo1.setClientLogin(newLogin);
         clientRepositoryForTests.updateAdmin(adminNo1);
-        String loginAfter = adminNo1.getClientLogin();
+        Admin foundAdmin = clientRepositoryForTests.findAdminByUUID(adminNo1.getClientID());
+        String loginAfter = foundAdmin.getClientLogin();
         assertNotNull(loginAfter);
         assertEquals(newLogin, loginAfter);
         assertNotEquals(loginBefore, loginAfter);
@@ -916,7 +1040,8 @@ public class ClientRepositoryTest {
         String passwordBefore = adminNo1.getClientPassword();
         adminNo1.setClientPassword(newPassword);
         clientRepositoryForTests.updateAdmin(adminNo1);
-        String passwordAfter = adminNo1.getClientPassword();
+        Admin foundAdmin = clientRepositoryForTests.findAdminByUUID(adminNo1.getClientID());
+        String passwordAfter = foundAdmin.getClientPassword();
         assertNotNull(passwordAfter);
         assertEquals(newPassword, passwordAfter);
         assertNotEquals(passwordBefore, passwordAfter);
@@ -928,7 +1053,8 @@ public class ClientRepositoryTest {
         String passwordBefore = adminNo1.getClientPassword();
         adminNo1.setClientPassword(newPassword);
         clientRepositoryForTests.updateAdmin(adminNo1);
-        String passwordAfter = adminNo1.getClientPassword();
+        Admin foundAdmin = clientRepositoryForTests.findAdminByUUID(adminNo1.getClientID());
+        String passwordAfter = foundAdmin.getClientPassword();
         assertNotNull(passwordAfter);
         assertEquals(newPassword, passwordAfter);
         assertNotEquals(passwordBefore, passwordAfter);
@@ -941,6 +1067,8 @@ public class ClientRepositoryTest {
         assertThrows(ClientRepositoryUpdateException.class, () -> clientRepositoryForTests.updateClient(adminNo1));
     }
 
+    // Staff update tests
+
     @Test
     public void clientRepositoryUpdateStaffTestPositive() throws ClientRepositoryException {
         String newLogin = "NewLogin";
@@ -950,8 +1078,9 @@ public class ClientRepositoryTest {
         staffNo1.setClientLogin(newLogin);
         staffNo1.setClientPassword(newPassword);
         clientRepositoryForTests.updateStaff(staffNo1);
-        String loginAfter = staffNo1.getClientLogin();
-        String passwordAfter = staffNo1.getClientPassword();
+        Staff foundStaff = clientRepositoryForTests.findStaffByUUID(staffNo1.getClientID());
+        String loginAfter = foundStaff.getClientLogin();
+        String passwordAfter = foundStaff.getClientPassword();
         assertNotNull(loginAfter);
         assertNotNull(passwordAfter);
         assertEquals(newLogin, loginAfter);
@@ -1000,7 +1129,8 @@ public class ClientRepositoryTest {
         String loginBefore = staffNo1.getClientLogin();
         staffNo1.setClientLogin(newLogin);
         clientRepositoryForTests.updateStaff(staffNo1);
-        String loginAfter = staffNo1.getClientLogin();
+        Staff foundStaff = clientRepositoryForTests.findStaffByUUID(staffNo1.getClientID());
+        String loginAfter = foundStaff.getClientLogin();
         assertNotNull(loginAfter);
         assertEquals(newLogin, loginAfter);
         assertNotEquals(loginBefore, loginAfter);
@@ -1012,7 +1142,8 @@ public class ClientRepositoryTest {
         String loginBefore = staffNo1.getClientLogin();
         staffNo1.setClientLogin(newLogin);
         clientRepositoryForTests.updateStaff(staffNo1);
-        String loginAfter = staffNo1.getClientLogin();
+        Staff foundStaff = clientRepositoryForTests.findStaffByUUID(staffNo1.getClientID());
+        String loginAfter = foundStaff.getClientLogin();
         assertNotNull(loginAfter);
         assertEquals(newLogin, loginAfter);
         assertNotEquals(loginBefore, loginAfter);
@@ -1058,7 +1189,8 @@ public class ClientRepositoryTest {
         String passwordBefore = staffNo1.getClientPassword();
         staffNo1.setClientPassword(newPassword);
         clientRepositoryForTests.updateStaff(staffNo1);
-        String passwordAfter = staffNo1.getClientPassword();
+        Staff foundStaff = clientRepositoryForTests.findStaffByUUID(staffNo1.getClientID());
+        String passwordAfter = foundStaff.getClientPassword();
         assertNotNull(passwordAfter);
         assertEquals(newPassword, passwordAfter);
         assertNotEquals(passwordBefore, passwordAfter);
@@ -1070,7 +1202,8 @@ public class ClientRepositoryTest {
         String passwordBefore = staffNo1.getClientPassword();
         staffNo1.setClientPassword(newPassword);
         clientRepositoryForTests.updateStaff(staffNo1);
-        String passwordAfter = staffNo1.getClientPassword();
+        Staff foundStaff = clientRepositoryForTests.findStaffByUUID(staffNo1.getClientID());
+        String passwordAfter = foundStaff.getClientPassword();
         assertNotNull(passwordAfter);
         assertEquals(newPassword, passwordAfter);
         assertNotEquals(passwordBefore, passwordAfter);
@@ -1083,11 +1216,13 @@ public class ClientRepositoryTest {
         assertThrows(ClientRepositoryUpdateException.class, () -> clientRepositoryForTests.updateStaff(staffNo1));
     }
 
+    // Client delete tests
+
     @Test
     public void clientRepositoryDeleteClientTestPositive() throws ClientRepositoryException {
         int numOfClientsBefore = clientRepositoryForTests.findAllClients().size();
         UUID removedClientID = clientNo1.getClientID();
-        clientRepositoryForTests.delete(clientNo1.getClientID());
+        clientRepositoryForTests.delete(clientNo1.getClientID(), "client");
         int numOfClientsAfter = clientRepositoryForTests.findAllClients().size();
         assertNotEquals(numOfClientsBefore, numOfClientsAfter);
         assertEquals(2, numOfClientsBefore);
@@ -1098,6 +1233,46 @@ public class ClientRepositoryTest {
     @Test
     public void clientRepositoryDeleteClientThatIsNotInTheDatabaseTestNegative() {
         Client client = new Client(UUID.randomUUID(), "SomeLogin", "SomePassword");
-        assertThrows(ClientRepositoryDeleteException.class, () -> clientRepositoryForTests.delete(client.getClientID()));
+        assertThrows(ClientRepositoryDeleteException.class, () -> clientRepositoryForTests.delete(client.getClientID(), "client"));
+    }
+
+    // Admin delete tests
+
+    @Test
+    public void clientRepositoryDeleteAdminTestPositive() throws ClientRepositoryException {
+        int numOfAdminsBefore = clientRepositoryForTests.findAllAdmins().size();
+        UUID removedAdminID = adminNo1.getClientID();
+        clientRepositoryForTests.delete(adminNo1.getClientID(), "admin");
+        int numOfAdminsAfter = clientRepositoryForTests.findAllAdmins().size();
+        assertNotEquals(numOfAdminsBefore, numOfAdminsAfter);
+        assertEquals(2, numOfAdminsBefore);
+        assertEquals(1, numOfAdminsAfter);
+        assertThrows(ClientRepositoryReadException.class, () -> clientRepositoryForTests.findAdminByUUID(removedAdminID));
+    }
+
+    @Test
+    public void clientRepositoryDeleteAdminThatIsNotInTheDatabaseTestNegative() {
+        Admin admin = new Admin(UUID.randomUUID(), "SomeLogin", "SomePassword");
+        assertThrows(ClientRepositoryDeleteException.class, () -> clientRepositoryForTests.delete(admin.getClientID(), "admin"));
+    }
+
+    // Staff delete tests
+
+    @Test
+    public void clientRepositoryDeleteStaffTestPositive() throws ClientRepositoryException {
+        int numOfStaffsBefore = clientRepositoryForTests.findAllStaffs().size();
+        UUID removedStaffID = staffNo1.getClientID();
+        clientRepositoryForTests.delete(staffNo1.getClientID(), "staff");
+        int numOfStaffsAfter = clientRepositoryForTests.findAllStaffs().size();
+        assertNotEquals(numOfStaffsBefore, numOfStaffsAfter);
+        assertEquals(2, numOfStaffsBefore);
+        assertEquals(1, numOfStaffsAfter);
+        assertThrows(ClientRepositoryReadException.class, () -> clientRepositoryForTests.findStaffByUUID(removedStaffID));
+    }
+
+    @Test
+    public void clientRepositoryDeleteStaffThatIsNotInTheDatabaseTestNegative() {
+        Staff staff = new Staff(UUID.randomUUID(), "SomeLogin", "SomePassword");
+        assertThrows(ClientRepositoryDeleteException.class, () -> clientRepositoryForTests.delete(staff.getClientID(), "staff"));
     }
 }

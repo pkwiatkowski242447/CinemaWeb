@@ -13,8 +13,4 @@ public interface RepositoryInterface<Type> {
 
     Type findByUUID(UUID elementID) throws GeneralRepositoryException;
     List<UUID> findAllUUIDs() throws GeneralRepositoryException;
-
-    // Delete methods
-
-    void delete(UUID elementID) throws GeneralRepositoryException;
 }

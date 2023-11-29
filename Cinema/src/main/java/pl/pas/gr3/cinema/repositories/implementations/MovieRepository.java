@@ -212,6 +212,7 @@ public class MovieRepository extends MongoRepository implements MovieRepositoryI
 
     // Delete methods
 
+    @Override
     public void delete(UUID movieID) throws MovieRepositoryException {
         try {
             Bson ticketFilter = Filters.eq("movie_id", movieID);
