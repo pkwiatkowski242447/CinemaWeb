@@ -12,7 +12,4 @@ public interface ServiceInterface<Type> {
 
     Response findByUUID(UUID elementID);
     Response findAll();
-
-    // Update methods
-    Response update(Type element);
 }

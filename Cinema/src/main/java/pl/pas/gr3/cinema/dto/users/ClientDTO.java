@@ -12,19 +12,19 @@ import java.util.UUID;
 @NoArgsConstructor
 public class ClientDTO {
 
-    @JsonbProperty("client-id")
+    @JsonbProperty("id")
     protected UUID clientID;
 
-    @JsonbProperty("client-login")
+    @JsonbProperty("login")
     protected String clientLogin;
 
-    @JsonbProperty("client-status-active")
+    @JsonbProperty("status-active")
     protected boolean clientStatusActive;
 
     @JsonbCreator
-    public ClientDTO(@JsonbProperty("client-id") UUID clientID,
-                     @JsonbProperty("client-login") String clientLogin,
-                     @JsonbProperty("client-status-active") boolean clientStatusActive) {
+    public ClientDTO(@JsonbProperty("id") UUID clientID,
+                     @JsonbProperty("login") String clientLogin,
+                     @JsonbProperty("status-active") boolean clientStatusActive) {
         this.clientID = clientID;
         this.clientLogin = clientLogin;
         this.clientStatusActive = clientStatusActive;

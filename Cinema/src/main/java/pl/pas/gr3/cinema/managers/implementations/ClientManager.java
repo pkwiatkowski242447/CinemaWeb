@@ -2,7 +2,6 @@ package pl.pas.gr3.cinema.managers.implementations;
 
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
-import pl.pas.gr3.cinema.exceptions.managers.GeneralManagerException;
 import pl.pas.gr3.cinema.exceptions.managers.crud.client.*;
 import pl.pas.gr3.cinema.exceptions.repositories.ClientRepositoryException;
 import pl.pas.gr3.cinema.managers.interfaces.UserManagerInterface;

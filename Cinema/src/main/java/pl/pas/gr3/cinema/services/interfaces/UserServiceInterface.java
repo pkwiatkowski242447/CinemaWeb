@@ -6,10 +6,6 @@ import java.util.UUID;
 
 public interface UserServiceInterface<Type> extends ServiceInterface<Type> {
 
-    // Create methods
-
-    Response create(String login, String password);
-
     // Read methods
 
     Response findByLogin(String login);

@@ -14,4 +14,7 @@ public interface TicketServiceInterface extends ServiceInterface<Ticket> {
     // Update methods
 
     Response delete(UUID ticketID);
+
+    // Update methods
+    Response update(Ticket ticket);
 }

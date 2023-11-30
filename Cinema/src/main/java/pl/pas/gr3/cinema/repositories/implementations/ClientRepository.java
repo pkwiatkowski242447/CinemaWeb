@@ -125,7 +125,7 @@ public class ClientRepository extends MongoRepository implements ClientRepositor
             }
             List<Admin> listOfAdmins = this.findAllAdmins();
             for (Admin admin : listOfAdmins) {
-                this.delete(admin.getClientID(), "admins");
+                this.delete(admin.getClientID(), "admin");
             }
             List<Staff> listOfStaffs = this.findAllStaffs();
             for (Staff staff : listOfStaffs) {

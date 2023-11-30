@@ -11,6 +11,8 @@ import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 import pl.pas.gr3.cinema.dto.TicketDTO;
 import pl.pas.gr3.cinema.dto.users.ClientDTO;
+import pl.pas.gr3.cinema.dto.users.ClientInputDTO;
+import pl.pas.gr3.cinema.dto.users.ClientPasswordDTO;
 import pl.pas.gr3.cinema.exceptions.managers.GeneralManagerException;
 import pl.pas.gr3.cinema.managers.implementations.ClientManager;
 import pl.pas.gr3.cinema.model.Ticket;
@@ -36,10 +38,9 @@ public class ClientService implements UserServiceInterface<Client> {
     @POST
     @Consumes(MediaType.APPLICATION_JSON)
     @Produces(MediaType.APPLICATION_JSON)
-    @Override
-    public Response create(String clientLogin, String clientPassword) {
+    public Response create(ClientInputDTO clientInputDTO) {
         try {
-            Client client = this.clientManager.create(clientLogin, clientPassword);
+            Client client = this.clientManager.create(clientInputDTO.getClientLogin(), clientInputDTO.getClientPassword());
             Set<ConstraintViolation<Client>> violationSet = validator.validate(client);
             List<String> messages = violationSet.stream().map(ConstraintViolation::getMessage).toList();
             if (!violationSet.isEmpty()) {
@@ -67,7 +68,6 @@ public class ClientService implements UserServiceInterface<Client> {
 
     @GET
     @Path("/{id}")
-    @Consumes(MediaType.TEXT_PLAIN)
     @Produces(MediaType.APPLICATION_JSON)
     @Override
     public Response findByUUID(@PathParam("id") UUID clientID) {
@@ -82,7 +82,6 @@ public class ClientService implements UserServiceInterface<Client> {
 
     @GET
     @Path("/login/{login}")
-    @Consumes(MediaType.TEXT_PLAIN)
     @Produces(MediaType.APPLICATION_JSON)
     @Override
     public Response findByLogin(@PathParam("login") String clientLogin) {
@@ -96,7 +95,6 @@ public class ClientService implements UserServiceInterface<Client> {
     }
 
     @GET
-    @Consumes(MediaType.TEXT_PLAIN)
     @Produces(MediaType.APPLICATION_JSON)
     @Override
     public Response findAllWithMatchingLogin(@QueryParam("match") String clientLogin) {
@@ -110,7 +108,6 @@ public class ClientService implements UserServiceInterface<Client> {
 
     @GET
     @Path("/{id}/tickets")
-    @Consumes(MediaType.TEXT_PLAIN)
     @Produces(MediaType.APPLICATION_JSON)
     @Override
     public Response getTicketsForCertainUser(@PathParam("id") UUID clientID) {
@@ -132,19 +129,23 @@ public class ClientService implements UserServiceInterface<Client> {
 
     @PUT
     @Consumes(MediaType.APPLICATION_JSON)
-    @Override
-    public Response update(Client client) {
+    public Response update(ClientPasswordDTO clientPasswordDTO) {
         try {
+            Client client = new Client(clientPasswordDTO.getClientID(), clientPasswordDTO.getClientLogin(), clientPasswordDTO.getClientPassword(), clientPasswordDTO.isClientStatusActive());
+            Set<ConstraintViolation<Client>> violationSet = validator.validate(client);
+            List<String> messages = violationSet.stream().map(ConstraintViolation::getMessage).toList();
+            if (!violationSet.isEmpty()) {
+                return Response.status(Response.Status.BAD_REQUEST).type(MediaType.APPLICATION_JSON).entity(messages).build();
+            }
             this.clientManager.update(client);
-            return Response.status(Response.Status.OK).entity("Client object was modified.").build();
+            return Response.status(Response.Status.NO_CONTENT).type(MediaType.APPLICATION_JSON).build();
         } catch (GeneralManagerException exception) {
-            return Response.status(Response.Status.BAD_REQUEST).entity(exception.getMessage()).build();
+            return Response.status(Response.Status.BAD_REQUEST).type(MediaType.APPLICATION_JSON).entity(exception.getMessage()).build();
         }
     }
 
     @POST
     @Path("/{id}/activate")
-    @Consumes(MediaType.TEXT_PLAIN)
     @Override
     public Response activate(@PathParam("id") UUID clientID) {
         try {
@@ -157,7 +158,6 @@ public class ClientService implements UserServiceInterface<Client> {
 
     @POST
     @Path("/{id}/deactivate")
-    @Consumes(MediaType.TEXT_PLAIN)
     @Override
     public Response deactivate(@PathParam("id") UUID clientID) {
         try {

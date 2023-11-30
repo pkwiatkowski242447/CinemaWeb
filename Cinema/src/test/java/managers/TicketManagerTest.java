@@ -193,13 +193,23 @@ public class TicketManagerTest {
     // Create tests
 
     @Test
-    public void ticketManagerCreateTicketTestPositive() throws TicketManagerCreateException {
+    public void ticketManagerCreateTicketNormalTestPositive() throws TicketManagerCreateException {
         Ticket ticket = ticketManager.create(movieTimeNo1.toString(), clientNo1.getClientID(), movieNo1.getMovieID(), "normal");
         assertNotNull(ticket);
         assertEquals(movieTimeNo1, ticket.getMovieTime());
         assertEquals(clientNo1.getClientID(), ticket.getClient().getClientID());
         assertEquals(movieNo1.getMovieID(), ticket.getMovie().getMovieID());
         assertEquals(movieNo1.getMovieBasePrice(), ticket.getTicketFinalPrice());
+    }
+
+    @Test
+    public void ticketManagerCreateTicketReducedTestPositive() throws TicketManagerCreateException {
+        Ticket ticket = ticketManager.create(movieTimeNo1.toString(), clientNo1.getClientID(), movieNo1.getMovieID(), "reduced");
+        assertNotNull(ticket);
+        assertEquals(movieTimeNo1, ticket.getMovieTime());
+        assertEquals(clientNo1.getClientID(), ticket.getClient().getClientID());
+        assertEquals(movieNo1.getMovieID(), ticket.getMovie().getMovieID());
+        assertEquals(movieNo1.getMovieBasePrice() * 0.75, ticket.getTicketFinalPrice());
     }
 
     @Test

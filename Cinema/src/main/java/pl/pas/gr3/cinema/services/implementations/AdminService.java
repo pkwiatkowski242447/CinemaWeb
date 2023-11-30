@@ -9,8 +9,12 @@ import jakarta.validation.Validator;
 import jakarta.ws.rs.*;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import pl.pas.gr3.cinema.dto.TicketDTO;
 import pl.pas.gr3.cinema.dto.users.AdminDTO;
+import pl.pas.gr3.cinema.dto.users.AdminInputDTO;
+import pl.pas.gr3.cinema.dto.users.AdminPasswordDTO;
 import pl.pas.gr3.cinema.exceptions.managers.GeneralManagerException;
 import pl.pas.gr3.cinema.managers.implementations.AdminManager;
 import pl.pas.gr3.cinema.model.Ticket;
@@ -23,11 +27,13 @@ import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 
+
 @ApplicationScoped
 @Path("/admins")
 @Named
 public class AdminService implements UserServiceInterface<Admin> {
 
+    private static final Logger logger = LoggerFactory.getLogger(AdminService.class);
     private final Validator validator = Validation.buildDefaultValidatorFactory().getValidator();
     @Inject
     private AdminManager adminManager;
@@ -35,10 +41,9 @@ public class AdminService implements UserServiceInterface<Admin> {
     @POST
     @Consumes(MediaType.APPLICATION_JSON)
     @Produces(MediaType.APPLICATION_JSON)
-    @Override
-    public Response create(String adminLogin, String adminPassword) {
+    public Response create(AdminInputDTO adminInputDTO) {
         try {
-            Admin admin = this.adminManager.create(adminLogin, adminPassword);
+            Admin admin = this.adminManager.create(adminInputDTO.getLogin(), adminInputDTO.getPassword());
             Set<ConstraintViolation<Admin>> violationSet = validator.validate(admin);
             List<String> messages = violationSet.stream().map(ConstraintViolation::getMessage).toList();
             if (!violationSet.isEmpty()) {
@@ -53,7 +58,6 @@ public class AdminService implements UserServiceInterface<Admin> {
 
     @GET
     @Path("/{id}")
-    @Consumes(MediaType.TEXT_PLAIN)
     @Produces(MediaType.APPLICATION_JSON)
     @Override
     public Response findByUUID(@PathParam("id") UUID adminID) {
@@ -81,7 +85,6 @@ public class AdminService implements UserServiceInterface<Admin> {
     }
 
     @GET
-    @Consumes(MediaType.TEXT_PLAIN)
     @Produces(MediaType.APPLICATION_JSON)
     @Override
     public Response findAllWithMatchingLogin(@QueryParam("match") String adminLogin) {
@@ -95,7 +98,6 @@ public class AdminService implements UserServiceInterface<Admin> {
 
     @GET
     @Path("/{id}/tickets")
-    @Consumes(MediaType.TEXT_PLAIN)
     @Produces(MediaType.APPLICATION_JSON)
     @Override
     public Response getTicketsForCertainUser(@PathParam("id") UUID adminID) {
@@ -131,9 +133,14 @@ public class AdminService implements UserServiceInterface<Admin> {
 
     @PUT
     @Consumes(MediaType.APPLICATION_JSON)
-    @Override
-    public Response update(Admin admin) {
+    public Response update(AdminPasswordDTO adminPasswordDTO) {
         try {
+            Admin admin = new Admin(adminPasswordDTO.getAdminID(), adminPasswordDTO.getAdminLogin(), adminPasswordDTO.getAdminPassword(), adminPasswordDTO.isAdminStatusActive());
+            Set<ConstraintViolation<Admin>> violationSet = validator.validate(admin);
+            List<String> messages = violationSet.stream().map(ConstraintViolation::getMessage).toList();
+            if (!violationSet.isEmpty()) {
+                return Response.status(Response.Status.BAD_REQUEST).type(MediaType.APPLICATION_JSON).entity(messages).build();
+            }
             this.adminManager.update(admin);
             return Response.status(Response.Status.NO_CONTENT).build();
         } catch (GeneralManagerException exception) {
@@ -143,8 +150,9 @@ public class AdminService implements UserServiceInterface<Admin> {
 
     @POST
     @Path("/{id}/activate")
-    @Consumes(MediaType.TEXT_PLAIN)
     @Override
+
+
     public Response activate(@PathParam("id") UUID adminID) {
         try {
             this.adminManager.activate(adminID);
@@ -156,7 +164,6 @@ public class AdminService implements UserServiceInterface<Admin> {
 
     @POST
     @Path("/{id}/deactivate")
-    @Consumes(MediaType.TEXT_PLAIN)
     @Override
     public Response deactivate(@PathParam("id") UUID adminID) {
         try {

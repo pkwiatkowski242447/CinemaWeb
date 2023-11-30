@@ -18,4 +18,7 @@ public interface MovieServiceInterface extends ServiceInterface<Movie> {
     // Other methods
 
     Response findAllTicketsForCertainMovie(UUID movieID);
+
+    // Update methods
+    Response update(Movie movie);
 }

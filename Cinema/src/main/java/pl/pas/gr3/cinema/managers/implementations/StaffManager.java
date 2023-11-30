@@ -1,7 +1,7 @@
 package pl.pas.gr3.cinema.managers.implementations;
 
+import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
-import pl.pas.gr3.cinema.exceptions.managers.GeneralManagerException;
 import pl.pas.gr3.cinema.exceptions.managers.crud.staff.*;
 import pl.pas.gr3.cinema.exceptions.repositories.ClientRepositoryException;
 import pl.pas.gr3.cinema.managers.interfaces.UserManagerInterface;
@@ -13,6 +13,7 @@ import java.io.Closeable;
 import java.util.List;
 import java.util.UUID;
 
+@ApplicationScoped
 public class StaffManager implements UserManagerInterface<Staff>, Closeable {
 
     @Inject

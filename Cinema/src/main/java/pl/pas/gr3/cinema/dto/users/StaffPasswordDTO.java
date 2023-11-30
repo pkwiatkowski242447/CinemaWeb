@@ -11,14 +11,14 @@ import java.util.UUID;
 @Getter @Setter
 @NoArgsConstructor
 public class StaffPasswordDTO extends StaffDTO {
-    @JsonbProperty("staff-password")
+    @JsonbProperty("password")
     private String staffPassword;
 
     @JsonbCreator
-    public StaffPasswordDTO(@JsonbProperty("staff-id") UUID staffID,
-                            @JsonbProperty("staff-login") String staffLogin,
-                            @JsonbProperty("staff-password") String staffPassword,
-                            @JsonbProperty("staff-status-active") boolean staffStatusActive) {
+    public StaffPasswordDTO(@JsonbProperty("id") UUID staffID,
+                            @JsonbProperty("login") String staffLogin,
+                            @JsonbProperty("password") String staffPassword,
+                            @JsonbProperty("status-active") boolean staffStatusActive) {
         super(staffID, staffLogin, staffStatusActive);
         this.staffPassword = staffPassword;
     }

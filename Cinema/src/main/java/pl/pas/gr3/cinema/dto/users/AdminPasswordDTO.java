@@ -12,14 +12,14 @@ import java.util.UUID;
 @NoArgsConstructor
 public class AdminPasswordDTO extends AdminDTO {
 
-    @JsonbProperty("admin-password")
+    @JsonbProperty("password")
     private String adminPassword;
 
     @JsonbCreator
-    public AdminPasswordDTO(@JsonbProperty("admin-id") UUID adminID,
-                            @JsonbProperty("admin-login") String adminLogin,
-                            @JsonbProperty("admin-password") String adminPassword,
-                            @JsonbProperty("admin-status-active") boolean adminStatusActive) {
+    public AdminPasswordDTO(@JsonbProperty("id") UUID adminID,
+                            @JsonbProperty("login") String adminLogin,
+                            @JsonbProperty("password") String adminPassword,
+                            @JsonbProperty("status-active") boolean adminStatusActive) {
         super(adminID, adminLogin, adminStatusActive);
         this.adminPassword = adminPassword;
     }

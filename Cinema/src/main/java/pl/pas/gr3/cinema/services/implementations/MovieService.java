@@ -33,7 +33,6 @@ public class MovieService implements MovieServiceInterface {
     private MovieManager movieManager;
 
     @POST
-    @Consumes(MediaType.TEXT_PLAIN)
     @Produces(MediaType.APPLICATION_JSON)
     @Override
     public Response create(@QueryParam("title") String movieTitle, @QueryParam("price") double movieBasePrice, @QueryParam("scr-room") int screeningRoomNumber, @QueryParam("number") int numberOfAvailableSeats) {
@@ -53,7 +52,6 @@ public class MovieService implements MovieServiceInterface {
 
     @GET
     @Path("/{id}")
-    @Consumes(MediaType.TEXT_PLAIN)
     @Produces(MediaType.APPLICATION_JSON)
     @Override
     public Response findByUUID(@PathParam("id") UUID movieID) {
@@ -71,6 +69,7 @@ public class MovieService implements MovieServiceInterface {
     }
 
     @GET
+    @Path("/all")
     @Produces(MediaType.APPLICATION_JSON)
     @Override
     public Response findAll() {
@@ -91,11 +90,10 @@ public class MovieService implements MovieServiceInterface {
     }
 
     @GET
-    @Path("/tickets")
-    @Consumes(MediaType.TEXT_PLAIN)
+    @Path("{id}/tickets")
     @Produces(MediaType.APPLICATION_JSON)
     @Override
-    public Response findAllTicketsForCertainMovie(UUID movieID) {
+    public Response findAllTicketsForCertainMovie(@PathParam("id") UUID movieID) {
         List<Ticket> listOfTickets = this.movieManager.getListOfTicketsForCertainMovie(movieID);
         List<TicketDTO> listOfDTOs = new ArrayList<>();
         for (Ticket ticket : listOfTickets) {

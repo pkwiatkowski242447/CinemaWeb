@@ -11,11 +11,14 @@ import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 import pl.pas.gr3.cinema.dto.TicketDTO;
 import pl.pas.gr3.cinema.dto.users.StaffDTO;
+import pl.pas.gr3.cinema.dto.users.StaffInputDTO;
+import pl.pas.gr3.cinema.dto.users.StaffPasswordDTO;
 import pl.pas.gr3.cinema.exceptions.managers.GeneralManagerException;
 import pl.pas.gr3.cinema.managers.implementations.StaffManager;
 import pl.pas.gr3.cinema.model.Ticket;
 import pl.pas.gr3.cinema.model.users.Client;
 import pl.pas.gr3.cinema.model.users.Staff;
+import pl.pas.gr3.cinema.services.interfaces.UserServiceInterface;
 
 import java.net.URI;
 import java.util.ArrayList;
@@ -26,7 +29,7 @@ import java.util.UUID;
 @ApplicationScoped
 @Path("/staffs")
 @Named
-public class StaffService {
+public class StaffService implements UserServiceInterface<Staff> {
 
     private final static Validator validator = Validation.buildDefaultValidatorFactory().getValidator();
 
@@ -34,11 +37,11 @@ public class StaffService {
     private StaffManager staffManager;
 
     @POST
-    @Consumes(MediaType.TEXT_PLAIN)
+    @Consumes(MediaType.APPLICATION_JSON)
     @Produces(MediaType.APPLICATION_JSON)
-    public Response create(@QueryParam("login") String staffLogin, @QueryParam("password") String staffPassword) {
+    public Response create(StaffInputDTO staffInputDTO) {
         try {
-            Staff staff = this.staffManager.create(staffLogin, staffPassword);
+            Staff staff = this.staffManager.create(staffInputDTO.getStaffLogin(), staffInputDTO.getStaffPassword());
             Set<ConstraintViolation<Staff>> violationSet = validator.validate(staff);
             List<String> messages = violationSet.stream().map(ConstraintViolation::getMessage).toList();
             if (!violationSet.isEmpty()) {
@@ -53,8 +56,8 @@ public class StaffService {
 
     @GET
     @Path("/{id}")
-    @Consumes(MediaType.TEXT_PLAIN)
     @Produces(MediaType.APPLICATION_JSON)
+    @Override
     public Response findByUUID(@PathParam("id") UUID staffID) {
         try {
             Client staff = this.staffManager.findByUUID(staffID);
@@ -67,8 +70,8 @@ public class StaffService {
 
     @GET
     @Path("/login/{login}")
-    @Consumes(MediaType.TEXT_PLAIN)
     @Produces(MediaType.APPLICATION_JSON)
+    @Override
     public Response findByLogin(@PathParam("login") String staffLogin) {
         try {
             Staff staff = this.staffManager.findByLogin(staffLogin);
@@ -80,8 +83,8 @@ public class StaffService {
     }
 
     @GET
-    @Consumes(MediaType.TEXT_PLAIN)
     @Produces(MediaType.APPLICATION_JSON)
+    @Override
     public Response findAllWithMatchingLogin(@QueryParam("match") String staffLogin) {
         try {
             List<StaffDTO> listOfDTOs = this.getListOfStaffDTOs(this.staffManager.findAllMatchingLogin(staffLogin));
@@ -93,9 +96,9 @@ public class StaffService {
 
     @GET
     @Path("/{id}/tickets")
-    @Consumes(MediaType.TEXT_PLAIN)
     @Produces(MediaType.APPLICATION_JSON)
-    public Response getTicketsForCertainStaff(@PathParam("id") UUID staffID) {
+    @Override
+    public Response getTicketsForCertainUser(@PathParam("id") UUID staffID) {
         try {
             List<Ticket> listOfTicketForAStaff = this.staffManager.getTicketsForClient(staffID);
             List<TicketDTO> listOfDTOs = new ArrayList<>();
@@ -115,6 +118,7 @@ public class StaffService {
     @GET
     @Path("/all")
     @Produces(MediaType.APPLICATION_JSON)
+    @Override
     public Response findAll() {
         try {
             List<StaffDTO> listOfDTOs = this.getListOfStaffDTOs(this.staffManager.findAll());
@@ -126,23 +130,24 @@ public class StaffService {
 
     @PUT
     @Consumes(MediaType.APPLICATION_JSON)
-    public Response update(Staff staff) {
+    public Response update(StaffPasswordDTO staffPasswordDTO) {
         try {
+            Staff staff = new Staff(staffPasswordDTO.getStaffID(), staffPasswordDTO.getStaffLogin(), staffPasswordDTO.getStaffPassword(), staffPasswordDTO.isStaffStatusActive());
             Set<ConstraintViolation<Staff>> violationSet = validator.validate(staff);
             List<String> messages = violationSet.stream().map(ConstraintViolation::getMessage).toList();
             if (!violationSet.isEmpty()) {
-                return Response.status(Response.Status.BAD_REQUEST).entity(messages).build();
+                return Response.status(Response.Status.BAD_REQUEST).type(MediaType.APPLICATION_JSON).entity(messages).build();
             }
             this.staffManager.update(staff);
-            return Response.status(Response.Status.NO_CONTENT).build();
+            return Response.status(Response.Status.NO_CONTENT).type(MediaType.APPLICATION_JSON).build();
         } catch (GeneralManagerException exception) {
-            return Response.status(Response.Status.BAD_REQUEST).entity(exception.getMessage()).build();
+            return Response.status(Response.Status.BAD_REQUEST).type(MediaType.APPLICATION_JSON).entity(exception.getMessage()).build();
         }
     }
 
     @POST
     @Path("/{id}/activate")
-    @Consumes(MediaType.TEXT_PLAIN)
+    @Override
     public Response activate(@PathParam("id") UUID staffID) {
         try {
             this.staffManager.activate(staffID);
@@ -154,7 +159,7 @@ public class StaffService {
 
     @POST
     @Path("/{id}/deactivate")
-    @Consumes(MediaType.TEXT_PLAIN)
+    @Override
     public Response deactivate(@PathParam("id") UUID staffID) {
         try {
             this.staffManager.deactivate(staffID);

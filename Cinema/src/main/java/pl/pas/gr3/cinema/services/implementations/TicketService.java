@@ -31,7 +31,6 @@ public class TicketService implements TicketServiceInterface {
     private TicketManager ticketManager;
 
     @POST
-    @Consumes(MediaType.TEXT_PLAIN)
     @Produces(MediaType.APPLICATION_JSON)
     @Override
     public Response create(@QueryParam("time") String movieTime,
@@ -54,7 +53,6 @@ public class TicketService implements TicketServiceInterface {
 
     @GET
     @Path("/{id}")
-    @Consumes(MediaType.TEXT_PLAIN)
     @Produces(MediaType.APPLICATION_JSON)
     @Override
     public Response findByUUID(@PathParam("id") UUID ticketID) {
@@ -68,6 +66,7 @@ public class TicketService implements TicketServiceInterface {
     }
 
     @GET
+    @Path("/all")
     @Produces(MediaType.APPLICATION_JSON)
     @Override
     public Response findAll() {
@@ -103,7 +102,6 @@ public class TicketService implements TicketServiceInterface {
 
     @DELETE
     @Path("/{id}")
-    @Consumes(MediaType.TEXT_PLAIN)
     @Override
     public Response delete(@PathParam("id") UUID ticketID) {
         try {
