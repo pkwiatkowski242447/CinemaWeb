@@ -10,9 +10,11 @@ import jakarta.ws.rs.*;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 import pl.pas.gr3.cinema.dto.MovieDTO;
+import pl.pas.gr3.cinema.dto.TicketDTO;
 import pl.pas.gr3.cinema.exceptions.managers.GeneralManagerException;
 import pl.pas.gr3.cinema.managers.implementations.MovieManager;
 import pl.pas.gr3.cinema.model.Movie;
+import pl.pas.gr3.cinema.model.Ticket;
 import pl.pas.gr3.cinema.services.interfaces.MovieServiceInterface;
 
 import java.util.ArrayList;
@@ -85,6 +87,24 @@ public class MovieService implements MovieServiceInterface {
             }
         } catch (GeneralManagerException exception) {
             return Response.status(Response.Status.BAD_REQUEST).entity(exception.getMessage()).build();
+        }
+    }
+
+    @GET
+    @Path("/tickets")
+    @Consumes(MediaType.TEXT_PLAIN)
+    @Produces(MediaType.APPLICATION_JSON)
+    @Override
+    public Response findAllTicketsForCertainMovie(UUID movieID) {
+        List<Ticket> listOfTickets = this.movieManager.getListOfTicketsForCertainMovie(movieID);
+        List<TicketDTO> listOfDTOs = new ArrayList<>();
+        for (Ticket ticket : listOfTickets) {
+            listOfDTOs.add(new TicketDTO(ticket.getTicketID(), ticket.getMovieTime(), ticket.getTicketFinalPrice(), ticket.getClient().getClientID(), ticket.getMovie().getMovieID()));
+        }
+        if (listOfTickets.isEmpty()) {
+            return Response.status(Response.Status.NO_CONTENT).type(MediaType.APPLICATION_JSON).build();
+        } else {
+            return Response.status(Response.Status.OK).type(MediaType.APPLICATION_JSON).entity(listOfDTOs).build();
         }
     }
 

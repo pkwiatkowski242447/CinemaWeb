@@ -51,7 +51,6 @@ public class Movie {
                 .append(movieTitle, movie.movieTitle)
                 .append(movieBasePrice, movie.movieBasePrice)
                 .append(scrRoomNumber, movie.scrRoomNumber)
-                .append(numberOfAvailableSeats, movie.numberOfAvailableSeats)
                 .isEquals();
     }
 
@@ -64,7 +63,6 @@ public class Movie {
                 .append(movieTitle)
                 .append(movieBasePrice)
                 .append(scrRoomNumber)
-                .append(numberOfAvailableSeats)
                 .toHashCode();
     }
 

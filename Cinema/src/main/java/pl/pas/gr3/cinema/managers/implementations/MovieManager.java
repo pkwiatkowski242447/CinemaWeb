@@ -9,6 +9,7 @@ import pl.pas.gr3.cinema.exceptions.managers.crud.movie.MovieManagerUpdateExcept
 import pl.pas.gr3.cinema.exceptions.repositories.MovieRepositoryException;
 import pl.pas.gr3.cinema.managers.interfaces.MovieManagerInterface;
 import pl.pas.gr3.cinema.model.Movie;
+import pl.pas.gr3.cinema.model.Ticket;
 import pl.pas.gr3.cinema.repositories.implementations.MovieRepository;
 
 import java.io.Closeable;
@@ -67,10 +68,15 @@ public class MovieManager implements MovieManagerInterface, Closeable {
     @Override
     public void delete(UUID movieID) throws MovieManagerDeleteException {
         try {
-            this.movieRepository.update(this.movieRepository.findByUUID(movieID));
+            this.movieRepository.delete(movieID);
         } catch (MovieRepositoryException exception) {
             throw new MovieManagerDeleteException(exception.getMessage(), exception);
         }
+    }
+
+    @Override
+    public List<Ticket> getListOfTicketsForCertainMovie(UUID movieID) {
+        return this.movieRepository.getListOfTicketsForMovie(movieID);
     }
 
     @Override
