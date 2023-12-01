@@ -1,4 +1,4 @@
-package pl.pas.gr3.cinema.services.implementations;
+package pl.pas.gr3.cinema.controllers.implementations;
 
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
@@ -17,7 +17,7 @@ import pl.pas.gr3.cinema.exceptions.managers.GeneralManagerException;
 import pl.pas.gr3.cinema.managers.implementations.ClientManager;
 import pl.pas.gr3.cinema.model.Ticket;
 import pl.pas.gr3.cinema.model.users.Client;
-import pl.pas.gr3.cinema.services.interfaces.UserServiceInterface;
+import pl.pas.gr3.cinema.controllers.interfaces.UserServiceInterface;
 
 import java.net.URI;
 import java.util.ArrayList;
@@ -28,7 +28,7 @@ import java.util.UUID;
 @ApplicationScoped
 @Path("/clients")
 @Named
-public class ClientService implements UserServiceInterface<Client> {
+public class ClientController implements UserServiceInterface<Client> {
 
     private static final Validator validator = Validation.buildDefaultValidatorFactory().getValidator();
 
@@ -107,7 +107,7 @@ public class ClientService implements UserServiceInterface<Client> {
     }
 
     @GET
-    @Path("/{id}/tickets")
+    @Path("/{id}/ticket-list")
     @Produces(MediaType.APPLICATION_JSON)
     @Override
     public Response getTicketsForCertainUser(@PathParam("id") UUID clientID) {

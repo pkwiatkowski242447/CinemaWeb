@@ -23,9 +23,9 @@ import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-public class StaffServiceTest {
+public class StaffControllerTest {
 
-    private static final Logger logger = LoggerFactory.getLogger(StaffServiceTest.class);
+    private static final Logger logger = LoggerFactory.getLogger(StaffControllerTest.class);
     private static String staffsBaseURL;
 
     private static final String databaseName = "default";
@@ -79,7 +79,7 @@ public class StaffServiceTest {
     // Create tests
 
     @Test
-    public void staffServiceCreateStaffTestPositive() throws Exception {
+    public void staffControllerCreateStaffTestPositive() throws Exception {
         String staffLogin = "SecretStaffLoginNo1";
         String staffPassword = "SecretStaffPasswordNo1";
         StaffInputDTO staffInputDTO = new StaffInputDTO(staffLogin, staffPassword);
@@ -111,7 +111,7 @@ public class StaffServiceTest {
     }
 
     @Test
-    public void staffServiceCreateStaffWithNullLoginThatTestNegative() throws Exception {
+    public void staffControllerCreateStaffWithNullLoginThatTestNegative() throws Exception {
         String staffLogin = null;
         String staffPassword = "SecretStaffPasswordNo1";
         StaffInputDTO staffInputDTO = new StaffInputDTO(staffLogin, staffPassword);
@@ -136,7 +136,7 @@ public class StaffServiceTest {
     }
 
     @Test
-    public void staffServiceCreateStaffWithEmptyLoginThatTestNegative() throws Exception {
+    public void staffControllerCreateStaffWithEmptyLoginThatTestNegative() throws Exception {
         String staffLogin = "";
         String staffPassword = "SecretStaffPasswordNo1";
         StaffInputDTO staffInputDTO = new StaffInputDTO(staffLogin, staffPassword);
@@ -161,7 +161,7 @@ public class StaffServiceTest {
     }
 
     @Test
-    public void staffServiceCreateStaffWithLoginTooShortThatTestNegative() throws Exception {
+    public void staffControllerCreateStaffWithLoginTooShortThatTestNegative() throws Exception {
         String staffLogin = "ddddfdd";
         String staffPassword = "SecretStaffPasswordNo1";
         StaffInputDTO staffInputDTO = new StaffInputDTO(staffLogin, staffPassword);
@@ -186,7 +186,7 @@ public class StaffServiceTest {
     }
 
     @Test
-    public void staffServiceCreateStaffWithLoginTooLongThatTestNegative() throws Exception {
+    public void staffControllerCreateStaffWithLoginTooLongThatTestNegative() throws Exception {
         String staffLogin = "ddddfddddfddddfddddfd";
         String staffPassword = "SecretStaffPasswordNo1";
         StaffInputDTO staffInputDTO = new StaffInputDTO(staffLogin, staffPassword);
@@ -211,7 +211,7 @@ public class StaffServiceTest {
     }
 
     @Test
-    public void staffServiceCreateStaffWithLoginLengthEqualTo8ThatTestPositive() throws Exception {
+    public void staffControllerCreateStaffWithLoginLengthEqualTo8ThatTestPositive() throws Exception {
         String staffLogin = "ddddfddd";
         String staffPassword = "SecretStaffPasswordNo1";
         StaffInputDTO staffInputDTO = new StaffInputDTO(staffLogin, staffPassword);
@@ -244,7 +244,7 @@ public class StaffServiceTest {
     }
 
     @Test
-    public void staffServiceCreateStaffWithLoginLengthEqualTo20ThatTestPositive() throws Exception {
+    public void staffControllerCreateStaffWithLoginLengthEqualTo20ThatTestPositive() throws Exception {
         String staffLogin = "ddddfddddfddddfddddf";
         String staffPassword = "SecretStaffPasswordNo1";
         StaffInputDTO staffInputDTO = new StaffInputDTO(staffLogin, staffPassword);
@@ -277,7 +277,7 @@ public class StaffServiceTest {
     }
 
     @Test
-    public void staffServiceCreateStaffWithLoginThatDoesNotMeetRegExTestNegative() throws Exception {
+    public void staffControllerCreateStaffWithLoginThatDoesNotMeetRegExTestNegative() throws Exception {
         String staffLogin = "Some Invalid Login";
         String staffPassword = "SecretStaffPasswordNo1";
         StaffInputDTO staffInputDTO = new StaffInputDTO(staffLogin, staffPassword);
@@ -302,7 +302,7 @@ public class StaffServiceTest {
     }
 
     @Test
-    public void staffServiceCreateStaffWithLoginThatIsAlreadyInTheDatabaseTestNegative() throws Exception {
+    public void staffControllerCreateStaffWithLoginThatIsAlreadyInTheDatabaseTestNegative() throws Exception {
         String staffLogin = staffNo1.getClientLogin();
         String staffPassword = "SecretStaffPasswordNo1";
         StaffInputDTO staffInputDTO = new StaffInputDTO(staffLogin, staffPassword);
@@ -327,7 +327,7 @@ public class StaffServiceTest {
     }
 
     @Test
-    public void staffServiceCreateStaffWithNullPasswordThatTestNegative() throws Exception {
+    public void staffControllerCreateStaffWithNullPasswordThatTestNegative() throws Exception {
         String staffLogin = "SecretStaffLoginNo1";
         String staffPassword = null;
         StaffInputDTO staffInputDTO = new StaffInputDTO(staffLogin, staffPassword);
@@ -352,7 +352,7 @@ public class StaffServiceTest {
     }
 
     @Test
-    public void staffServiceCreateStaffWithEmptyPasswordThatTestNegative() throws Exception {
+    public void staffControllerCreateStaffWithEmptyPasswordThatTestNegative() throws Exception {
         String staffLogin = "SecretStaffLoginNo1";
         String staffPassword = "";
         StaffInputDTO staffInputDTO = new StaffInputDTO(staffLogin, staffPassword);
@@ -377,7 +377,7 @@ public class StaffServiceTest {
     }
 
     @Test
-    public void staffServiceCreateStaffWithPasswordTooShortThatTestNegative() throws Exception {
+    public void staffControllerCreateStaffWithPasswordTooShortThatTestNegative() throws Exception {
         String staffLogin = "SecretStaffLoginNo1";
         String staffPassword = "ddddfdd";
         StaffInputDTO staffInputDTO = new StaffInputDTO(staffLogin, staffPassword);
@@ -402,7 +402,7 @@ public class StaffServiceTest {
     }
 
     @Test
-    public void staffServiceCreateStaffWithPasswordTooLongThatTestNegative() throws Exception {
+    public void staffControllerCreateStaffWithPasswordTooLongThatTestNegative() throws Exception {
         String staffLogin = "SecretStaffLoginNo1";
         String staffPassword = "ddddfddddfddddfddddfddddfddddfddddfddddfd";
         StaffInputDTO staffInputDTO = new StaffInputDTO(staffLogin, staffPassword);
@@ -427,7 +427,7 @@ public class StaffServiceTest {
     }
 
     @Test
-    public void staffServiceCreateStaffWithPasswordLengthEqualTo8ThatTestPositive() throws Exception {
+    public void staffControllerCreateStaffWithPasswordLengthEqualTo8ThatTestPositive() throws Exception {
         String staffLogin = "SecretStaffLoginNo1";
         String staffPassword = "ddddfddd";
         StaffInputDTO staffInputDTO = new StaffInputDTO(staffLogin, staffPassword);
@@ -460,7 +460,7 @@ public class StaffServiceTest {
     }
 
     @Test
-    public void staffServiceCreateStaffWithPasswordLengthEqualTo40ThatTestPositive() throws Exception {
+    public void staffControllerCreateStaffWithPasswordLengthEqualTo40ThatTestPositive() throws Exception {
         String staffLogin = "SecretStaffLoginNo1";
         String staffPassword = "ddddfddddfddddfddddfddddfddddfddddfddddf";
         StaffInputDTO staffInputDTO = new StaffInputDTO(staffLogin, staffPassword);
@@ -493,7 +493,7 @@ public class StaffServiceTest {
     }
 
     @Test
-    public void staffServiceCreateStaffWithPasswordThatDoesNotMeetRegExTestNegative() throws Exception {
+    public void staffControllerCreateStaffWithPasswordThatDoesNotMeetRegExTestNegative() throws Exception {
         String staffLogin = "SecretStaffLoginNo1";
         String staffPassword = "Some Invalid Password";
         StaffInputDTO staffInputDTO = new StaffInputDTO(staffLogin, staffPassword);
@@ -520,7 +520,7 @@ public class StaffServiceTest {
     // Read tests
 
     @Test
-    public void staffServiceFindStaffByIDTestPositive() throws Exception {
+    public void staffControllerFindStaffByIDTestPositive() throws Exception {
         UUID searchedStaffID = staffNo1.getClientID();
         try (Jsonb jsonb = JsonbBuilder.create()) {
             String path = staffsBaseURL + "/" + searchedStaffID;
@@ -548,7 +548,7 @@ public class StaffServiceTest {
     }
 
     @Test
-    public void staffServiceFindStaffByIDThatIsNotInTheDatabaseTestNegative() {
+    public void staffControllerFindStaffByIDThatIsNotInTheDatabaseTestNegative() {
         UUID searchedStaffID = UUID.randomUUID();
         String path = staffsBaseURL + "/" + searchedStaffID;
 
@@ -565,7 +565,7 @@ public class StaffServiceTest {
     }
 
     @Test
-    public void staffServiceFindStaffByLoginTestPositive() throws Exception {
+    public void staffControllerFindStaffByLoginTestPositive() throws Exception {
         String searchedStaffLogin = staffNo1.getClientLogin();
         try (Jsonb jsonb = JsonbBuilder.create()) {
             String path = staffsBaseURL + "/login/" + searchedStaffLogin;
@@ -591,7 +591,7 @@ public class StaffServiceTest {
     }
 
     @Test
-    public void staffServiceFindStaffByLoginThatIsNotInTheDatabaseTestNegative() {
+    public void staffControllerFindStaffByLoginThatIsNotInTheDatabaseTestNegative() {
         String searchedStaffLogin = "SomeNonExistentLogin";
         String path = staffsBaseURL + "/login/" + searchedStaffLogin;
 
@@ -607,7 +607,7 @@ public class StaffServiceTest {
     }
 
     @Test
-    public void staffServiceFindFindStaffsMatchingLoginTestPositive() throws Exception {
+    public void staffControllerFindFindStaffsMatchingLoginTestPositive() throws Exception {
         staffManager.create("ExtraStaffLogin", "ExtraStaffPassword");
         String matchedLogin = "Extra";
         String path = staffsBaseURL + "?match=" + matchedLogin;
@@ -623,7 +623,7 @@ public class StaffServiceTest {
     }
 
     @Test
-    public void staffServiceFindFindStaffsTestPositive() {
+    public void staffControllerFindFindStaffsTestPositive() {
         String path = staffsBaseURL + "/all";
 
         RequestSpecification requestSpecification = RestAssured.given();
@@ -639,7 +639,7 @@ public class StaffServiceTest {
     // Update tests
 
     @Test
-    public void staffServiceUpdateStaffTestPositive() throws Exception {
+    public void staffControllerUpdateStaffTestPositive() throws Exception {
         String staffLoginBefore = staffNo1.getClientLogin();
         String staffPasswordBefore = staffNo1.getClientPassword();
         String newStaffLogin = "SomeNewStaffLoginNo1";
@@ -679,7 +679,7 @@ public class StaffServiceTest {
     }
 
     @Test
-    public void staffServiceUpdateStaffWithNullLoginTestNegative() throws Exception {
+    public void staffControllerUpdateStaffWithNullLoginTestNegative() throws Exception {
         String newStaffLogin = null;
         staffNo1.setClientLogin(newStaffLogin);
         try (Jsonb jsonb = JsonbBuilder.create()) {
@@ -704,7 +704,7 @@ public class StaffServiceTest {
     }
 
     @Test
-    public void staffServiceUpdateStaffWithEmptyLoginTestNegative() throws Exception {
+    public void staffControllerUpdateStaffWithEmptyLoginTestNegative() throws Exception {
         String newStaffLogin = "";
         staffNo1.setClientLogin(newStaffLogin);
         try (Jsonb jsonb = JsonbBuilder.create()) {
@@ -729,7 +729,7 @@ public class StaffServiceTest {
     }
 
     @Test
-    public void staffServiceUpdateStaffWithLoginTooShortTestNegative() throws Exception {
+    public void staffControllerUpdateStaffWithLoginTooShortTestNegative() throws Exception {
         String newStaffLogin = "ddddfdd";
         staffNo1.setClientLogin(newStaffLogin);
         try (Jsonb jsonb = JsonbBuilder.create()) {
@@ -754,7 +754,7 @@ public class StaffServiceTest {
     }
 
     @Test
-    public void staffServiceUpdateStaffWithLoginTooLongTestNegative() throws Exception {
+    public void staffControllerUpdateStaffWithLoginTooLongTestNegative() throws Exception {
         String newStaffsLogin = "ddddfddddfddddfddddfddddfddddfddddfddddfd";
         staffNo1.setClientLogin(newStaffsLogin);
         try (Jsonb jsonb = JsonbBuilder.create()) {
@@ -779,7 +779,7 @@ public class StaffServiceTest {
     }
 
     @Test
-    public void staffServiceUpdateStaffWithLoginLengthEqualTo8TestPositive() throws Exception {
+    public void staffControllerUpdateStaffWithLoginLengthEqualTo8TestPositive() throws Exception {
         String staffLoginBefore = staffNo1.getClientLogin();
         String newStaffLogin = "ddddfddd";
         staffNo1.setClientLogin(newStaffLogin);
@@ -810,7 +810,7 @@ public class StaffServiceTest {
     }
 
     @Test
-    public void staffServiceUpdateStaffWithLoginLengthEqualTo20TestPositive() throws Exception {
+    public void staffControllerUpdateStaffWithLoginLengthEqualTo20TestPositive() throws Exception {
         String staffLoginBefore = staffNo1.getClientLogin();
         String newStaffLogin = "ddddfddddfddddfddddf";
         staffNo1.setClientLogin(newStaffLogin);
@@ -841,7 +841,7 @@ public class StaffServiceTest {
     }
 
     @Test
-    public void staffServiceUpdateStaffWithLoginThatViolatesRegExTestNegative() throws Exception {
+    public void staffControllerUpdateStaffWithLoginThatViolatesRegExTestNegative() throws Exception {
         String newStaffLogin = "Some Invalid Login";
         staffNo1.setClientLogin(newStaffLogin);
         try (Jsonb jsonb = JsonbBuilder.create()) {
@@ -866,7 +866,7 @@ public class StaffServiceTest {
     }
 
     @Test
-    public void staffServiceUpdateStaffWithNullPasswordTestNegative() throws Exception {
+    public void staffControllerUpdateStaffWithNullPasswordTestNegative() throws Exception {
         String newStaffPassword = null;
         staffNo1.setClientPassword(newStaffPassword);
         try (Jsonb jsonb = JsonbBuilder.create()) {
@@ -891,7 +891,7 @@ public class StaffServiceTest {
     }
 
     @Test
-    public void staffServiceUpdateStaffWithEmptyPasswordTestNegative() throws Exception {
+    public void staffControllerUpdateStaffWithEmptyPasswordTestNegative() throws Exception {
         String newStaffPassword = "";
         staffNo1.setClientPassword(newStaffPassword);
         try (Jsonb jsonb = JsonbBuilder.create()) {
@@ -916,7 +916,7 @@ public class StaffServiceTest {
     }
 
     @Test
-    public void staffServiceUpdateStaffWithPasswordTooShortTestNegative() throws Exception {
+    public void staffControllerUpdateStaffWithPasswordTooShortTestNegative() throws Exception {
         String newStaffPassword = "ddddfdd";
         staffNo1.setClientPassword(newStaffPassword);
         try (Jsonb jsonb = JsonbBuilder.create()) {
@@ -941,7 +941,7 @@ public class StaffServiceTest {
     }
 
     @Test
-    public void staffServiceUpdateStaffWithPasswordTooLongTestNegative() throws Exception {
+    public void staffControllerUpdateStaffWithPasswordTooLongTestNegative() throws Exception {
         String newStaffPassword = "ddddfddddfddddfddddfddddfddddfddddfddddfd";
         staffNo1.setClientPassword(newStaffPassword);
         try (Jsonb jsonb = JsonbBuilder.create()) {
@@ -966,7 +966,7 @@ public class StaffServiceTest {
     }
 
     @Test
-    public void staffServiceUpdateStaffWithPasswordLengthEqualTo8TestPositive() throws Exception {
+    public void staffControllerUpdateStaffWithPasswordLengthEqualTo8TestPositive() throws Exception {
         String staffPasswordBefore = staffNo1.getClientPassword();
         String newStaffPassword = "ddddfddd";
         staffNo1.setClientPassword(newStaffPassword);
@@ -997,7 +997,7 @@ public class StaffServiceTest {
     }
 
     @Test
-    public void staffServiceUpdateStaffWithPasswordLengthEqualTo40TestPositive() throws Exception {
+    public void staffControllerUpdateStaffWithPasswordLengthEqualTo40TestPositive() throws Exception {
         String staffPasswordBefore = staffNo1.getClientPassword();
         String newStaffPassword = "ddddfddddfddddfddddfddddfddddfddddfddddf";
         staffNo1.setClientPassword(newStaffPassword);
@@ -1028,7 +1028,7 @@ public class StaffServiceTest {
     }
 
     @Test
-    public void staffServiceUpdateStaffWithPasswordThatViolatesRegExTestNegative() throws Exception {
+    public void staffControllerUpdateStaffWithPasswordThatViolatesRegExTestNegative() throws Exception {
         String newStaffPassword = "Some Invalid Password";
         staffNo1.setClientPassword(newStaffPassword);
         try (Jsonb jsonb = JsonbBuilder.create()) {
@@ -1055,7 +1055,7 @@ public class StaffServiceTest {
     // Activate tests
 
     @Test
-    public void staffServiceActivateStaffTestPositive() throws Exception {
+    public void staffControllerActivateStaffTestPositive() throws Exception {
         UUID activatedStaffID = staffNo1.getClientID();
         String path = staffsBaseURL + "/" + activatedStaffID + "/deactivate";
 
@@ -1086,7 +1086,7 @@ public class StaffServiceTest {
     }
 
     @Test
-    public void staffServiceActivateStaffThatIsNotInTheDatabaseTestNegative() {
+    public void staffControllerActivateStaffThatIsNotInTheDatabaseTestNegative() {
         UUID activatedStaffID = UUID.randomUUID();
         String path = staffsBaseURL + "/" + activatedStaffID + "/activate";
 
@@ -1101,7 +1101,7 @@ public class StaffServiceTest {
     // Deactivate tests
 
     @Test
-    public void staffServiceDeactivateStaffTestPositive() throws Exception {
+    public void staffControllerDeactivateStaffTestPositive() throws Exception {
         boolean staffStatusActiveBefore = staffNo1.isClientStatusActive();
         UUID deactivatedStaffID = staffNo1.getClientID();
         String path = staffsBaseURL + "/" + deactivatedStaffID + "/deactivate";
@@ -1121,7 +1121,7 @@ public class StaffServiceTest {
     }
 
     @Test
-    public void staffServiceDeactivateStaffThatIsNotInTheDatabaseTestNegative() {
+    public void staffControllerDeactivateStaffThatIsNotInTheDatabaseTestNegative() {
         UUID deactivatedStaffID = UUID.randomUUID();
         String path = staffsBaseURL + "/" + deactivatedStaffID + "/deactivate";
 

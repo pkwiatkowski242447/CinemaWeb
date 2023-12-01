@@ -1,4 +1,4 @@
-package pl.pas.gr3.cinema.services.implementations;
+package pl.pas.gr3.cinema.controllers.implementations;
 
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
@@ -10,12 +10,13 @@ import jakarta.ws.rs.*;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 import pl.pas.gr3.cinema.dto.MovieDTO;
+import pl.pas.gr3.cinema.dto.MovieInputDTO;
 import pl.pas.gr3.cinema.dto.TicketDTO;
 import pl.pas.gr3.cinema.exceptions.managers.GeneralManagerException;
 import pl.pas.gr3.cinema.managers.implementations.MovieManager;
 import pl.pas.gr3.cinema.model.Movie;
 import pl.pas.gr3.cinema.model.Ticket;
-import pl.pas.gr3.cinema.services.interfaces.MovieServiceInterface;
+import pl.pas.gr3.cinema.controllers.interfaces.MovieServiceInterface;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -25,7 +26,7 @@ import java.util.UUID;
 @ApplicationScoped
 @Path("/movies")
 @Named
-public class MovieService implements MovieServiceInterface {
+public class MovieController implements MovieServiceInterface {
 
     private final static Validator validator = Validation.buildDefaultValidatorFactory().getValidator();
 
@@ -35,9 +36,9 @@ public class MovieService implements MovieServiceInterface {
     @POST
     @Produces(MediaType.APPLICATION_JSON)
     @Override
-    public Response create(@QueryParam("title") String movieTitle, @QueryParam("price") double movieBasePrice, @QueryParam("scr-room") int screeningRoomNumber, @QueryParam("number") int numberOfAvailableSeats) {
+    public Response create(MovieInputDTO movieInputDTO) {
         try {
-            Movie movie = this.movieManager.create(movieTitle, movieBasePrice, screeningRoomNumber, numberOfAvailableSeats);
+            Movie movie = this.movieManager.create(movieInputDTO.getMovieTitle(), movieInputDTO.getMovieBasePrice(), movieInputDTO.getScrRoomNumber(), movieInputDTO.getNumberOfAvailableSeats());
             Set<ConstraintViolation<Movie>> violationSet = validator.validate(movie);
             List<String> messages = violationSet.stream().map(ConstraintViolation::getMessage).toList();
             if (!violationSet.isEmpty()) {
@@ -109,8 +110,9 @@ public class MovieService implements MovieServiceInterface {
     @PUT
     @Consumes(MediaType.APPLICATION_JSON)
     @Override
-    public Response update(Movie movie) {
+    public Response update(MovieDTO movieDTO) {
         try {
+            Movie movie = new Movie(movieDTO.getMovieID(), movieDTO.getMovieTitle(), movieDTO.getMovieBasePrice(), movieDTO.getScrRoomNumber(), movieDTO.getNumberOfAvailableSeats());
             Set<ConstraintViolation<Movie>> violationSet = validator.validate(movie);
             List<String> messages = violationSet.stream().map(ConstraintViolation::getMessage).toList();
             if (!violationSet.isEmpty()) {

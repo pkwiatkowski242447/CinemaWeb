@@ -14,6 +14,7 @@ import pl.pas.gr3.cinema.repositories.implementations.TicketRepository;
 
 import java.io.Closeable;
 import java.time.LocalDateTime;
+import java.time.format.DateTimeParseException;
 import java.util.List;
 import java.util.UUID;
 
@@ -39,7 +40,7 @@ public class TicketManager implements TicketManagerInterface, Closeable {
             } else {
                 return this.ticketRepository.create(movieTimeParsed, clientID, movieID, TicketType.NORMAL);
             }
-        } catch (TicketRepositoryException exception) {
+        } catch (TicketRepositoryException | DateTimeParseException exception) {
             throw new TicketManagerCreateException(exception.getMessage(), exception);
         }
     }

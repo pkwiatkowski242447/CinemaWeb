@@ -1,4 +1,4 @@
-package pl.pas.gr3.cinema.services.interfaces;
+package pl.pas.gr3.cinema.controllers.interfaces;
 
 import jakarta.ws.rs.core.Response;
 

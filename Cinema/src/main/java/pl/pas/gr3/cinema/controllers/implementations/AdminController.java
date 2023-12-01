@@ -1,4 +1,4 @@
-package pl.pas.gr3.cinema.services.implementations;
+package pl.pas.gr3.cinema.controllers.implementations;
 
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
@@ -19,7 +19,7 @@ import pl.pas.gr3.cinema.exceptions.managers.GeneralManagerException;
 import pl.pas.gr3.cinema.managers.implementations.AdminManager;
 import pl.pas.gr3.cinema.model.Ticket;
 import pl.pas.gr3.cinema.model.users.Admin;
-import pl.pas.gr3.cinema.services.interfaces.UserServiceInterface;
+import pl.pas.gr3.cinema.controllers.interfaces.UserServiceInterface;
 
 import java.net.URI;
 import java.util.ArrayList;
@@ -31,9 +31,9 @@ import java.util.UUID;
 @ApplicationScoped
 @Path("/admins")
 @Named
-public class AdminService implements UserServiceInterface<Admin> {
+public class AdminController implements UserServiceInterface<Admin> {
 
-    private static final Logger logger = LoggerFactory.getLogger(AdminService.class);
+    private static final Logger logger = LoggerFactory.getLogger(AdminController.class);
     private final Validator validator = Validation.buildDefaultValidatorFactory().getValidator();
     @Inject
     private AdminManager adminManager;
@@ -97,7 +97,7 @@ public class AdminService implements UserServiceInterface<Admin> {
     }
 
     @GET
-    @Path("/{id}/tickets")
+    @Path("/{id}/ticket-list")
     @Produces(MediaType.APPLICATION_JSON)
     @Override
     public Response getTicketsForCertainUser(@PathParam("id") UUID adminID) {
