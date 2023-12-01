@@ -524,7 +524,7 @@ public class TicketControllerTest {
     }
 
     @Test
-    public void ticketControllerAllocateTicketTestPositive() throws Exception {
+    public void ticketControllerAllocateTwoTicketsOnePositiveAndOneNegativeTestPositive() throws Exception {
         Movie testMovie = movieManager.create("SomeMovieTitleNo1", 31.20, 3, 1);
         TicketInputDTO ticketInputDTONo1 = new TicketInputDTO(movieTimeNo1.toString(), clientNo1.getClientID(), testMovie.getMovieID(), "normal");
         TicketInputDTO ticketInputDTONo2 = new TicketInputDTO(movieTimeNo1.toString(), clientNo2.getClientID(), testMovie.getMovieID(), "normal");
@@ -568,6 +568,67 @@ public class TicketControllerTest {
 
             validatableResponse = response.then();
             validatableResponse.statusCode(400);
+        }
+    }
+
+    @Test
+    public void ticketControllerAllocateTwoTicketsTwoPositiveTestPositive() throws Exception {
+        Movie testMovie = movieManager.create("SomeMovieTitleNo1", 31.20, 3, 1);
+        TicketInputDTO ticketInputDTONo1 = new TicketInputDTO(movieTimeNo1.toString(), clientNo1.getClientID(), testMovie.getMovieID(), "normal");
+        TicketInputDTO ticketInputDTONo2 = new TicketInputDTO(movieTimeNo1.toString(), clientNo2.getClientID(), testMovie.getMovieID(), "normal");
+        try (Jsonb jsonb = JsonbBuilder.create()) {
+            String jsonPayload = jsonb.toJson(ticketInputDTONo1);
+            logger.info("Json: " + jsonPayload);
+
+            RequestSpecification requestSpecification = RestAssured.given();
+            requestSpecification.contentType(ContentType.JSON);
+            requestSpecification.accept(ContentType.JSON);
+            requestSpecification.body(jsonPayload);
+
+            Response response = requestSpecification.post(ticketsBaseURL);
+
+            assertNotNull(response.asString());
+            logger.info("Response: " + response.asString());
+
+            ValidatableResponse validatableResponse = response.then();
+            validatableResponse.statusCode(201);
+
+            TicketDTO ticketDTO = jsonb.fromJson(response.asString(), TicketDTO.class);
+            assertNotNull(ticketDTO);
+            assertNotNull(ticketDTO.getTicketID());
+            assertEquals(movieTimeNo1, ticketDTO.getMovieTime());
+            assertEquals(clientNo1.getClientID(), ticketDTO.getClientID());
+            assertEquals(testMovie.getMovieID(), ticketDTO.getMovieID());
+            assertEquals(testMovie.getMovieBasePrice(), ticketDTO.getTicketFinalPrice());
+
+            String path = ticketsBaseURL + "/" + ticketDTO.getTicketID();
+            requestSpecification = RestAssured.given();
+
+            response = requestSpecification.delete(path);
+
+            jsonPayload = jsonb.toJson(ticketInputDTONo2);
+            logger.info("Json: " + jsonPayload);
+
+            requestSpecification = RestAssured.given();
+            requestSpecification.contentType(ContentType.JSON);
+            requestSpecification.accept(ContentType.JSON);
+            requestSpecification.body(jsonPayload);
+
+            response = requestSpecification.post(ticketsBaseURL);
+
+            assertNotNull(response.asString());
+            logger.info("Response: " + response.asString());
+
+            validatableResponse = response.then();
+            validatableResponse.statusCode(201);
+
+            ticketDTO = jsonb.fromJson(response.asString(), TicketDTO.class);
+            assertNotNull(ticketDTO);
+            assertNotNull(ticketDTO.getTicketID());
+            assertEquals(movieTimeNo1, ticketDTO.getMovieTime());
+            assertEquals(clientNo2.getClientID(), ticketDTO.getClientID());
+            assertEquals(testMovie.getMovieID(), ticketDTO.getMovieID());
+            assertEquals(testMovie.getMovieBasePrice(), ticketDTO.getTicketFinalPrice());
         }
     }
 
