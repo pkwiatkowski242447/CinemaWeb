@@ -2,6 +2,7 @@ package pl.pas.gr3.cinema.managers.implementations;
 
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
+import pl.pas.gr3.cinema.consts.repositories.MongoRepositoryConstants;
 import pl.pas.gr3.cinema.exceptions.managers.crud.staff.*;
 import pl.pas.gr3.cinema.exceptions.repositories.ClientRepositoryException;
 import pl.pas.gr3.cinema.managers.interfaces.UserManagerInterface;
@@ -83,7 +84,7 @@ public class StaffManager implements UserManagerInterface<Staff>, Closeable {
     @Override
     public void activate(UUID staffID) throws StaffManagerActivationException {
         try {
-            this.clientRepository.activate(this.clientRepository.findByUUID(staffID), "staff");
+            this.clientRepository.activate(this.clientRepository.findByUUID(staffID), MongoRepositoryConstants.STAFF_SUBCLASS);
         } catch (ClientRepositoryException exception) {
             throw new StaffManagerActivationException(exception.getMessage(), exception);
         }
@@ -92,7 +93,7 @@ public class StaffManager implements UserManagerInterface<Staff>, Closeable {
     @Override
     public void deactivate(UUID staffID) throws StaffManagerDeactivationException {
         try {
-            this.clientRepository.deactivate(this.clientRepository.findByUUID(staffID), "staff");
+            this.clientRepository.deactivate(this.clientRepository.findByUUID(staffID), MongoRepositoryConstants.STAFF_SUBCLASS);
         } catch (ClientRepositoryException exception) {
             throw new StaffManagerDeactivationException(exception.getMessage(), exception);
         }
@@ -101,7 +102,7 @@ public class StaffManager implements UserManagerInterface<Staff>, Closeable {
     @Override
     public List<Ticket> getTicketsForClient(UUID staffID) throws StaffManagerReadException {
         try {
-            return this.clientRepository.getListOfTicketsForClient(staffID, "staff");
+            return this.clientRepository.getListOfTicketsForClient(staffID, MongoRepositoryConstants.STAFF_SUBCLASS);
         } catch (ClientRepositoryException exception) {
             throw new StaffManagerReadException(exception.getMessage(), exception);
         }
@@ -110,7 +111,7 @@ public class StaffManager implements UserManagerInterface<Staff>, Closeable {
     @Override
     public void delete(UUID userID) throws StaffManagerDeleteException {
         try {
-            this.clientRepository.delete(userID, "staff");
+            this.clientRepository.delete(userID, MongoRepositoryConstants.STAFF_SUBCLASS);
         } catch (ClientRepositoryException exception) {
             throw new StaffManagerDeleteException(exception.getMessage(), exception);
         }

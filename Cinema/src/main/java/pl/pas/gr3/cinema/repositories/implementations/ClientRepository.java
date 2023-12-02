@@ -8,6 +8,7 @@ import org.bson.Document;
 import org.bson.conversions.Bson;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import pl.pas.gr3.cinema.consts.repositories.MongoRepositoryConstants;
 import pl.pas.gr3.cinema.exceptions.mapping.ClientDocNullReferenceException;
 import pl.pas.gr3.cinema.exceptions.mapping.DocNullReferenceException;
 import pl.pas.gr3.cinema.exceptions.repositories.*;
@@ -24,6 +25,7 @@ import pl.pas.gr3.cinema.mapping.docs.users.StaffDoc;
 import pl.pas.gr3.cinema.mapping.mappers.users.AdminMapper;
 import pl.pas.gr3.cinema.mapping.mappers.users.ClientMapper;
 import pl.pas.gr3.cinema.mapping.mappers.users.StaffMapper;
+import pl.pas.gr3.cinema.messages.repositories.MongoRepositoryMessages;
 import pl.pas.gr3.cinema.model.Ticket;
 import pl.pas.gr3.cinema.model.users.Admin;
 import pl.pas.gr3.cinema.model.users.Client;
@@ -93,7 +95,7 @@ public class ClientRepository extends MongoRepository implements ClientRepositor
             CreateCollectionOptions createCollectionOptions = new CreateCollectionOptions().validationOptions(validationOptions);
             mongoDatabase.createCollection(clientCollectionName, createCollectionOptions);
             IndexOptions indexOptions = new IndexOptions().unique(true);
-            mongoDatabase.getCollection(clientCollectionName).createIndex(Indexes.ascending("client_login"), indexOptions);
+            mongoDatabase.getCollection(clientCollectionName).createIndex(Indexes.ascending(MongoRepositoryConstants.CLIENT_LOGIN), indexOptions);
         }
     }
 
@@ -121,15 +123,15 @@ public class ClientRepository extends MongoRepository implements ClientRepositor
         try {
             List<Client> listOfClients = this.findAllClients();
             for (Client client : listOfClients) {
-                this.delete(client.getClientID(), "client");
+                this.delete(client.getClientID(), MongoRepositoryConstants.CLIENT_SUBCLASS);
             }
             List<Admin> listOfAdmins = this.findAllAdmins();
             for (Admin admin : listOfAdmins) {
-                this.delete(admin.getClientID(), "admin");
+                this.delete(admin.getClientID(), MongoRepositoryConstants.ADMIN_SUBCLASS);
             }
             List<Staff> listOfStaffs = this.findAllStaffs();
             for (Staff staff : listOfStaffs) {
-                this.delete(staff.getClientID(), "staff");
+                this.delete(staff.getClientID(), MongoRepositoryConstants.STAFF_SUBCLASS);
             }
         } catch (ClientRepositoryException exception) {
             logger.debug(exception.getMessage());
@@ -152,7 +154,7 @@ public class ClientRepository extends MongoRepository implements ClientRepositor
             CreateCollectionOptions createCollectionOptions = new CreateCollectionOptions().validationOptions(validationOptions);
             mongoDatabase.createCollection(clientCollectionName, createCollectionOptions);
             IndexOptions indexOptions = new IndexOptions().unique(true);
-            mongoDatabase.getCollection(clientCollectionName).createIndex(Indexes.ascending("client_login"), indexOptions);
+            mongoDatabase.getCollection(clientCollectionName).createIndex(Indexes.ascending(MongoRepositoryConstants.CLIENT_LOGIN), indexOptions);
         }
     }
 
@@ -215,13 +217,13 @@ public class ClientRepository extends MongoRepository implements ClientRepositor
     public Client findClientByUUID(UUID clientID) throws ClientRepositoryReadException {
         Client client;
         try {
-            List<Bson> aggregate = List.of(Aggregates.match(Filters.eq("_clazz", "client")),
-                    Aggregates.match(Filters.eq("_id", clientID)));
+            List<Bson> aggregate = List.of(Aggregates.match(Filters.eq(MongoRepositoryConstants.USER_SUBCLASS, MongoRepositoryConstants.CLIENT_SUBCLASS)),
+                    Aggregates.match(Filters.eq(MongoRepositoryConstants.GENERAL_IDENTIFIER, clientID)));
             ClientDoc foundClientDoc = getClientCollection().aggregate(aggregate).first();
             if (foundClientDoc != null) {
                 client = ClientMapper.toClient(foundClientDoc);
             } else {
-                throw new ClientDocNullReferenceException("Client document for given ID could not be found in the database.");
+                throw new ClientDocNullReferenceException(MongoRepositoryMessages.CLIENT_DOC_OBJECT_NOT_FOUND);
             }
         } catch (MongoException | DocNullReferenceException exception) {
             throw new ClientRepositoryReadException(exception.getMessage(), exception);
@@ -232,13 +234,13 @@ public class ClientRepository extends MongoRepository implements ClientRepositor
     public Admin findAdminByUUID(UUID adminID) throws ClientRepositoryReadException {
         Admin admin;
         try {
-            List<Bson> aggregate = List.of(Aggregates.match(Filters.eq("_clazz", "admin")),
-                    Aggregates.match(Filters.eq("_id", adminID)));
+            List<Bson> aggregate = List.of(Aggregates.match(Filters.eq(MongoRepositoryConstants.USER_SUBCLASS, MongoRepositoryConstants.ADMIN_SUBCLASS)),
+                    Aggregates.match(Filters.eq(MongoRepositoryConstants.GENERAL_IDENTIFIER, adminID)));
             ClientDoc foundAdminDoc = getClientCollection().aggregate(aggregate).first();
             if (foundAdminDoc != null) {
                 admin = AdminMapper.toAdmin(foundAdminDoc);
             } else {
-                throw new ClientDocNullReferenceException("Admin document for given ID could not be found in the database.");
+                throw new ClientDocNullReferenceException(MongoRepositoryMessages.ADMIN_DOC_OBJECT_NOT_FOUND);
             }
         } catch (MongoException | DocNullReferenceException exception) {
             throw new ClientRepositoryReadException(exception.getMessage(), exception);
@@ -249,13 +251,13 @@ public class ClientRepository extends MongoRepository implements ClientRepositor
     public Staff findStaffByUUID(UUID staffID) throws ClientRepositoryReadException {
         Staff staff;
         try {
-            List<Bson> aggregate = List.of(Aggregates.match(Filters.eq("_clazz", "staff")),
-                    Aggregates.match(Filters.eq("_id", staffID)));
+            List<Bson> aggregate = List.of(Aggregates.match(Filters.eq(MongoRepositoryConstants.USER_SUBCLASS, MongoRepositoryConstants.STAFF_SUBCLASS)),
+                    Aggregates.match(Filters.eq(MongoRepositoryConstants.GENERAL_IDENTIFIER, staffID)));
             ClientDoc foundStaffDoc = getClientCollection().aggregate(aggregate).first();
             if (foundStaffDoc != null) {
                 staff = StaffMapper.toStaff(foundStaffDoc);
             } else {
-                throw new ClientDocNullReferenceException("Staff document for given ID could not be found in the database.");
+                throw new ClientDocNullReferenceException(MongoRepositoryMessages.STAFF_DOC_OBJECT_NOT_FOUND);
             }
         } catch (MongoException | DocNullReferenceException exception) {
             throw new ClientRepositoryReadException(exception.getMessage(), exception);
@@ -270,7 +272,7 @@ public class ClientRepository extends MongoRepository implements ClientRepositor
         List<Client> listOfAllClients = new ArrayList<>();
         try (ClientSession clientSession = mongoClient.startSession()) {
             clientSession.startTransaction();
-            Bson filter = Filters.eq("_clazz", "client");
+            Bson filter = Filters.eq(MongoRepositoryConstants.USER_SUBCLASS, MongoRepositoryConstants.CLIENT_SUBCLASS);
             List<ClientDoc> listOfClientDocs = getClientCollection().find(filter).into(new ArrayList<>());
             for (ClientDoc clientDoc : listOfClientDocs) {
                 listOfAllClients.add(ClientMapper.toClient(clientDoc));
@@ -287,7 +289,7 @@ public class ClientRepository extends MongoRepository implements ClientRepositor
         List<Admin> listOfAllAdmins = new ArrayList<>();
         try (ClientSession clientSession = mongoClient.startSession()) {
             clientSession.startTransaction();
-            Bson filter = Filters.eq("_clazz", "admin");
+            Bson filter = Filters.eq(MongoRepositoryConstants.USER_SUBCLASS, MongoRepositoryConstants.ADMIN_SUBCLASS);
             List<ClientDoc> listOfAdminsDocs = getClientCollection().find(filter).into(new ArrayList<>());
             for (ClientDoc adminDoc : listOfAdminsDocs) {
                 listOfAllAdmins.add(AdminMapper.toAdmin(adminDoc));
@@ -304,7 +306,7 @@ public class ClientRepository extends MongoRepository implements ClientRepositor
         List<Staff> listOfAllStaff = new ArrayList<>();
         try (ClientSession clientSession = mongoClient.startSession()) {
             clientSession.startTransaction();
-            Bson filter = Filters.eq("_clazz", "staff");
+            Bson filter = Filters.eq(MongoRepositoryConstants.USER_SUBCLASS, MongoRepositoryConstants.STAFF_SUBCLASS);
             List<ClientDoc> listOfStaffDocs = getClientCollection().find(filter).into(new ArrayList<>());
             for (ClientDoc staffDoc : listOfStaffDocs) {
                 listOfAllStaff.add(StaffMapper.toStaff(staffDoc));
@@ -322,13 +324,13 @@ public class ClientRepository extends MongoRepository implements ClientRepositor
     public Client findClientByLogin(String loginValue) throws ClientRepositoryException {
         Client client;
         try {
-            List<Bson> listOfFilters = List.of(Aggregates.match(Filters.eq("_clazz", "client")),
-                    Aggregates.match(Filters.eq("client_login", loginValue)));
+            List<Bson> listOfFilters = List.of(Aggregates.match(Filters.eq(MongoRepositoryConstants.USER_SUBCLASS, MongoRepositoryConstants.CLIENT_SUBCLASS)),
+                    Aggregates.match(Filters.eq(MongoRepositoryConstants.CLIENT_LOGIN, loginValue)));
             ClientDoc foundClientDoc = getClientCollection().aggregate(listOfFilters).first();
             if (foundClientDoc != null) {
                 client = ClientMapper.toClient(foundClientDoc);
             } else {
-                throw new ClientDocNullReferenceException("Client object with given login could not be found in the database.");
+                throw new ClientDocNullReferenceException(MongoRepositoryMessages.CLIENT_DOC_OBJECT_NOT_FOUND);
             }
         } catch (MongoException | DocNullReferenceException exception) {
             throw new ClientRepositoryReadException(exception.getMessage(), exception);
@@ -340,13 +342,13 @@ public class ClientRepository extends MongoRepository implements ClientRepositor
     public Admin findAdminByLogin(String loginValue) throws ClientRepositoryException {
         Admin admin;
         try {
-            List<Bson> listOfFilters = List.of(Aggregates.match(Filters.eq("_clazz", "admin")),
-                    Aggregates.match(Filters.eq("client_login", loginValue)));
+            List<Bson> listOfFilters = List.of(Aggregates.match(Filters.eq(MongoRepositoryConstants.USER_SUBCLASS, MongoRepositoryConstants.ADMIN_SUBCLASS)),
+                    Aggregates.match(Filters.eq(MongoRepositoryConstants.CLIENT_LOGIN, loginValue)));
             ClientDoc foundAdminDoc = getClientCollection().aggregate(listOfFilters).first();
             if (foundAdminDoc != null) {
                 admin = AdminMapper.toAdmin(foundAdminDoc);
             } else {
-                throw new ClientDocNullReferenceException("Admin object with given login could not be found in the database.");
+                throw new ClientDocNullReferenceException(MongoRepositoryMessages.ADMIN_DOC_OBJECT_NOT_FOUND);
             }
         } catch (MongoException | DocNullReferenceException exception) {
             throw new ClientRepositoryReadException(exception.getMessage(), exception);
@@ -358,13 +360,13 @@ public class ClientRepository extends MongoRepository implements ClientRepositor
     public Staff findStaffByLogin(String loginValue) throws ClientRepositoryException {
         Staff staff;
         try {
-            List<Bson> listOfFilters = List.of(Aggregates.match(Filters.eq("_clazz", "staff")),
-                    Aggregates.match(Filters.eq("client_login", loginValue)));
+            List<Bson> listOfFilters = List.of(Aggregates.match(Filters.eq(MongoRepositoryConstants.USER_SUBCLASS, MongoRepositoryConstants.STAFF_SUBCLASS)),
+                    Aggregates.match(Filters.eq(MongoRepositoryConstants.CLIENT_LOGIN, loginValue)));
             ClientDoc foundStaffDoc = getClientCollection().aggregate(listOfFilters).first();
             if (foundStaffDoc != null) {
                 staff = StaffMapper.toStaff(foundStaffDoc);
             } else {
-                throw new ClientDocNullReferenceException("Staff object with given login could not be found in the database.");
+                throw new ClientDocNullReferenceException(MongoRepositoryMessages.STAFF_DOC_OBJECT_NOT_FOUND);
             }
         } catch (MongoException | DocNullReferenceException exception) {
             throw new ClientRepositoryReadException(exception.getMessage(), exception);
@@ -379,8 +381,8 @@ public class ClientRepository extends MongoRepository implements ClientRepositor
         List<Client> listOfMatchingClients = new ArrayList<>();
         try(ClientSession clientSession = mongoClient.startSession()) {
             clientSession.startTransaction();
-            List<Bson> listOfFilters = List.of(Aggregates.match(Filters.eq("_clazz", "client")),
-                    Aggregates.match(Filters.regex("client_login", "^" + loginValue + ".*$")));
+            List<Bson> listOfFilters = List.of(Aggregates.match(Filters.eq(MongoRepositoryConstants.USER_SUBCLASS, MongoRepositoryConstants.CLIENT_SUBCLASS)),
+                    Aggregates.match(Filters.regex(MongoRepositoryConstants.CLIENT_LOGIN, "^" + loginValue + ".*$")));
             for (ClientDoc clientDoc : getClientCollection().aggregate(listOfFilters)) {
                 listOfMatchingClients.add(ClientMapper.toClient(clientDoc));
             }
@@ -396,8 +398,8 @@ public class ClientRepository extends MongoRepository implements ClientRepositor
         List<Admin> listOfMatchingAdmins = new ArrayList<>();
         try(ClientSession clientSession = mongoClient.startSession()) {
             clientSession.startTransaction();
-            List<Bson> listOfFilters = List.of(Aggregates.match(Filters.eq("_clazz", "admin")),
-                    Aggregates.match(Filters.regex("client_login", "^" + loginValue + ".*$")));
+            List<Bson> listOfFilters = List.of(Aggregates.match(Filters.eq(MongoRepositoryConstants.USER_SUBCLASS, MongoRepositoryConstants.ADMIN_SUBCLASS)),
+                    Aggregates.match(Filters.regex(MongoRepositoryConstants.CLIENT_LOGIN, "^" + loginValue + ".*$")));
             for (ClientDoc clientDoc : getClientCollection().aggregate(listOfFilters)) {
                 listOfMatchingAdmins.add(AdminMapper.toAdmin(clientDoc));
             }
@@ -413,8 +415,8 @@ public class ClientRepository extends MongoRepository implements ClientRepositor
         List<Staff> listOfMatchingStaffs = new ArrayList<>();
         try(ClientSession clientSession = mongoClient.startSession()) {
             clientSession.startTransaction();
-            List<Bson> listOfFilters = List.of(Aggregates.match(Filters.eq("_clazz", "staff")),
-                    Aggregates.match(Filters.regex("client_login", "^" + loginValue + ".*$")));
+            List<Bson> listOfFilters = List.of(Aggregates.match(Filters.eq(MongoRepositoryConstants.USER_SUBCLASS, MongoRepositoryConstants.STAFF_SUBCLASS)),
+                    Aggregates.match(Filters.regex(MongoRepositoryConstants.CLIENT_LOGIN, "^" + loginValue + ".*$")));
             for (ClientDoc clientDoc : getClientCollection().aggregate(listOfFilters)) {
                 listOfMatchingStaffs.add(StaffMapper.toStaff(clientDoc));
             }
@@ -446,16 +448,16 @@ public class ClientRepository extends MongoRepository implements ClientRepositor
     public List<Ticket> getListOfTicketsForClient(UUID clientID, String name) throws ClientRepositoryReadException {
         try {
             List<Ticket> listOfActiveTickets;
-            Bson clientFilter = Filters.eq("_id", clientID);
+            Bson clientFilter = Filters.eq(MongoRepositoryConstants.GENERAL_IDENTIFIER, clientID);
             Document clientDoc = getClientCollectionWithoutType().find(clientFilter).first();
             if (clientDoc == null) {
-                throw new ClientDocNullReferenceException("Document for given ID could not be found in the database.");
-            } else if (clientDoc.getString("_clazz").equals(name)) {
-                List<Bson> listOfFilters = List.of(Aggregates.match(Filters.eq("client_id", clientID)));
+                throw new ClientDocNullReferenceException(MongoRepositoryMessages.DOC_OBJECT_NOT_FOUND);
+            } else if (clientDoc.getString(MongoRepositoryConstants.USER_SUBCLASS).equals(name)) {
+                List<Bson> listOfFilters = List.of(Aggregates.match(Filters.eq(MongoRepositoryConstants.CLIENT_IDENTIFIER, clientID)));
                 listOfActiveTickets = findTicketsWithAggregate(listOfFilters);
                 return listOfActiveTickets;
             } else {
-                throw new InvalidUUIDException("Given UUID references object of different type.");
+                throw new InvalidUUIDException(MongoRepositoryMessages.ID_REFERENCE_TO_DOCUMENT_OF_DIFFERENT_TYPE);
             }
         } catch (ClientDocNullReferenceException | InvalidUUIDException exception) {
             throw new ClientRepositoryReadException(exception.getMessage(), exception);
@@ -468,10 +470,10 @@ public class ClientRepository extends MongoRepository implements ClientRepositor
     public void updateClient(Client client) throws ClientRepositoryException {
         try {
             ClientDoc newClientDoc = ClientMapper.toClientDoc(client);
-            Bson clientFilter = Filters.eq("_id", client.getClientID());
+            Bson clientFilter = Filters.eq(MongoRepositoryConstants.GENERAL_IDENTIFIER, client.getClientID());
             ClientDoc updatedClientDoc = getClientCollection().findOneAndReplace(clientFilter, newClientDoc);
             if (updatedClientDoc == null) {
-                throw new ClientDocNullReferenceException("Client object representation for given client object could not be found in the database.");
+                throw new ClientDocNullReferenceException(MongoRepositoryMessages.CLIENT_DOC_FOR_CLIENT_OBJ_NOT_FOUND);
             }
         } catch (MongoException | ClientDocNullReferenceException exception) {
             throw new ClientRepositoryUpdateException(exception.getMessage(), exception);
@@ -482,10 +484,10 @@ public class ClientRepository extends MongoRepository implements ClientRepositor
     public void updateAdmin(Admin admin) throws ClientRepositoryException {
         try {
             ClientDoc newAdminDoc = AdminMapper.toAdminDoc(admin);
-            Bson adminFilter = Filters.eq("_id", admin.getClientID());
+            Bson adminFilter = Filters.eq(MongoRepositoryConstants.GENERAL_IDENTIFIER, admin.getClientID());
             ClientDoc updatedAdminDoc = getClientCollection().findOneAndReplace(adminFilter, newAdminDoc);
             if (updatedAdminDoc == null) {
-                throw new ClientDocNullReferenceException("Admin object representation for given client object could not be found in the database.");
+                throw new ClientDocNullReferenceException(MongoRepositoryMessages.ADMIN_DOC_FOR_ADMIN_OBJ_NOT_FOUND);
             }
         } catch (MongoException | ClientDocNullReferenceException exception) {
             throw new ClientRepositoryUpdateException(exception.getMessage(), exception);
@@ -496,10 +498,10 @@ public class ClientRepository extends MongoRepository implements ClientRepositor
     public void updateStaff(Staff staff) throws ClientRepositoryException {
         try {
             ClientDoc newStaffDoc = StaffMapper.toStaffDoc(staff);
-            Bson staffFilter = Filters.eq("_id", staff.getClientID());
+            Bson staffFilter = Filters.eq(MongoRepositoryConstants.GENERAL_IDENTIFIER, staff.getClientID());
             ClientDoc updatedStaffDoc = getClientCollection().findOneAndReplace(staffFilter, newStaffDoc);
             if (updatedStaffDoc == null) {
-                throw new ClientDocNullReferenceException("Staff object representation for given client object could not be found in the database.");
+                throw new ClientDocNullReferenceException(MongoRepositoryMessages.STAFF_DOC_FOR_STAFF_OBJ_NOT_FOUND);
             }
         } catch (MongoException | ClientDocNullReferenceException exception) {
             throw new ClientRepositoryUpdateException(exception.getMessage(), exception);
@@ -510,14 +512,14 @@ public class ClientRepository extends MongoRepository implements ClientRepositor
 
     public void delete(UUID userID, String type) throws ClientRepositoryException {
         try {
-            Bson filter = Filters.eq("_id", userID);
+            Bson filter = Filters.eq(MongoRepositoryConstants.GENERAL_IDENTIFIER, userID);
             Document clientDoc = getClientCollectionWithoutType().find(filter).first();
             if (clientDoc == null) {
-                throw new ClientDocNullReferenceException("Document with given ID could not be found in the database.");
-            } else if (clientDoc.getString("_clazz").equals(type)) {
+                throw new ClientDocNullReferenceException(MongoRepositoryMessages.DOC_OBJECT_NOT_FOUND);
+            } else if (clientDoc.getString(MongoRepositoryConstants.USER_SUBCLASS).equals(type)) {
                 getClientCollection().findOneAndDelete(filter);
             } else {
-                throw new InvalidUUIDException("Given UUID is a reference to object of different type.");
+                throw new InvalidUUIDException(MongoRepositoryMessages.ID_REFERENCE_TO_DOCUMENT_OF_DIFFERENT_TYPE);
             }
         } catch (MongoException | InvalidUUIDException | ClientDocNullReferenceException exception) {
             throw new ClientRepositoryDeleteException(exception.getMessage(), exception);
@@ -530,7 +532,7 @@ public class ClientRepository extends MongoRepository implements ClientRepositor
         try {
             this.updateCertainUserBasedOnType(client, name);
         } catch (ClientRepositoryException exception) {
-            throw new ClientActivationException("Client object representation for given client object could not be found in the database.");
+            throw new ClientActivationException(MongoRepositoryMessages.USER_DOC_FOR_CLIENT_OBJ_NOT_FOUND);
         }
     }
 
@@ -540,18 +542,18 @@ public class ClientRepository extends MongoRepository implements ClientRepositor
         try {
             this.updateCertainUserBasedOnType(client, name);
         } catch (ClientRepositoryException exception) {
-            throw new ClientDeactivationException("Client object representation for given client object could not be found in the database.");
+            throw new ClientDeactivationException(MongoRepositoryMessages.USER_DOC_FOR_CLIENT_OBJ_NOT_FOUND);
         }
     }
 
     private void updateCertainUserBasedOnType(Client client, String name) throws ClientRepositoryException {
         try {
             switch (name) {
-                case "admin": {
+                case MongoRepositoryConstants.ADMIN_SUBCLASS: {
                     this.updateAdmin(AdminMapper.toAdmin(ClientMapper.toClientDoc(client)));
                     break;
                 }
-                case "staff": {
+                case MongoRepositoryConstants.STAFF_SUBCLASS: {
                     this.updateStaff(StaffMapper.toStaff(ClientMapper.toClientDoc(client)));
                     break;
                 }
@@ -560,7 +562,7 @@ public class ClientRepository extends MongoRepository implements ClientRepositor
                 }
             }
         } catch (ClientRepositoryException exception) {
-            throw new ClientActivationException("Client object representation for given client object could not be found in the database.");
+            throw new ClientActivationException(MongoRepositoryMessages.USER_DOC_FOR_CLIENT_OBJ_NOT_FOUND);
         }
     }
 }

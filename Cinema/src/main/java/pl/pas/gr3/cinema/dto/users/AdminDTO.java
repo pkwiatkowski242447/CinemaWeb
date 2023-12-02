@@ -2,6 +2,7 @@ package pl.pas.gr3.cinema.dto.users;
 
 import jakarta.json.bind.annotation.JsonbCreator;
 import jakarta.json.bind.annotation.JsonbProperty;
+import jakarta.validation.constraints.NotNull;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
@@ -12,7 +13,9 @@ import java.util.UUID;
 @NoArgsConstructor
 public class AdminDTO {
 
+
     @JsonbProperty("id")
+    @NotNull
     protected UUID adminID;
 
     @JsonbProperty("login")

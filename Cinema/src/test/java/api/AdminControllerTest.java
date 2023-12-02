@@ -108,7 +108,7 @@ public class AdminControllerTest {
 
             assertNotNull(createdObject);
             assertNotNull(createdObject.getAdminID());
-            assertEquals(createdObject.getAdminLogin(), adminInputDTO.getLogin());
+            assertEquals(createdObject.getAdminLogin(), adminInputDTO.getAdminLogin());
             assertTrue(createdObject.isAdminStatusActive());
         }
     }
@@ -241,7 +241,7 @@ public class AdminControllerTest {
 
             assertNotNull(createdObject);
             assertNotNull(createdObject.getAdminID());
-            assertEquals(createdObject.getAdminLogin(), adminInputDTO.getLogin());
+            assertEquals(createdObject.getAdminLogin(), adminInputDTO.getAdminLogin());
             assertTrue(createdObject.isAdminStatusActive());
         }
     }
@@ -274,7 +274,7 @@ public class AdminControllerTest {
 
             assertNotNull(createdObject);
             assertNotNull(createdObject.getAdminID());
-            assertEquals(createdObject.getAdminLogin(), adminInputDTO.getLogin());
+            assertEquals(createdObject.getAdminLogin(), adminInputDTO.getAdminLogin());
             assertTrue(createdObject.isAdminStatusActive());
         }
     }
@@ -457,7 +457,7 @@ public class AdminControllerTest {
 
             assertNotNull(createdObject);
             assertNotNull(createdObject.getAdminID());
-            assertEquals(createdObject.getAdminLogin(), adminInputDTO.getLogin());
+            assertEquals(createdObject.getAdminLogin(), adminInputDTO.getAdminLogin());
             assertTrue(createdObject.isAdminStatusActive());
         }
     }
@@ -490,7 +490,7 @@ public class AdminControllerTest {
 
             assertNotNull(createdObject);
             assertNotNull(createdObject.getAdminID());
-            assertEquals(createdObject.getAdminLogin(), adminInputDTO.getLogin());
+            assertEquals(createdObject.getAdminLogin(), adminInputDTO.getAdminLogin());
             assertTrue(createdObject.isAdminStatusActive());
         }
     }

@@ -11,6 +11,7 @@ import org.bson.codecs.pojo.ClassModel;
 import org.bson.codecs.pojo.Conventions;
 import org.bson.codecs.pojo.PojoCodecProvider;
 import org.bson.conversions.Bson;
+import pl.pas.gr3.cinema.consts.repositories.MongoRepositoryConstants;
 import pl.pas.gr3.cinema.exceptions.mapping.ClientDocNullReferenceException;
 import pl.pas.gr3.cinema.exceptions.mapping.DocNullReferenceException;
 import pl.pas.gr3.cinema.exceptions.mapping.MovieDocNullReferenceException;
@@ -24,6 +25,7 @@ import pl.pas.gr3.cinema.mapping.mappers.TicketMapper;
 import pl.pas.gr3.cinema.mapping.mappers.users.AdminMapper;
 import pl.pas.gr3.cinema.mapping.mappers.users.ClientMapper;
 import pl.pas.gr3.cinema.mapping.mappers.users.StaffMapper;
+import pl.pas.gr3.cinema.messages.repositories.MongoRepositoryMessages;
 import pl.pas.gr3.cinema.model.Ticket;
 import pl.pas.gr3.cinema.model.users.Client;
 
@@ -103,50 +105,50 @@ public abstract class MongoRepository implements Closeable {
     // Find client / movie / ticket by ID
 
     protected ClientDoc findClientDoc(UUID clientDocID) {
-        Bson clientFilter = Filters.eq("_id", clientDocID);
+        Bson clientFilter = Filters.eq(MongoRepositoryConstants.GENERAL_IDENTIFIER, clientDocID);
         ClientDoc clientDoc = getClientCollection().find(clientFilter).first();
         if (clientDoc != null) {
             return clientDoc;
         } else {
-            throw new ClientDocNullReferenceException("Client object with given ID could not be found in the database.");
+            throw new ClientDocNullReferenceException(MongoRepositoryMessages.CLIENT_DOC_OBJECT_NOT_FOUND);
         }
     }
 
     protected MovieDoc findMovieDoc(UUID movieDocID) {
-        Bson movieFilter = Filters.eq("_id", movieDocID);
+        Bson movieFilter = Filters.eq(MongoRepositoryConstants.GENERAL_IDENTIFIER, movieDocID);
         MovieDoc movieDoc = getMovieCollection().find(movieFilter).first();
         if (movieDoc != null) {
             return movieDoc;
         } else {
-            throw new MovieDocNullReferenceException("Movie object with given ID could not be found in the database.");
+            throw new MovieDocNullReferenceException(MongoRepositoryMessages.MOVIE_DOC_OBJECT_NOT_FOUND);
         }
     }
 
     protected TicketDoc findTicketDoc(UUID ticketDocID) {
-        Bson ticketFilter = Filters.eq("_id", ticketDocID);
+        Bson ticketFilter = Filters.eq(MongoRepositoryConstants.GENERAL_IDENTIFIER, ticketDocID);
         TicketDoc ticketDoc = getTicketCollection().find(ticketFilter).first();
         if (ticketDoc != null) {
             return ticketDoc;
         } else {
-            throw new TicketDocNullReferenceException("Ticket object with given ID could not be found in the database.");
+            throw new TicketDocNullReferenceException(MongoRepositoryMessages.TICKET_DOC_OBJECT_NOT_FOUND);
         }
     }
 
     protected Client findClient(UUID clientID) {
-        Bson documentFilter = Filters.eq("_id", clientID);
+        Bson documentFilter = Filters.eq(MongoRepositoryConstants.GENERAL_IDENTIFIER, clientID);
         Document clientDocument = getClientCollectionWithoutType().find(documentFilter).first();
         Client client;
         if (clientDocument != null) {
-            UUID foundClientID = (UUID) clientDocument.get("_id");
-            String foundClientLogin = clientDocument.getString("client_login");
-            String foundClientPassword = clientDocument.getString("client_password");
-            boolean foundClientStatusActive = clientDocument.getBoolean("client_status_active");
-            switch(clientDocument.getString("_clazz")) {
-                case "admin": {
+            UUID foundClientID = (UUID) clientDocument.get(MongoRepositoryConstants.GENERAL_IDENTIFIER);
+            String foundClientLogin = clientDocument.getString(MongoRepositoryConstants.CLIENT_LOGIN);
+            String foundClientPassword = clientDocument.getString(MongoRepositoryConstants.CLIENT_PASSWORD);
+            boolean foundClientStatusActive = clientDocument.getBoolean(MongoRepositoryConstants.CLIENT_STATUS_ACTIVE);
+            switch(clientDocument.getString(MongoRepositoryConstants.USER_SUBCLASS)) {
+                case MongoRepositoryConstants.ADMIN_SUBCLASS: {
                     client = AdminMapper.toAdmin(new AdminDoc(foundClientID, foundClientLogin, foundClientPassword, foundClientStatusActive));
                     break;
                 }
-                case "staff": {
+                case MongoRepositoryConstants.STAFF_SUBCLASS: {
                     client = StaffMapper.toStaff(new StaffDoc(foundClientID, foundClientLogin, foundClientPassword, foundClientStatusActive));
                     break;
                 }
@@ -155,21 +157,21 @@ public abstract class MongoRepository implements Closeable {
                 }
             }
         } else {
-            throw new DocNullReferenceException("Document object with given ID could not be found in client collection in the database.");
+            throw new DocNullReferenceException(MongoRepositoryMessages.DOC_OBJECT_NOT_FOUND);
         }
         return client;
     }
 
     protected Ticket getTicketFromTicketDoc(TicketDoc ticketDoc) throws DocNullReferenceException {
         Ticket ticket;
-        Bson movieFilter = Filters.eq("_id", ticketDoc.getMovieID());
-        Bson clientFilter = Filters.eq("_id", ticketDoc.getClientID());
+        Bson movieFilter = Filters.eq(MongoRepositoryConstants.GENERAL_IDENTIFIER, ticketDoc.getMovieID());
+        Bson clientFilter = Filters.eq(MongoRepositoryConstants.GENERAL_IDENTIFIER, ticketDoc.getClientID());
         MovieDoc foundMovieDoc = getMovieCollection().find(movieFilter).first();
         ClientDoc foundClientDoc = getClientCollection().find(clientFilter).first();
         if (foundMovieDoc == null) {
-            throw new MovieDocNullReferenceException("Movie object for given ticketDoc could not be found in the database.");
+            throw new MovieDocNullReferenceException(MongoRepositoryMessages.MOVIE_DOC_NOT_FOUND_FOR_TICKET_DOC);
         } else if (foundClientDoc == null) {
-            throw new ClientDocNullReferenceException("Client object for given clientDoc could not be found in the database.");
+            throw new ClientDocNullReferenceException(MongoRepositoryMessages.CLIENT_DOC_NOT_FOUND_FOR_TICKET_DOC);
         } else {
             ticket = TicketMapper.toTicket(ticketDoc, foundClientDoc, foundMovieDoc);
         }

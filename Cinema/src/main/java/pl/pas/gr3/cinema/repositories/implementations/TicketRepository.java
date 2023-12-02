@@ -11,6 +11,7 @@ import org.bson.Document;
 import org.bson.conversions.Bson;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import pl.pas.gr3.cinema.consts.repositories.MongoRepositoryConstants;
 import pl.pas.gr3.cinema.exceptions.mapping.*;
 import pl.pas.gr3.cinema.exceptions.model.TicketCreateException;
 import pl.pas.gr3.cinema.exceptions.repositories.*;
@@ -24,6 +25,7 @@ import pl.pas.gr3.cinema.mapping.docs.TicketDoc;
 import pl.pas.gr3.cinema.mapping.docs.users.ClientDoc;
 import pl.pas.gr3.cinema.mapping.mappers.MovieMapper;
 import pl.pas.gr3.cinema.mapping.mappers.TicketMapper;
+import pl.pas.gr3.cinema.messages.repositories.MongoRepositoryMessages;
 import pl.pas.gr3.cinema.model.Movie;
 import pl.pas.gr3.cinema.model.Ticket;
 import pl.pas.gr3.cinema.model.TicketType;
@@ -145,13 +147,13 @@ public class TicketRepository extends MongoRepository implements TicketRepositor
         Ticket ticket;
         try (ClientSession clientSession = mongoClient.startSession()) {
             clientSession.startTransaction();
-            Bson clientFilter = Filters.eq("_id", clientID);
+            Bson clientFilter = Filters.eq(MongoRepositoryConstants.GENERAL_IDENTIFIER, clientID);
             ClientDoc foundClientDoc = getClientCollection().find(clientFilter).first();
             Client client;
             if (foundClientDoc == null) {
-                throw new ClientDocNullReferenceException("Client object with given ID could not be found in the database.");
+                throw new ClientDocNullReferenceException(MongoRepositoryMessages.CLIENT_DOC_OBJECT_NOT_FOUND);
             } else if (!foundClientDoc.isClientStatusActive()) {
-                throw new ClientNotActiveException("Given client is not active, and therefore could not crete resource allocation.");
+                throw new ClientNotActiveException(MongoRepositoryMessages.ALLOCATION_NOT_POSSIBLE_SINCE_CLIENT_INACTIVE);
             } else {
                 client = super.findClient(clientID);
             }
@@ -162,7 +164,7 @@ public class TicketRepository extends MongoRepository implements TicketRepositor
             if (foundMovieDoc != null) {
                 movie = MovieMapper.toMovie(foundMovieDoc);
             } else {
-                throw new MovieDocNullReferenceException("Movie object with given ID could not be found in the database.");
+                throw new MovieDocNullReferenceException(MongoRepositoryMessages.MOVIE_DOC_OBJECT_NOT_FOUND);
             }
 
             ticket = new Ticket(UUID.randomUUID(), movieTime, client, movie, ticketType);
@@ -230,7 +232,7 @@ public class TicketRepository extends MongoRepository implements TicketRepositor
             Bson ticketFilter = Filters.eq("_id", ticket.getTicketID());
             TicketDoc updatedTicketDoc = getTicketCollection().findOneAndReplace(ticketFilter, ticketDoc);
             if (updatedTicketDoc == null) {
-                throw new TicketDocNullReferenceException("Ticket object representation for given ticket object could not be found in the database.");
+                throw new TicketDocNullReferenceException(MongoRepositoryMessages.TICKET_DOC_FOR_TICKET_OBJ_NOT_FOUND);
             }
         } catch (MongoException | DocNullReferenceException exception) {
             throw new TicketRepositoryUpdateException(exception.getMessage(), exception);
@@ -241,17 +243,17 @@ public class TicketRepository extends MongoRepository implements TicketRepositor
     public void delete(UUID ticketID) throws TicketRepositoryException {
         try (ClientSession clientSession = mongoClient.startSession()) {
             clientSession.startTransaction();
-            Bson ticketFilter = Filters.eq("_id", ticketID);
+            Bson ticketFilter = Filters.eq(MongoRepositoryConstants.GENERAL_IDENTIFIER, ticketID);
             TicketDoc removedTicketDoc = getTicketCollection().findOneAndDelete(ticketFilter);
             if (removedTicketDoc != null) {
-                Bson movieFilter = Filters.eq("_id", removedTicketDoc.getMovieID());
-                Bson updates = Updates.inc("number_of_available_seats", 1);
+                Bson movieFilter = Filters.eq(MongoRepositoryConstants.GENERAL_IDENTIFIER, removedTicketDoc.getMovieID());
+                Bson updates = Updates.inc(MongoRepositoryConstants.NUMBER_OF_AVAILABLE_SEATS, 1);
                 MovieDoc updatedMovieDoc = getMovieCollection().findOneAndUpdate(movieFilter, updates);
                 if (updatedMovieDoc == null) {
-                    throw new MovieDocNullReferenceException("Movie object for given ticket ID could not be found in the database.");
+                    throw new MovieDocNullReferenceException(MongoRepositoryMessages.MOVIE_DOC_OBJECT_NOT_FOUND);
                 }
             } else {
-                throw new TicketDocNullReferenceException("Ticket object with given ID could not be found in the database.");
+                throw new TicketDocNullReferenceException(MongoRepositoryMessages.TICKET_DOC_OBJECT_NOT_FOUND);
             }
             clientSession.commitTransaction();
         } catch (MongoException | NullPointerException | DocNullReferenceException exception) {

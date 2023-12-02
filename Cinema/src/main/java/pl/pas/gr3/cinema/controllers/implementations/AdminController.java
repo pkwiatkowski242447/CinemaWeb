@@ -22,10 +22,7 @@ import pl.pas.gr3.cinema.model.users.Admin;
 import pl.pas.gr3.cinema.controllers.interfaces.UserServiceInterface;
 
 import java.net.URI;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Set;
-import java.util.UUID;
+import java.util.*;
 
 
 @ApplicationScoped
@@ -43,7 +40,7 @@ public class AdminController implements UserServiceInterface<Admin> {
     @Produces(MediaType.APPLICATION_JSON)
     public Response create(AdminInputDTO adminInputDTO) {
         try {
-            Admin admin = this.adminManager.create(adminInputDTO.getLogin(), adminInputDTO.getPassword());
+            Admin admin = this.adminManager.create(adminInputDTO.getAdminLogin(), adminInputDTO.getAdminPassword());
             Set<ConstraintViolation<Admin>> violationSet = validator.validate(admin);
             List<String> messages = violationSet.stream().map(ConstraintViolation::getMessage).toList();
             if (!violationSet.isEmpty()) {
@@ -151,8 +148,6 @@ public class AdminController implements UserServiceInterface<Admin> {
     @POST
     @Path("/{id}/activate")
     @Override
-
-
     public Response activate(@PathParam("id") UUID adminID) {
         try {
             this.adminManager.activate(adminID);

@@ -6,7 +6,8 @@ import lombok.*;
 import org.apache.commons.lang3.builder.EqualsBuilder;
 import org.apache.commons.lang3.builder.HashCodeBuilder;
 import org.apache.commons.lang3.builder.ToStringBuilder;
-import pl.pas.gr3.cinema.validation.UserValidationMessages;
+import pl.pas.gr3.cinema.consts.model.ClientConstants;
+import pl.pas.gr3.cinema.messages.validation.UserValidationMessages;
 
 import java.util.UUID;
 
@@ -19,13 +20,13 @@ public class Client {
     protected UUID clientID;
 
     @NotNull(message = UserValidationMessages.NULL_LOGIN)
-    @Size(min = 8, message = UserValidationMessages.LOGIN_TOO_SHORT)
-    @Size(max = 20, message = UserValidationMessages.LOGIN_TOO_LONG)
+    @Size(min = ClientConstants.LOGIN_MIN_LENGTH, message = UserValidationMessages.LOGIN_TOO_SHORT)
+    @Size(max = ClientConstants.LOGIN_MAX_LENGTH, message = UserValidationMessages.LOGIN_TOO_LONG)
     protected String clientLogin;
 
     @NotNull(message = UserValidationMessages.NULL_PASSWORD)
-    @Size(min = 8, message = UserValidationMessages.PASSWORD_TOO_SHORT)
-    @Size(max = 40, message = UserValidationMessages.PASSWORD_TOO_LONG)
+    @Size(min = ClientConstants.PASSWORD_MIN_LENGTH, message = UserValidationMessages.PASSWORD_TOO_SHORT)
+    @Size(max = ClientConstants.PASSWORD_MAX_LENGTH, message = UserValidationMessages.PASSWORD_TOO_LONG)
     protected String clientPassword;
 
     protected boolean clientStatusActive;

@@ -6,7 +6,8 @@ import lombok.Data;
 import org.apache.commons.lang3.builder.EqualsBuilder;
 import org.apache.commons.lang3.builder.HashCodeBuilder;
 import org.apache.commons.lang3.builder.ToStringBuilder;
-import pl.pas.gr3.cinema.validation.MovieValidationMessages;
+import pl.pas.gr3.cinema.consts.model.MovieConstants;
+import pl.pas.gr3.cinema.messages.validation.MovieValidationMessages;
 
 import java.util.UUID;
 
@@ -18,20 +19,20 @@ public class Movie {
     private final UUID movieID;
 
     @NotNull(message = MovieValidationMessages.NULL_MOVIE_TITLE)
-    @Size(min = 1, message = MovieValidationMessages.MOVIE_TITLE_TOO_SHORT)
-    @Size(max = 150, message = MovieValidationMessages.MOVIE_TITLE_TOO_LONG)
+    @Size(min = MovieConstants.MOVIE_TITLE_MIN_LENGTH, message = MovieValidationMessages.MOVIE_TITLE_TOO_SHORT)
+    @Size(max = MovieConstants.MOVIE_TITLE_MAX_LENGTH, message = MovieValidationMessages.MOVIE_TITLE_TOO_LONG)
     private String movieTitle;
 
-    @Min(value = 0, message = MovieValidationMessages.MOVIE_BASE_PRICE_TOO_LOW)
-    @Max(value = 100, message = MovieValidationMessages.MOVIE_BASE_PRICE_TOO_HIGH)
+    @Min(value = MovieConstants.MOVIE_BASE_PRICE_MIN_VALUE, message = MovieValidationMessages.MOVIE_BASE_PRICE_TOO_LOW)
+    @Max(value = MovieConstants.MOVIE_BASE_PRICE_MAX_VALUE, message = MovieValidationMessages.MOVIE_BASE_PRICE_TOO_HIGH)
     private double movieBasePrice;
 
-    @Min(value = 1, message = MovieValidationMessages.SCREENING_ROOM_NUMBER_TOO_LOW)
-    @Max(value = 30, message = MovieValidationMessages.SCREENING_ROOM_NUMBER_TOO_HIGH)
+    @Min(value = MovieConstants.SCREENING_ROOM_NUMBER_MIN_VALUE, message = MovieValidationMessages.SCREENING_ROOM_NUMBER_TOO_LOW)
+    @Max(value = MovieConstants.SCREENING_ROOM_NUMBER_MAX_VALUE, message = MovieValidationMessages.SCREENING_ROOM_NUMBER_TOO_HIGH)
     private int scrRoomNumber;
 
-    @Min(value = 0, message = MovieValidationMessages.NUMBER_OF_AVAILABLE_SEATS_NEGATIVE)
-    @Max(value = 120, message = MovieValidationMessages.NUMBER_OF_AVAILABLE_SEATS_ABOVE_LIMIT)
+    @Min(value = MovieConstants.NUMBER_OF_AVAILABLE_SEATS_MIN_VALUE, message = MovieValidationMessages.NUMBER_OF_AVAILABLE_SEATS_NEGATIVE)
+    @Max(value = MovieConstants.NUMBER_OF_AVAILABLE_SEATS_MAX_VALUE, message = MovieValidationMessages.NUMBER_OF_AVAILABLE_SEATS_ABOVE_LIMIT)
     private int numberOfAvailableSeats;
 
     // Constructors

@@ -33,6 +33,7 @@ public class AdminManagerTest {
 
     @BeforeEach
     public void initializeSampleData() {
+        this.clearTestData();
         try {
             adminNo1 = adminManager.create("UniqueAdminLoginNo1", "UniqueAdminPasswordNo1");
             adminNo2 = adminManager.create("UniqueAdminLoginNo2", "UniqueAdminPasswordNo2");
@@ -43,6 +44,10 @@ public class AdminManagerTest {
 
     @AfterEach
     public void destroySampleData() {
+        this.clearTestData();
+    }
+
+    private void clearTestData() {
         try {
             List<Admin> listOfAdmins = adminManager.findAll();
             for (Admin admin : listOfAdmins) {

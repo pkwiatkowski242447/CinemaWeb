@@ -9,8 +9,8 @@ import org.apache.commons.lang3.builder.ToStringBuilder;
 import pl.pas.gr3.cinema.exceptions.model.MovieNullReferenceException;
 import pl.pas.gr3.cinema.exceptions.model.TicketCreateException;
 import pl.pas.gr3.cinema.model.users.Client;
-import pl.pas.gr3.cinema.errors.ModelErrorMessages;
-import pl.pas.gr3.cinema.validation.TicketValidationMessages;
+import pl.pas.gr3.cinema.messages.errors.ModelErrorMessages;
+import pl.pas.gr3.cinema.messages.validation.TicketValidationMessages;
 
 import java.time.LocalDateTime;
 import java.util.UUID;

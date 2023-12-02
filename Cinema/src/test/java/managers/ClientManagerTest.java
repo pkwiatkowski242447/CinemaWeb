@@ -32,6 +32,7 @@ public class ClientManagerTest {
 
     @BeforeEach
     public void initializeSampleData() {
+        this.clearTestData();
         try {
             clientNo1 = clientManager.create("UniqueClientLoginNo1", "UniqueClientPasswordNo1");
             clientNo2 = clientManager.create("UniqueClientLoginNo2", "UniqueClientPasswordNo2");
@@ -42,6 +43,10 @@ public class ClientManagerTest {
 
     @AfterEach
     public void destroySampleData() {
+        this.clearTestData();
+    }
+
+    private void clearTestData() {
         try {
             List<Client> listOfClients = clientManager.findAll();
             for (Client client : listOfClients) {

@@ -11,6 +11,7 @@ import org.bson.Document;
 import org.bson.conversions.Bson;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import pl.pas.gr3.cinema.consts.repositories.MongoRepositoryConstants;
 import pl.pas.gr3.cinema.exceptions.mapping.MovieDocNullReferenceException;
 import pl.pas.gr3.cinema.exceptions.repositories.*;
 import pl.pas.gr3.cinema.exceptions.repositories.crud.movie.MovieRepositoryCreateException;
@@ -21,6 +22,7 @@ import pl.pas.gr3.cinema.exceptions.repositories.other.movie.ResourceIsCurrently
 import pl.pas.gr3.cinema.mapping.docs.MovieDoc;
 import pl.pas.gr3.cinema.mapping.docs.TicketDoc;
 import pl.pas.gr3.cinema.mapping.mappers.MovieMapper;
+import pl.pas.gr3.cinema.messages.repositories.MongoRepositoryMessages;
 import pl.pas.gr3.cinema.model.Movie;
 import pl.pas.gr3.cinema.model.Ticket;
 import pl.pas.gr3.cinema.repositories.interfaces.MovieRepositoryInterface;
@@ -189,7 +191,7 @@ public class MovieRepository extends MongoRepository implements MovieRepositoryI
 
     public List<Ticket> getListOfTicketsForMovie(UUID movieID) {
         List<Ticket> listOfActiveTickets;
-        List<Bson> listOfFilters = List.of(Aggregates.match(Filters.eq("movie_id", movieID)));
+        List<Bson> listOfFilters = List.of(Aggregates.match(Filters.eq(MongoRepositoryConstants.MOVIE_IDENTIFIER, movieID)));
         listOfActiveTickets = findTicketsWithAggregate(listOfFilters);
         return listOfActiveTickets;
     }
@@ -200,10 +202,10 @@ public class MovieRepository extends MongoRepository implements MovieRepositoryI
     public void update(Movie movie) throws MovieRepositoryException {
         try {
             MovieDoc newMovieDoc = MovieMapper.toMovieDoc(movie);
-            Bson movieFilter = Filters.eq("_id", movie.getMovieID());
+            Bson movieFilter = Filters.eq(MongoRepositoryConstants.GENERAL_IDENTIFIER, movie.getMovieID());
             MovieDoc updatedMovieDoc = getMovieCollection().findOneAndReplace(movieFilter, newMovieDoc);
             if (updatedMovieDoc == null) {
-                throw new MovieDocNullReferenceException("Movie object representation for given movie object could not be found in the database.");
+                throw new MovieDocNullReferenceException(MongoRepositoryMessages.MOVIE_DOC_OBJECT_NOT_FOUND);
             }
         } catch (MongoException | MovieDocNullReferenceException exception) {
             throw new MovieRepositoryUpdateException(exception.getMessage(), exception);
@@ -215,16 +217,16 @@ public class MovieRepository extends MongoRepository implements MovieRepositoryI
     @Override
     public void delete(UUID movieID) throws MovieRepositoryException {
         try {
-            Bson ticketFilter = Filters.eq("movie_id", movieID);
+            Bson ticketFilter = Filters.eq(MongoRepositoryConstants.MOVIE_IDENTIFIER, movieID);
             List<TicketDoc> listOfTicketDocs = getTicketCollection().find(ticketFilter).into(new ArrayList<>());
             if (listOfTicketDocs.isEmpty()) {
-                Bson movieFilter = Filters.eq("_id", movieID);
+                Bson movieFilter = Filters.eq(MongoRepositoryConstants.GENERAL_IDENTIFIER, movieID);
                 MovieDoc removedMovieDoc = getMovieCollection().findOneAndDelete(movieFilter);
                 if (removedMovieDoc == null) {
-                    throw new MovieDocNullReferenceException("Movie object with given ID could not be found in the database.");
+                    throw new MovieDocNullReferenceException(MongoRepositoryMessages.MOVIE_DOC_OBJECT_NOT_FOUND);
                 }
             } else {
-                throw new ResourceIsCurrentlyUsedDeleteException("Movie object with given ID is currently used in some tickets.");
+                throw new ResourceIsCurrentlyUsedDeleteException(MongoRepositoryMessages.MOVIE_HAS_UNFINISHED_ALLOCATIONS);
             }
         } catch (MongoException | MovieDocNullReferenceException | ResourceIsCurrentlyUsedDeleteException exception) {
             throw new MovieRepositoryDeleteException(exception.getMessage(), exception);

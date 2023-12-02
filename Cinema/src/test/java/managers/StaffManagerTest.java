@@ -31,6 +31,7 @@ public class StaffManagerTest {
 
     @BeforeEach
     public void initializeSampleData() {
+        this.clearTestData();
         try {
             staffNo1 = staffManager.create("UniqueStaffLoginNo1", "UniqueStaffPasswordNo1");
             staffNo2 = staffManager.create("UniqueStaffLoginNo2", "UniqueStaffPasswordNo2");
@@ -41,6 +42,10 @@ public class StaffManagerTest {
 
     @AfterEach
     public void destroySampleData() {
+        this.clearTestData();
+    }
+
+    private void clearTestData() {
         try {
             List<Staff> listOfStaffs = staffManager.findAll();
             for (Staff staff : listOfStaffs) {

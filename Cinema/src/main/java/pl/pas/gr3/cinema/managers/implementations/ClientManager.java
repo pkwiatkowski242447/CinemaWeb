@@ -2,6 +2,7 @@ package pl.pas.gr3.cinema.managers.implementations;
 
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
+import pl.pas.gr3.cinema.consts.repositories.MongoRepositoryConstants;
 import pl.pas.gr3.cinema.exceptions.managers.crud.client.*;
 import pl.pas.gr3.cinema.exceptions.repositories.ClientRepositoryException;
 import pl.pas.gr3.cinema.managers.interfaces.UserManagerInterface;
@@ -83,7 +84,7 @@ public class ClientManager implements UserManagerInterface<Client>, Closeable {
     @Override
     public void activate(UUID clientID) throws ClientManagerActivationException {
         try {
-            this.clientRepository.activate(this.clientRepository.findByUUID(clientID), "client");
+            this.clientRepository.activate(this.clientRepository.findByUUID(clientID), MongoRepositoryConstants.CLIENT_SUBCLASS);
         } catch (ClientRepositoryException exception) {
             throw new ClientManagerActivationException(exception.getMessage(), exception);
         }
@@ -92,7 +93,7 @@ public class ClientManager implements UserManagerInterface<Client>, Closeable {
     @Override
     public void deactivate(UUID clientID) throws ClientManagerDeactivationException {
         try {
-            this.clientRepository.deactivate(this.clientRepository.findByUUID(clientID), "client");
+            this.clientRepository.deactivate(this.clientRepository.findByUUID(clientID), MongoRepositoryConstants.CLIENT_SUBCLASS);
         } catch (ClientRepositoryException exception) {
             throw new ClientManagerDeactivationException(exception.getMessage(), exception);
         }
@@ -101,7 +102,7 @@ public class ClientManager implements UserManagerInterface<Client>, Closeable {
     @Override
     public List<Ticket> getTicketsForClient(UUID clientID) throws ClientManagerReadException {
         try {
-            return this.clientRepository.getListOfTicketsForClient(clientID, "client");
+            return this.clientRepository.getListOfTicketsForClient(clientID, MongoRepositoryConstants.CLIENT_SUBCLASS);
         } catch (ClientRepositoryException exception) {
             throw new ClientManagerReadException(exception.getMessage(), exception);
         }
@@ -110,7 +111,7 @@ public class ClientManager implements UserManagerInterface<Client>, Closeable {
     @Override
     public void delete(UUID userID) throws ClientManagerDeleteException {
         try {
-            this.clientRepository.delete(userID, "client");
+            this.clientRepository.delete(userID, MongoRepositoryConstants.CLIENT_SUBCLASS);
         } catch (ClientRepositoryException exception) {
             throw new ClientManagerDeleteException(exception.getMessage(), exception);
         }

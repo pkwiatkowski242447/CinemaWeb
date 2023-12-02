@@ -2,6 +2,7 @@ package pl.pas.gr3.cinema.managers.implementations;
 
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
+import pl.pas.gr3.cinema.consts.repositories.MongoRepositoryConstants;
 import pl.pas.gr3.cinema.exceptions.managers.crud.admin.*;
 import pl.pas.gr3.cinema.exceptions.repositories.ClientRepositoryException;
 import pl.pas.gr3.cinema.managers.interfaces.UserManagerInterface;
@@ -83,7 +84,7 @@ public class AdminManager implements UserManagerInterface<Admin>, Closeable {
     @Override
     public void activate(UUID adminID) throws AdminManagerActivationException {
         try {
-            this.clientRepository.activate(this.clientRepository.findAdminByUUID(adminID), "admin");
+            this.clientRepository.activate(this.clientRepository.findAdminByUUID(adminID), MongoRepositoryConstants.ADMIN_SUBCLASS);
         } catch (ClientRepositoryException exception) {
             throw new AdminManagerActivationException(exception.getMessage(), exception);
         }
@@ -92,7 +93,7 @@ public class AdminManager implements UserManagerInterface<Admin>, Closeable {
     @Override
     public void deactivate(UUID adminID) throws AdminManagerDeactivationException {
         try {
-            this.clientRepository.deactivate(this.clientRepository.findAdminByUUID(adminID), "admin");
+            this.clientRepository.deactivate(this.clientRepository.findAdminByUUID(adminID), MongoRepositoryConstants.ADMIN_SUBCLASS);
         } catch (ClientRepositoryException exception) {
             throw new AdminManagerDeactivationException(exception.getMessage(), exception);
         }
@@ -101,7 +102,7 @@ public class AdminManager implements UserManagerInterface<Admin>, Closeable {
     @Override
     public List<Ticket> getTicketsForClient(UUID adminID) throws AdminManagerReadException {
         try {
-            return this.clientRepository.getListOfTicketsForClient(adminID, "admin");
+            return this.clientRepository.getListOfTicketsForClient(adminID, MongoRepositoryConstants.ADMIN_SUBCLASS);
         } catch (ClientRepositoryException exception) {
             throw new AdminManagerReadException(exception.getMessage(), exception);
         }
@@ -110,7 +111,7 @@ public class AdminManager implements UserManagerInterface<Admin>, Closeable {
     @Override
     public void delete(UUID userID) throws AdminManagerDeleteException {
         try {
-            this.clientRepository.delete(userID, "admin");
+            this.clientRepository.delete(userID, MongoRepositoryConstants.ADMIN_SUBCLASS);
         } catch (ClientRepositoryException exception) {
             throw new AdminManagerDeleteException(exception.getMessage(), exception);
         }

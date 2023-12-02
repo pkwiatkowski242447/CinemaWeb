@@ -1,4 +1,4 @@
-package pl.pas.gr3.cinema.validation;
+package pl.pas.gr3.cinema.messages.validation;
 
 public class MovieValidationMessages {
     public final static String NULL_IDENTIFIER = "No movie can have an identifier that is null.";

@@ -1,4 +1,4 @@
-package pl.pas.gr3.cinema.validation;
+package pl.pas.gr3.cinema.messages.validation;
 
 public class TicketValidationMessages {
 

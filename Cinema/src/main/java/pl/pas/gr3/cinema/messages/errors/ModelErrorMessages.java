@@ -1,4 +1,4 @@
-package pl.pas.gr3.cinema.errors;
+package pl.pas.gr3.cinema.messages.errors;
 
 public class ModelErrorMessages {
 

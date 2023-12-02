@@ -12,15 +12,15 @@ import lombok.Setter;
 public class AdminInputDTO {
 
     @JsonbProperty("login")
-    private String login;
+    private String adminLogin;
 
     @JsonbProperty("password")
-    private String password;
+    private String adminPassword;
 
     @JsonbCreator
-    public AdminInputDTO(@JsonbProperty("login") String login,
-                         @JsonbProperty("password") String password) {
-        this.login = login;
-        this.password = password;
+    public AdminInputDTO(@JsonbProperty("login") String adminLogin,
+                         @JsonbProperty("password") String adminPassword) {
+        this.adminLogin = adminLogin;
+        this.adminPassword = adminPassword;
     }
 }
