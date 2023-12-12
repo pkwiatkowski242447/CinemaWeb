@@ -6,19 +6,16 @@ import com.mongodb.client.model.CreateCollectionOptions;
 import com.mongodb.client.model.Filters;
 import com.mongodb.client.model.Updates;
 import com.mongodb.client.model.ValidationOptions;
-import jakarta.enterprise.context.ApplicationScoped;
 import org.bson.Document;
 import org.bson.conversions.Bson;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.stereotype.Repository;
 import pl.pas.gr3.cinema.consts.repositories.MongoRepositoryConstants;
 import pl.pas.gr3.cinema.exceptions.mapping.*;
 import pl.pas.gr3.cinema.exceptions.model.TicketCreateException;
 import pl.pas.gr3.cinema.exceptions.repositories.*;
-import pl.pas.gr3.cinema.exceptions.repositories.crud.ticket.TicketRepositoryCreateException;
-import pl.pas.gr3.cinema.exceptions.repositories.crud.ticket.TicketRepositoryDeleteException;
-import pl.pas.gr3.cinema.exceptions.repositories.crud.ticket.TicketRepositoryReadException;
-import pl.pas.gr3.cinema.exceptions.repositories.crud.ticket.TicketRepositoryUpdateException;
+import pl.pas.gr3.cinema.exceptions.repositories.crud.ticket.*;
 import pl.pas.gr3.cinema.exceptions.repositories.other.client.ClientNotActiveException;
 import pl.pas.gr3.cinema.mapping.docs.MovieDoc;
 import pl.pas.gr3.cinema.mapping.docs.TicketDoc;
@@ -45,7 +42,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
-@ApplicationScoped
+@Repository
 public class TicketRepository extends MongoRepository implements TicketRepositoryInterface {
 
     private final String databaseName;
@@ -88,6 +85,8 @@ public class TicketRepository extends MongoRepository implements TicketRepositor
     public TicketRepository() {
         this.databaseName = "default";
         super.initDBConnection(databaseName);
+
+        mongoDatabase.getCollection(ticketCollectionName).drop();
 
         boolean collectionExists = false;
         for (String collectionName : mongoDatabase.listCollectionNames()) {
@@ -231,7 +230,9 @@ public class TicketRepository extends MongoRepository implements TicketRepositor
         try {
             TicketDoc foundTicketDoc = findTicketDoc(ticketID);
             ticket = this.getTicketFromTicketDoc(foundTicketDoc);
-        } catch (MongoException | DocNullReferenceException exception) {
+        } catch (TicketDocNullReferenceException exception) {
+            throw new TicketRepositoryTicketNotFoundException(exception.getMessage(), exception);
+        } catch (MongoException exception) {
             throw new TicketRepositoryReadException(exception.getMessage(), exception);
         }
         return ticket;

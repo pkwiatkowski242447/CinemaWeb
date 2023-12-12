@@ -3,11 +3,13 @@ package pl.pas.gr3.cinema.repositories.implementations;
 import com.mongodb.*;
 import com.mongodb.client.ClientSession;
 import com.mongodb.client.model.*;
-import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.annotation.PostConstruct;
+import jakarta.annotation.PreDestroy;
 import org.bson.Document;
 import org.bson.conversions.Bson;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.stereotype.Repository;
 import pl.pas.gr3.cinema.consts.repositories.MongoRepositoryConstants;
 import pl.pas.gr3.cinema.exceptions.mapping.ClientDocNullReferenceException;
 import pl.pas.gr3.cinema.exceptions.mapping.DocNullReferenceException;
@@ -29,14 +31,11 @@ import pl.pas.gr3.cinema.model.users.Client;
 import pl.pas.gr3.cinema.model.users.Staff;
 import pl.pas.gr3.cinema.repositories.interfaces.ClientRepositoryInterface;
 
-import jakarta.annotation.PostConstruct;
-import jakarta.annotation.PreDestroy;
-
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
-@ApplicationScoped
+@Repository
 public class ClientRepository extends MongoRepository implements ClientRepositoryInterface {
 
     private final String databaseName;
@@ -79,6 +78,8 @@ public class ClientRepository extends MongoRepository implements ClientRepositor
     public ClientRepository() {
         this.databaseName = "default";
         super.initDBConnection(this.databaseName);
+
+        mongoDatabase.getCollection(clientCollectionName).drop();
 
         boolean collectionExists = false;
         for (String collectionName : mongoDatabase.listCollectionNames()) {
@@ -242,7 +243,9 @@ public class ClientRepository extends MongoRepository implements ClientRepositor
             } else {
                 throw new ClientDocNullReferenceException(MongoRepositoryMessages.CLIENT_DOC_OBJECT_NOT_FOUND);
             }
-        } catch (MongoException | DocNullReferenceException exception) {
+        } catch (ClientDocNullReferenceException exception) {
+            throw new ClientRepositoryClientNotFoundException(exception.getMessage(), exception);
+        } catch (MongoException exception) {
             throw new ClientRepositoryReadException(exception.getMessage(), exception);
         }
         return client;
@@ -259,7 +262,9 @@ public class ClientRepository extends MongoRepository implements ClientRepositor
             } else {
                 throw new ClientDocNullReferenceException(MongoRepositoryMessages.ADMIN_DOC_OBJECT_NOT_FOUND);
             }
-        } catch (MongoException | DocNullReferenceException exception) {
+        } catch (ClientDocNullReferenceException exception) {
+            throw new ClientRepositoryAdminNotFoundException(exception.getMessage(), exception);
+        } catch (MongoException exception) {
             throw new ClientRepositoryReadException(exception.getMessage(), exception);
         }
         return admin;
@@ -276,7 +281,9 @@ public class ClientRepository extends MongoRepository implements ClientRepositor
             } else {
                 throw new ClientDocNullReferenceException(MongoRepositoryMessages.STAFF_DOC_OBJECT_NOT_FOUND);
             }
-        } catch (MongoException | DocNullReferenceException exception) {
+        } catch (ClientDocNullReferenceException exception) {
+            throw new ClientRepositoryStaffNotFoundException(exception.getMessage(), exception);
+        } catch (MongoException exception) {
             throw new ClientRepositoryReadException(exception.getMessage(), exception);
         }
         return staff;
@@ -349,7 +356,9 @@ public class ClientRepository extends MongoRepository implements ClientRepositor
             } else {
                 throw new ClientDocNullReferenceException(MongoRepositoryMessages.CLIENT_DOC_OBJECT_NOT_FOUND);
             }
-        } catch (MongoException | DocNullReferenceException exception) {
+        } catch (ClientDocNullReferenceException exception) {
+            throw new ClientRepositoryClientNotFoundException(exception.getMessage(), exception);
+        } catch (MongoException exception) {
             throw new ClientRepositoryReadException(exception.getMessage(), exception);
         }
         return client;
@@ -367,7 +376,9 @@ public class ClientRepository extends MongoRepository implements ClientRepositor
             } else {
                 throw new ClientDocNullReferenceException(MongoRepositoryMessages.ADMIN_DOC_OBJECT_NOT_FOUND);
             }
-        } catch (MongoException | DocNullReferenceException exception) {
+        } catch (ClientDocNullReferenceException exception) {
+            throw new ClientRepositoryAdminNotFoundException(exception.getMessage(), exception);
+        } catch (MongoException exception) {
             throw new ClientRepositoryReadException(exception.getMessage(), exception);
         }
         return admin;
@@ -385,7 +396,9 @@ public class ClientRepository extends MongoRepository implements ClientRepositor
             } else {
                 throw new ClientDocNullReferenceException(MongoRepositoryMessages.STAFF_DOC_OBJECT_NOT_FOUND);
             }
-        } catch (MongoException | DocNullReferenceException exception) {
+        } catch (ClientDocNullReferenceException exception) {
+            throw new ClientRepositoryStaffNotFoundException(exception.getMessage(), exception);
+        } catch (MongoException exception) {
             throw new ClientRepositoryReadException(exception.getMessage(), exception);
         }
         return staff;

@@ -1,6 +1,6 @@
 package pl.pas.gr3.cinema.controllers.interfaces;
 
-import jakarta.ws.rs.core.Response;
+import org.springframework.http.ResponseEntity;
 import pl.pas.gr3.dto.MovieDTO;
 import pl.pas.gr3.dto.MovieInputDTO;
 import pl.pas.gr3.cinema.model.Movie;
@@ -11,16 +11,16 @@ public interface MovieServiceInterface extends ServiceInterface<Movie> {
 
     // Create methods
 
-    Response create(MovieInputDTO movieInputDTO);
+    ResponseEntity<?> create(MovieInputDTO movieInputDTO);
 
     // Update methods
 
-    Response delete(UUID movieID);
+    ResponseEntity<?> delete(UUID movieID);
 
     // Other methods
 
-    Response findAllTicketsForCertainMovie(UUID movieID);
+    ResponseEntity<?> findAllTicketsForCertainMovie(UUID movieID);
 
     // Update methods
-    Response update(MovieDTO movieDTO);
+    ResponseEntity<?> update(MovieDTO movieDTO);
 }

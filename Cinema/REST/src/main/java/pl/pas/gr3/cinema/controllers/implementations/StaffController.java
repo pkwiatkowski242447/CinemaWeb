@@ -1,21 +1,21 @@
 package pl.pas.gr3.cinema.controllers.implementations;
 
-import jakarta.enterprise.context.ApplicationScoped;
-import jakarta.inject.Inject;
-import jakarta.inject.Named;
 import jakarta.validation.ConstraintViolation;
 import jakarta.validation.Validation;
 import jakarta.validation.Validator;
-import jakarta.ws.rs.*;
-import jakarta.ws.rs.core.MediaType;
-import jakarta.ws.rs.core.Response;
-import pl.pas.gr3.cinema.exceptions.managers.crud.staff.StaffManagerCreateStaffDuplicateLoginException;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
+import pl.pas.gr3.cinema.exceptions.services.crud.staff.StaffServiceCreateStaffDuplicateLoginException;
+import pl.pas.gr3.cinema.exceptions.services.crud.staff.StaffServiceStaffNotFoundException;
 import pl.pas.gr3.dto.TicketDTO;
 import pl.pas.gr3.dto.users.StaffDTO;
 import pl.pas.gr3.dto.users.StaffInputDTO;
 import pl.pas.gr3.dto.users.StaffPasswordDTO;
-import pl.pas.gr3.cinema.exceptions.managers.GeneralManagerException;
-import pl.pas.gr3.cinema.managers.implementations.StaffManager;
+import pl.pas.gr3.cinema.exceptions.services.GeneralServiceException;
+import pl.pas.gr3.cinema.services.implementations.StaffService;
 import pl.pas.gr3.cinema.model.Ticket;
 import pl.pas.gr3.cinema.model.users.Client;
 import pl.pas.gr3.cinema.model.users.Staff;
@@ -27,164 +27,145 @@ import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 
-@ApplicationScoped
-@Path("/staffs")
-@Named
+@RestController
+@RequestMapping("/api/v1/staffs")
 public class StaffController implements UserServiceInterface<Staff> {
 
     private final static Validator validator = Validation.buildDefaultValidatorFactory().getValidator();
 
-    @Inject
-    private StaffManager staffManager;
+    private final StaffService staffService;
 
-    @POST
-    @Consumes(MediaType.APPLICATION_JSON)
-    @Produces(MediaType.APPLICATION_JSON)
-    public Response create(StaffInputDTO staffInputDTO) {
+    @Autowired
+    public StaffController(StaffService staffService) {
+        this.staffService = staffService;
+    }
+
+    @PostMapping(consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity<?> create(@RequestBody StaffInputDTO staffInputDTO) {
         try {
-            Staff staff = this.staffManager.create(staffInputDTO.getStaffLogin(), staffInputDTO.getStaffPassword());
+            Staff staff = this.staffService.create(staffInputDTO.getStaffLogin(), staffInputDTO.getStaffPassword());
+
             Set<ConstraintViolation<Staff>> violationSet = validator.validate(staff);
             List<String> messages = violationSet.stream().map(ConstraintViolation::getMessage).toList();
             if (!violationSet.isEmpty()) {
-                return Response.status(Response.Status.BAD_REQUEST).type(MediaType.APPLICATION_JSON).entity(messages).build();
+                return ResponseEntity.badRequest().contentType(MediaType.APPLICATION_JSON).body(messages);
             }
+
             StaffDTO staffDTO = new StaffDTO(staff.getClientID(), staff.getClientLogin(), staff.isClientStatusActive());
-            return Response.status(Response.Status.CREATED).type(MediaType.APPLICATION_JSON).contentLocation(URI.create("/" + staffDTO.getStaffID().toString())).entity(staffDTO).build();
-        } catch (StaffManagerCreateStaffDuplicateLoginException exception) {
-            return Response.status(Response.Status.CONFLICT).type(MediaType.APPLICATION_JSON).entity(exception.getMessage()).build();
-        } catch (GeneralManagerException exception) {
-            return Response.status(Response.Status.BAD_REQUEST).type(MediaType.APPLICATION_JSON).entity(exception.getMessage()).build();
+            return ResponseEntity.created(URI.create("/" + staffDTO.getStaffID().toString())).contentType(MediaType.APPLICATION_JSON).body(staffDTO);
+        } catch (StaffServiceCreateStaffDuplicateLoginException exception) {
+            return ResponseEntity.status(HttpStatus.CONFLICT).contentType(MediaType.APPLICATION_JSON).body(exception.getMessage());
+        } catch (GeneralServiceException exception) {
+            return ResponseEntity.badRequest().contentType(MediaType.APPLICATION_JSON).body(exception.getMessage());
         }
     }
 
-    @GET
-    @Path("/{id}")
-    @Produces(MediaType.APPLICATION_JSON)
+    @GetMapping(value = "/{id}", produces = MediaType.APPLICATION_JSON_VALUE)
     @Override
-    public Response findByUUID(@PathParam("id") UUID staffID) {
+    public ResponseEntity<?> findByUUID(@PathVariable("id") UUID staffID) {
         try {
-            Client staff = this.staffManager.findByUUID(staffID);
-            StaffDTO staffDTO = new StaffDTO(staff.getClientID(), staff.getClientLogin(), staff.isClientStatusActive());
-            return this.generateResponseForDTO(staffDTO);
-        } catch (GeneralManagerException exception) {
-            return Response.status(Response.Status.BAD_REQUEST).entity(exception.getMessage()).build();
-        }
-    }
-
-    @GET
-    @Path("/login/{login}")
-    @Produces(MediaType.APPLICATION_JSON)
-    @Override
-    public Response findByLogin(@PathParam("login") String staffLogin) {
-        try {
-            Staff staff = this.staffManager.findByLogin(staffLogin);
+            Client staff = this.staffService.findByUUID(staffID);
             StaffDTO staffDTO = new StaffDTO(staff.getClientID(), staff.getClientLogin(), staff.isClientStatusActive());
             return this.generateResponseForDTO(staffDTO);
-        } catch (GeneralManagerException exception) {
-            return Response.status(Response.Status.BAD_REQUEST).entity(exception.getMessage()).build();
+        } catch (StaffServiceStaffNotFoundException exception) {
+            return ResponseEntity.notFound().build();
+        } catch (GeneralServiceException exception) {
+            return ResponseEntity.badRequest().contentType(MediaType.APPLICATION_JSON).body(exception.getMessage());
         }
     }
 
-    @GET
-    @Produces(MediaType.APPLICATION_JSON)
+    @GetMapping(value = "/login/{login}", produces = MediaType.APPLICATION_JSON_VALUE)
     @Override
-    public Response findAllWithMatchingLogin(@QueryParam("match") String staffLogin) {
+    public ResponseEntity<?> findByLogin(@PathVariable("login") String staffLogin) {
         try {
-            List<StaffDTO> listOfDTOs = this.getListOfStaffDTOs(this.staffManager.findAllMatchingLogin(staffLogin));
+            Staff staff = this.staffService.findByLogin(staffLogin);
+            StaffDTO staffDTO = new StaffDTO(staff.getClientID(), staff.getClientLogin(), staff.isClientStatusActive());
+            return this.generateResponseForDTO(staffDTO);
+        } catch (StaffServiceStaffNotFoundException exception) {
+            return ResponseEntity.notFound().build();
+        } catch (GeneralServiceException exception) {
+            return ResponseEntity.badRequest().contentType(MediaType.APPLICATION_JSON).body(exception.getMessage());
+        }
+    }
+
+    @GetMapping(produces = MediaType.APPLICATION_JSON_VALUE)
+    @Override
+    public ResponseEntity<?> findAllWithMatchingLogin(@RequestParam("match") String staffLogin) {
+        try {
+            List<StaffDTO> listOfDTOs = this.getListOfStaffDTOs(this.staffService.findAllMatchingLogin(staffLogin));
             return this.generateResponseForListOfDTOs(listOfDTOs);
-        } catch (GeneralManagerException exception) {
-            return Response.status(Response.Status.BAD_REQUEST).entity(exception.getMessage()).build();
+        } catch (GeneralServiceException exception) {
+            return ResponseEntity.badRequest().contentType(MediaType.APPLICATION_JSON).body(exception.getMessage());
         }
     }
 
-    @GET
-    @Path("/{id}/ticket-list")
-    @Produces(MediaType.APPLICATION_JSON)
+    @GetMapping(value = "/{id}/ticket-list", produces = MediaType.APPLICATION_JSON_VALUE)
     @Override
-    public Response getTicketsForCertainUser(@PathParam("id") UUID staffID) {
+    public ResponseEntity<?> getTicketsForCertainUser(@PathVariable("id") UUID staffID) {
         try {
-            List<Ticket> listOfTicketForAStaff = this.staffManager.getTicketsForClient(staffID);
+            List<Ticket> listOfTicketForAStaff = this.staffService.getTicketsForClient(staffID);
             List<TicketDTO> listOfDTOs = new ArrayList<>();
             for (Ticket ticket : listOfTicketForAStaff) {
                 listOfDTOs.add(new TicketDTO(ticket.getTicketID(), ticket.getMovieTime(), ticket.getTicketFinalPrice(), ticket.getClient().getClientID(), ticket.getMovie().getMovieID()));
             }
             if (listOfTicketForAStaff.isEmpty()) {
-                return Response.status(Response.Status.NO_CONTENT).build();
+                return ResponseEntity.noContent().build();
             } else {
-                return Response.status(Response.Status.OK).entity(listOfDTOs).build();
+                return ResponseEntity.ok().contentType(MediaType.APPLICATION_JSON).body(listOfDTOs);
             }
-        } catch (GeneralManagerException exception) {
-            return Response.status(Response.Status.BAD_REQUEST).entity(exception.getMessage()).build();
+        } catch (GeneralServiceException exception) {
+            return ResponseEntity.badRequest().contentType(MediaType.APPLICATION_JSON).body(exception.getMessage());
         }
     }
 
-    @GET
-    @Path("/all")
-    @Produces(MediaType.APPLICATION_JSON)
+    @GetMapping(value = "/all", produces = MediaType.APPLICATION_JSON_VALUE)
     @Override
-    public Response findAll() {
+    public ResponseEntity<?> findAll() {
         try {
-            List<StaffDTO> listOfDTOs = this.getListOfStaffDTOs(this.staffManager.findAll());
+            List<StaffDTO> listOfDTOs = this.getListOfStaffDTOs(this.staffService.findAll());
             return this.generateResponseForListOfDTOs(listOfDTOs);
-        } catch (GeneralManagerException exception) {
-            return Response.status(Response.Status.BAD_REQUEST).entity(exception.getMessage()).build();
+        } catch (GeneralServiceException exception) {
+            return ResponseEntity.badRequest().contentType(MediaType.APPLICATION_JSON).body(exception.getMessage());
         }
     }
 
-    @PUT
-    @Consumes(MediaType.APPLICATION_JSON)
-    public Response update(StaffPasswordDTO staffPasswordDTO) {
+    @PutMapping(consumes = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity<?> update(@RequestBody StaffPasswordDTO staffPasswordDTO) {
         try {
             Staff staff = new Staff(staffPasswordDTO.getStaffID(), staffPasswordDTO.getStaffLogin(), staffPasswordDTO.getStaffPassword(), staffPasswordDTO.isStaffStatusActive());
+
             Set<ConstraintViolation<Staff>> violationSet = validator.validate(staff);
             List<String> messages = violationSet.stream().map(ConstraintViolation::getMessage).toList();
             if (!violationSet.isEmpty()) {
-                return Response.status(Response.Status.BAD_REQUEST).type(MediaType.APPLICATION_JSON).entity(messages).build();
+                return ResponseEntity.badRequest().contentType(MediaType.APPLICATION_JSON).body(messages);
             }
-            this.staffManager.update(staff);
-            return Response.status(Response.Status.NO_CONTENT).type(MediaType.APPLICATION_JSON).build();
-        } catch (GeneralManagerException exception) {
-            return Response.status(Response.Status.BAD_REQUEST).type(MediaType.APPLICATION_JSON).entity(exception.getMessage()).build();
+
+            this.staffService.update(staff);
+            return ResponseEntity.noContent().build();
+        } catch (GeneralServiceException exception) {
+            return ResponseEntity.badRequest().contentType(MediaType.APPLICATION_JSON).body(exception.getMessage());
         }
     }
 
-    @POST
-    @Path("/{id}/activate")
+    @PostMapping(value = "/{id}/activate")
     @Override
-    public Response activate(@PathParam("id") UUID staffID) {
+    public ResponseEntity<?> activate(@PathVariable("id") UUID staffID) {
         try {
-            this.staffManager.activate(staffID);
-            return Response.status(Response.Status.NO_CONTENT).build();
-        } catch (GeneralManagerException exception) {
-            return Response.status(Response.Status.BAD_REQUEST).entity(exception.getMessage()).build();
+            this.staffService.activate(staffID);
+            return ResponseEntity.noContent().build();
+        } catch (GeneralServiceException exception) {
+            return ResponseEntity.badRequest().contentType(MediaType.APPLICATION_JSON).body(exception.getMessage());
         }
     }
 
-    @POST
-    @Path("/{id}/deactivate")
+    @PostMapping(value = "/{id}/deactivate")
     @Override
-    public Response deactivate(@PathParam("id") UUID staffID) {
+    public ResponseEntity<?> deactivate(@PathVariable("id") UUID staffID) {
         try {
-            this.staffManager.deactivate(staffID);
-            return Response.status(Response.Status.NO_CONTENT).build();
-        } catch (GeneralManagerException exception) {
-            return Response.status(Response.Status.BAD_REQUEST).entity(exception.getMessage()).build();
-        }
-    }
-
-    private Response generateResponseForDTO(StaffDTO staffDTO) {
-        if (staffDTO == null) {
-            return Response.status(Response.Status.NO_CONTENT).build();
-        } else {
-            return Response.status(Response.Status.OK).entity(staffDTO).build();
-        }
-    }
-
-    private Response generateResponseForListOfDTOs(List<StaffDTO> listOfDTOs) {
-        if (listOfDTOs.isEmpty()) {
-            return Response.status(Response.Status.NO_CONTENT).build();
-        } else {
-            return Response.status(Response.Status.OK).entity(listOfDTOs).build();
+            this.staffService.deactivate(staffID);
+            return ResponseEntity.noContent().build();
+        } catch (GeneralServiceException exception) {
+            return ResponseEntity.badRequest().contentType(MediaType.APPLICATION_JSON).body(exception.getMessage());
         }
     }
 
@@ -194,5 +175,21 @@ public class StaffController implements UserServiceInterface<Staff> {
             listOfDTOs.add(new StaffDTO(staff.getClientID(), staff.getClientLogin(), staff.isClientStatusActive()));
         }
         return listOfDTOs;
+    }
+
+    private ResponseEntity<?> generateResponseForDTO(StaffDTO staffDTO) {
+        if (staffDTO == null) {
+            return ResponseEntity.noContent().build();
+        } else {
+            return ResponseEntity.ok().contentType(MediaType.APPLICATION_JSON).body(staffDTO);
+        }
+    }
+
+    private ResponseEntity<?> generateResponseForListOfDTOs(List<StaffDTO> listOfDTOs) {
+        if (listOfDTOs.isEmpty()) {
+            return ResponseEntity.noContent().build();
+        } else {
+            return ResponseEntity.ok().contentType(MediaType.APPLICATION_JSON).body(listOfDTOs);
+        }
     }
 }

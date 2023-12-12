@@ -28,17 +28,19 @@
             <h:inputSecret id="passworFirstInput" value="#{clientBean.client.clientPassword}" required="true" maxlength="40" />
             <br />
             <h:commandButton value="Submit" action="#{clientBean.createClient()}" />
-
-            <h:panelGroup rendered="#{clientBean.operationStatusCode eq 201}">
-                <p><h:outputText>Konto klienta zostało utworzone pomyślnie.</h:outputText></p>
-            </h:panelGroup>
-            <h:panelGroup rendered="#{clientBean.operationStatusCode eq 409}">
-                <p><h:outputText>Ten login jest już zajęty.</h:outputText></p>
-            </h:panelGroup>
-            <h:panelGroup rendered="#{clientBean.operationStatusCode eq 400}">
-                <p><h:outputText>Podany format danych jest nieprawidłowy.</h:outputText></p>
-            </h:panelGroup>
         </h:form>
+
+        <p>${clientBean.message}</p>
+
+        <h:panelGroup rendered="#{clientBean.operationStatusCode eq '201'}">
+            <p><h:outputText>Konto klienta zostało utworzone pomyślnie.</h:outputText></p>
+        </h:panelGroup>
+        <h:panelGroup rendered="#{clientBean.operationStatusCode eq '409'}">
+            <p><h:outputText>Ten login jest już zajęty.</h:outputText></p>
+        </h:panelGroup>
+        <h:panelGroup rendered="#{clientBean.operationStatusCode eq '400'}">
+            <p><h:outputText>Podany format danych jest nieprawidłowy.</h:outputText></p>
+        </h:panelGroup>
     </ui:define>
 
 </ui:composition>

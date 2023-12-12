@@ -6,18 +6,15 @@ import com.mongodb.client.model.Aggregates;
 import com.mongodb.client.model.CreateCollectionOptions;
 import com.mongodb.client.model.Filters;
 import com.mongodb.client.model.ValidationOptions;
-import jakarta.enterprise.context.ApplicationScoped;
 import org.bson.Document;
 import org.bson.conversions.Bson;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.stereotype.Repository;
 import pl.pas.gr3.cinema.consts.repositories.MongoRepositoryConstants;
 import pl.pas.gr3.cinema.exceptions.mapping.MovieDocNullReferenceException;
 import pl.pas.gr3.cinema.exceptions.repositories.*;
-import pl.pas.gr3.cinema.exceptions.repositories.crud.movie.MovieRepositoryCreateException;
-import pl.pas.gr3.cinema.exceptions.repositories.crud.movie.MovieRepositoryDeleteException;
-import pl.pas.gr3.cinema.exceptions.repositories.crud.movie.MovieRepositoryReadException;
-import pl.pas.gr3.cinema.exceptions.repositories.crud.movie.MovieRepositoryUpdateException;
+import pl.pas.gr3.cinema.exceptions.repositories.crud.movie.*;
 import pl.pas.gr3.cinema.exceptions.repositories.other.movie.ResourceIsCurrentlyUsedDeleteException;
 import pl.pas.gr3.cinema.mapping.docs.MovieDoc;
 import pl.pas.gr3.cinema.mapping.docs.TicketDoc;
@@ -33,7 +30,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
-@ApplicationScoped
+@Repository
 public class MovieRepository extends MongoRepository implements MovieRepositoryInterface {
 
     private final String databaseName;
@@ -82,6 +79,8 @@ public class MovieRepository extends MongoRepository implements MovieRepositoryI
     public MovieRepository() {
         this.databaseName = "default";
         super.initDBConnection(this.databaseName);
+
+        mongoDatabase.getCollection(movieCollectionName).drop();
 
         boolean collectionExists = false;
         for (String collectionName : mongoDatabase.listCollectionNames()) {
@@ -158,7 +157,9 @@ public class MovieRepository extends MongoRepository implements MovieRepositoryI
         try {
             MovieDoc foundMovieDoc = findMovieDoc(movieID);
             movie = MovieMapper.toMovie(foundMovieDoc);
-        } catch (MongoException | MovieDocNullReferenceException exception) {
+        } catch (MovieDocNullReferenceException exception) {
+            throw new MovieRepositoryMovieNotFoundException(exception.getMessage(), exception);
+        } catch (MongoException exception) {
             throw new MovieRepositoryReadException(exception.getMessage(), exception);
         }
         return movie;

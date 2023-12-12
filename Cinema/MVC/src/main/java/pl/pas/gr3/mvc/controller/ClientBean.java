@@ -27,12 +27,12 @@ import java.util.List;
 @Named
 public class ClientBean implements Serializable {
 
-    private final String clientsBaseURL = "http://localhost:8080/REST-1.0-SNAPSHOT/api/clients";
+    private final String clientsBaseURL = "http://localhost:8000/api/v1/clients";
     private final Client client = new Client();
     private List<ClientDTO> listOfDTOs = new ArrayList<>();
     private int operationStatusCode = 0;
     private String clientLogin;
-    private String json;
+    private String message;
 
     @PostConstruct
     private void initializeData() {
@@ -73,7 +73,7 @@ public class ClientBean implements Serializable {
 
         operationStatusCode = response.statusCode();
 
-        json = response.getBody().toString();
+        message = response.body().toString();
 
         return new ArrayList<>(response.jsonPath().getList(".", ClientDTO.class));
     }
@@ -88,7 +88,7 @@ public class ClientBean implements Serializable {
 
         operationStatusCode = response.statusCode();
 
-        json = response.getBody().toString();
+        message = response.body().toString();
 
         listOfDTOs = new ArrayList<>(response.jsonPath().getList(".", ClientDTO.class));
     }

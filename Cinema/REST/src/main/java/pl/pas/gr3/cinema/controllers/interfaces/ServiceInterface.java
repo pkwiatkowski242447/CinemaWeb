@@ -1,6 +1,6 @@
 package pl.pas.gr3.cinema.controllers.interfaces;
 
-import jakarta.ws.rs.core.Response;
+import org.springframework.http.ResponseEntity;
 
 import java.util.UUID;
 
@@ -10,6 +10,6 @@ public interface ServiceInterface<Type> {
 
     // Read methods
 
-    Response findByUUID(UUID elementID);
-    Response findAll();
+    ResponseEntity<?> findByUUID(UUID elementID);
+    ResponseEntity<?> findAll();
 }

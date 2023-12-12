@@ -1,21 +1,21 @@
 package pl.pas.gr3.cinema.controllers.implementations;
 
-import jakarta.enterprise.context.ApplicationScoped;
-import jakarta.inject.Inject;
-import jakarta.inject.Named;
 import jakarta.validation.ConstraintViolation;
 import jakarta.validation.Validation;
 import jakarta.validation.Validator;
-import jakarta.ws.rs.*;
-import jakarta.ws.rs.core.MediaType;
-import jakarta.ws.rs.core.Response;
-import pl.pas.gr3.cinema.exceptions.managers.crud.client.ClientManagerCreateClientDuplicateLoginException;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
+import pl.pas.gr3.cinema.exceptions.services.crud.client.ClientServiceClientNotFoundException;
+import pl.pas.gr3.cinema.exceptions.services.crud.client.ClientServiceCreateClientDuplicateLoginException;
 import pl.pas.gr3.dto.TicketDTO;
 import pl.pas.gr3.dto.users.ClientDTO;
 import pl.pas.gr3.dto.users.ClientInputDTO;
 import pl.pas.gr3.dto.users.ClientPasswordDTO;
-import pl.pas.gr3.cinema.exceptions.managers.GeneralManagerException;
-import pl.pas.gr3.cinema.managers.implementations.ClientManager;
+import pl.pas.gr3.cinema.exceptions.services.GeneralServiceException;
+import pl.pas.gr3.cinema.services.implementations.ClientService;
 import pl.pas.gr3.cinema.model.Ticket;
 import pl.pas.gr3.cinema.model.users.Client;
 import pl.pas.gr3.cinema.controllers.interfaces.UserServiceInterface;
@@ -26,148 +26,145 @@ import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 
-@ApplicationScoped
-@Path("/clients")
-@Named
+@RestController
+@RequestMapping("/api/v1/clients")
 public class ClientController implements UserServiceInterface<Client> {
 
     private static final Validator validator = Validation.buildDefaultValidatorFactory().getValidator();
 
-    @Inject
-    private ClientManager clientManager;
+    private final ClientService clientService;
 
-    @POST
-    @Consumes(MediaType.APPLICATION_JSON)
-    @Produces(MediaType.APPLICATION_JSON)
-    public Response create(ClientInputDTO clientInputDTO) {
+    @Autowired
+    public ClientController(ClientService clientService) {
+        this.clientService = clientService;
+    }
+
+    @PostMapping(consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity<?> create(@RequestBody ClientInputDTO clientInputDTO) {
         try {
-            Client client = this.clientManager.create(clientInputDTO.getClientLogin(), clientInputDTO.getClientPassword());
+            Client client = this.clientService.create(clientInputDTO.getClientLogin(), clientInputDTO.getClientPassword());
+
             Set<ConstraintViolation<Client>> violationSet = validator.validate(client);
             List<String> messages = violationSet.stream().map(ConstraintViolation::getMessage).toList();
             if (!violationSet.isEmpty()) {
-                return Response.status(Response.Status.BAD_REQUEST).type(MediaType.APPLICATION_JSON).entity(messages).build();
+                return ResponseEntity.badRequest().contentType(MediaType.APPLICATION_JSON).body(messages);
             }
+
             ClientDTO clientDTO = new ClientDTO(client.getClientID(), client.getClientLogin(), client.isClientStatusActive());
-            return Response.status(Response.Status.CREATED).type(MediaType.APPLICATION_JSON).entity(clientDTO).contentLocation(URI.create("/" + clientDTO.getClientID().toString())).build();
-        } catch (ClientManagerCreateClientDuplicateLoginException exception) {
-            return Response.status(Response.Status.CONFLICT).type(MediaType.APPLICATION_JSON).entity(exception.getMessage()).build();
-        } catch (GeneralManagerException exception) {
-            return Response.status(Response.Status.BAD_REQUEST).type(MediaType.APPLICATION_JSON).entity(exception.getMessage()).build();
+            return ResponseEntity.created(URI.create("/" + clientDTO.getClientID().toString())).contentType(MediaType.APPLICATION_JSON).body(clientDTO);
+        } catch (ClientServiceCreateClientDuplicateLoginException exception) {
+            return ResponseEntity.status(HttpStatus.CONFLICT).contentType(MediaType.APPLICATION_JSON).body(exception.getMessage());
+        } catch (GeneralServiceException exception) {
+            return ResponseEntity.badRequest().contentType(MediaType.APPLICATION_JSON).body(exception.getMessage());
         }
     }
 
-    @GET
-    @Path("/all")
-    @Produces(MediaType.APPLICATION_JSON)
+    @GetMapping(value = "/all", produces = MediaType.APPLICATION_JSON_VALUE)
     @Override
-    public Response findAll() {
+    public ResponseEntity<?> findAll() {
         try {
-            List<ClientDTO> listOfDTOs = this.getListOfClientDTOs(this.clientManager.findAll());
+            List<ClientDTO> listOfDTOs = this.getListOfClientDTOs(this.clientService.findAll());
             return this.generateResponseForListOfDTOs(listOfDTOs);
-        } catch (GeneralManagerException exception) {
-            return Response.status(Response.Status.BAD_REQUEST).entity(exception.getMessage()).build();
+        } catch (GeneralServiceException exception) {
+            return ResponseEntity.badRequest().contentType(MediaType.APPLICATION_JSON).body(exception.getMessage());
         }
     }
 
-    @GET
-    @Path("/{id}")
-    @Produces(MediaType.APPLICATION_JSON)
+    @GetMapping(value = "/{id}", produces = MediaType.APPLICATION_JSON_VALUE)
     @Override
-    public Response findByUUID(@PathParam("id") UUID clientID) {
+    public ResponseEntity<?> findByUUID(@PathVariable("id") UUID clientID) {
         try {
-            Client client = this.clientManager.findByUUID(clientID);
+            Client client = this.clientService.findByUUID(clientID);
             ClientDTO clientDTO = new ClientDTO(client.getClientID(), client.getClientLogin(), client.isClientStatusActive());
             return this.generateResponseForDTO(clientDTO);
-        } catch (GeneralManagerException exception) {
-            return Response.status(Response.Status.BAD_REQUEST).entity(exception.getMessage()).build();
+        } catch (ClientServiceClientNotFoundException exception) {
+            return ResponseEntity.notFound().build();
+        } catch (GeneralServiceException exception) {
+            return ResponseEntity.badRequest().contentType(MediaType.APPLICATION_JSON).body(exception.getMessage());
         }
     }
 
-    @GET
-    @Path("/login/{login}")
-    @Produces(MediaType.APPLICATION_JSON)
+    @GetMapping(value = "/login/{login}", produces = MediaType.APPLICATION_JSON_VALUE)
     @Override
-    public Response findByLogin(@PathParam("login") String clientLogin) {
+    public ResponseEntity<?> findByLogin(@PathVariable("login") String clientLogin) {
         try {
-            Client client = this.clientManager.findByLogin(clientLogin);
+            Client client = this.clientService.findByLogin(clientLogin);
             ClientDTO clientDTO = new ClientDTO(client.getClientID(), client.getClientLogin(), client.isClientStatusActive());
             return this.generateResponseForDTO(clientDTO);
-        } catch (GeneralManagerException exception) {
-            return Response.status(Response.Status.BAD_REQUEST).entity(exception.getMessage()).build();
+        } catch (ClientServiceClientNotFoundException exception) {
+            return ResponseEntity.notFound().build();
+        } catch (GeneralServiceException exception) {
+            return ResponseEntity.badRequest().contentType(MediaType.APPLICATION_JSON).body(exception.getMessage());
         }
     }
 
-    @GET
-    @Produces(MediaType.APPLICATION_JSON)
+    @GetMapping(produces = MediaType.APPLICATION_JSON_VALUE)
     @Override
-    public Response findAllWithMatchingLogin(@QueryParam("match") String clientLogin) {
+    public ResponseEntity<?> findAllWithMatchingLogin(@RequestParam("match") String clientLogin) {
         try {
-            List<ClientDTO> listOfDTOs = this.getListOfClientDTOs(this.clientManager.findAllMatchingLogin(clientLogin));
+            List<ClientDTO> listOfDTOs = this.getListOfClientDTOs(this.clientService.findAllMatchingLogin(clientLogin));
             return this.generateResponseForListOfDTOs(listOfDTOs);
-        } catch (GeneralManagerException exception) {
-            return Response.status(Response.Status.BAD_REQUEST).entity(exception.getMessage()).build();
+        } catch (GeneralServiceException exception) {
+            return ResponseEntity.badRequest().contentType(MediaType.APPLICATION_JSON).body(exception.getMessage());
         }
     }
 
-    @GET
-    @Path("/{id}/ticket-list")
-    @Produces(MediaType.APPLICATION_JSON)
+    @GetMapping(value = "/{id}/ticket-list", produces = MediaType.APPLICATION_JSON_VALUE)
     @Override
-    public Response getTicketsForCertainUser(@PathParam("id") UUID clientID) {
+    public ResponseEntity<?> getTicketsForCertainUser(@PathVariable("id") UUID clientID) {
         try {
-            List<Ticket> listOfTicketsForAClient = this.clientManager.getTicketsForClient(clientID);
+            List<Ticket> listOfTicketsForAClient = this.clientService.getTicketsForClient(clientID);
             List<TicketDTO> listOfDTOs = new ArrayList<>();
             for (Ticket ticket : listOfTicketsForAClient) {
                 listOfDTOs.add(new TicketDTO(ticket.getTicketID(), ticket.getMovieTime(), ticket.getTicketFinalPrice(), ticket.getClient().getClientID(), ticket.getMovie().getMovieID()));
             }
             if (listOfTicketsForAClient.isEmpty()) {
-                return Response.status(Response.Status.NO_CONTENT).build();
+                return ResponseEntity.noContent().build();
             } else {
-                return Response.status(Response.Status.OK).entity(listOfDTOs).build();
+                return ResponseEntity.ok().contentType(MediaType.APPLICATION_JSON).body(listOfDTOs);
             }
-        } catch (GeneralManagerException exception) {
-            return Response.status(Response.Status.BAD_REQUEST).entity(exception.getMessage()).build();
+        } catch (GeneralServiceException exception) {
+            return ResponseEntity.badRequest().contentType(MediaType.APPLICATION_JSON).body(exception.getMessage());
         }
     }
 
-    @PUT
-    @Consumes(MediaType.APPLICATION_JSON)
-    public Response update(ClientPasswordDTO clientPasswordDTO) {
+    @PutMapping(consumes = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity<?> update(@RequestBody ClientPasswordDTO clientPasswordDTO) {
         try {
             Client client = new Client(clientPasswordDTO.getClientID(), clientPasswordDTO.getClientLogin(), clientPasswordDTO.getClientPassword(), clientPasswordDTO.isClientStatusActive());
+
             Set<ConstraintViolation<Client>> violationSet = validator.validate(client);
             List<String> messages = violationSet.stream().map(ConstraintViolation::getMessage).toList();
             if (!violationSet.isEmpty()) {
-                return Response.status(Response.Status.BAD_REQUEST).type(MediaType.APPLICATION_JSON).entity(messages).build();
+                return ResponseEntity.badRequest().contentType(MediaType.APPLICATION_JSON).body(messages);
             }
-            this.clientManager.update(client);
-            return Response.status(Response.Status.NO_CONTENT).type(MediaType.APPLICATION_JSON).build();
-        } catch (GeneralManagerException exception) {
-            return Response.status(Response.Status.BAD_REQUEST).type(MediaType.APPLICATION_JSON).entity(exception.getMessage()).build();
+
+            this.clientService.update(client);
+            return ResponseEntity.noContent().build();
+        } catch (GeneralServiceException exception) {
+            return ResponseEntity.badRequest().contentType(MediaType.APPLICATION_JSON).body(exception.getMessage());
         }
     }
 
-    @POST
-    @Path("/{id}/activate")
+    @PostMapping(value = "/{id}/activate")
     @Override
-    public Response activate(@PathParam("id") UUID clientID) {
+    public ResponseEntity<?> activate(@PathVariable("id") UUID clientID) {
         try {
-            this.clientManager.activate(clientID);
-            return Response.status(Response.Status.NO_CONTENT).build();
-        } catch (GeneralManagerException exception) {
-            return Response.status(Response.Status.BAD_REQUEST).entity(exception.getMessage()).build();
+            this.clientService.activate(clientID);
+            return ResponseEntity.noContent().build();
+        } catch (GeneralServiceException exception) {
+            return ResponseEntity.badRequest().contentType(MediaType.APPLICATION_JSON).body(exception.getMessage());
         }
     }
 
-    @POST
-    @Path("/{id}/deactivate")
+    @PostMapping(value = "/{id}/deactivate")
     @Override
-    public Response deactivate(@PathParam("id") UUID clientID) {
+    public ResponseEntity<?> deactivate(@PathVariable("id") UUID clientID) {
         try {
-            this.clientManager.deactivate(clientID);
-            return Response.status(Response.Status.NO_CONTENT).build();
-        } catch (GeneralManagerException exception) {
-            return Response.status(Response.Status.BAD_REQUEST).entity(exception.getMessage()).build();
+            this.clientService.deactivate(clientID);
+            return ResponseEntity.noContent().build();
+        } catch (GeneralServiceException exception) {
+            return ResponseEntity.badRequest().contentType(MediaType.APPLICATION_JSON).body(exception.getMessage());
         }
     }
 
@@ -179,19 +176,19 @@ public class ClientController implements UserServiceInterface<Client> {
         return listOfDTOs;
     }
 
-    private Response generateResponseForDTO(ClientDTO clientDTO) {
+    private ResponseEntity<?> generateResponseForDTO(ClientDTO clientDTO) {
         if (clientDTO == null) {
-            return Response.status(Response.Status.NOT_FOUND).build();
+            return ResponseEntity.noContent().build();
         } else {
-            return Response.status(Response.Status.OK).entity(clientDTO).build();
+            return ResponseEntity.ok().contentType(MediaType.APPLICATION_JSON).body(clientDTO);
         }
     }
 
-    private Response generateResponseForListOfDTOs(List<ClientDTO> listOfDTOs) {
+    private ResponseEntity<?> generateResponseForListOfDTOs(List<ClientDTO> listOfDTOs) {
         if (listOfDTOs.isEmpty()) {
-            return Response.status(Response.Status.NO_CONTENT).build();
+            return ResponseEntity.noContent().build();
         } else {
-            return Response.status(Response.Status.OK).entity(listOfDTOs).build();
+            return ResponseEntity.ok().contentType(MediaType.APPLICATION_JSON).body(listOfDTOs);
         }
     }
 }

@@ -1,114 +1,120 @@
 package pl.pas.gr3.cinema.controllers.implementations;
 
-import jakarta.enterprise.context.ApplicationScoped;
-import jakarta.inject.Inject;
-import jakarta.inject.Named;
 import jakarta.validation.ConstraintViolation;
 import jakarta.validation.Validation;
 import jakarta.validation.Validator;
-import jakarta.ws.rs.*;
-import jakarta.ws.rs.core.MediaType;
-import jakarta.ws.rs.core.Response;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
+import pl.pas.gr3.cinema.exceptions.services.crud.ticket.TicketServiceTicketNotFoundException;
 import pl.pas.gr3.dto.TicketDTO;
 import pl.pas.gr3.dto.TicketInputDTO;
-import pl.pas.gr3.cinema.exceptions.managers.GeneralManagerException;
-import pl.pas.gr3.cinema.managers.implementations.TicketManager;
+import pl.pas.gr3.cinema.exceptions.services.GeneralServiceException;
+import pl.pas.gr3.cinema.services.implementations.TicketService;
 import pl.pas.gr3.cinema.model.Ticket;
 import pl.pas.gr3.cinema.controllers.interfaces.TicketServiceInterface;
 
+import java.net.URI;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 
-@ApplicationScoped
-@Path("/tickets")
-@Named
+@RestController
+@RequestMapping("/api/v1/tickets")
 public class TicketController implements TicketServiceInterface {
 
     private static final Validator validator = Validation.buildDefaultValidatorFactory().getValidator();
 
-    @Inject
-    private TicketManager ticketManager;
+    private final TicketService ticketService;
 
-    @POST
-    @Produces(MediaType.APPLICATION_JSON)
+    @Autowired
+    public TicketController(TicketService ticketService) {
+        this.ticketService = ticketService;
+    }
+
+    @PostMapping(consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
     @Override
-    public Response create(TicketInputDTO ticketInputDTO) {
+    public ResponseEntity<?> create(@RequestBody TicketInputDTO ticketInputDTO) {
         try {
-            Ticket ticket = this.ticketManager.create(ticketInputDTO.getMovieTime(), ticketInputDTO.getClientID(), ticketInputDTO.getMovieID(), ticketInputDTO.getTicketType());
+            Ticket ticket = this.ticketService.create(ticketInputDTO.getMovieTime(), ticketInputDTO.getClientID(), ticketInputDTO.getMovieID(), ticketInputDTO.getTicketType());
+
             Set<ConstraintViolation<Ticket>> violationSet = validator.validate(ticket);
             List<String> messages = violationSet.stream().map(ConstraintViolation::getMessage).toList();
             if (!violationSet.isEmpty()) {
-                return Response.status(Response.Status.BAD_REQUEST).type(MediaType.APPLICATION_JSON).entity(messages).build();
+                return ResponseEntity.badRequest().contentType(MediaType.APPLICATION_JSON).body(messages);
             }
+
             TicketDTO ticketDTO = new TicketDTO(ticket.getTicketID(), ticket.getMovieTime(), ticket.getTicketFinalPrice(), ticket.getClient().getClientID(), ticket.getMovie().getMovieID());
-            return Response.status(Response.Status.CREATED).type(MediaType.APPLICATION_JSON).entity(ticketDTO).build();
-        } catch (GeneralManagerException exception) {
-            return Response.status(Response.Status.BAD_REQUEST).type(MediaType.APPLICATION_JSON).entity(exception.getMessage()).build();
+            return ResponseEntity.created(URI.create("/" + ticketDTO.getTicketID().toString())).contentType(MediaType.APPLICATION_JSON).body(ticketDTO);
+        } catch (GeneralServiceException exception) {
+            return ResponseEntity.badRequest().contentType(MediaType.APPLICATION_JSON).body(exception.getMessage());
         }
     }
 
-    @GET
-    @Path("/{id}")
-    @Produces(MediaType.APPLICATION_JSON)
+    @GetMapping(value = "/{id}", produces = MediaType.APPLICATION_JSON_VALUE)
     @Override
-    public Response findByUUID(@PathParam("id") UUID ticketID) {
+    public ResponseEntity<?> findByUUID(@PathVariable("id") UUID ticketID) {
         try {
-            Ticket ticket = this.ticketManager.findByUUID(ticketID);
+            Ticket ticket = this.ticketService.findByUUID(ticketID);
             TicketDTO ticketDTO = new TicketDTO(ticket.getTicketID(), ticket.getMovieTime(), ticket.getTicketFinalPrice(), ticket.getClient().getClientID(), ticket.getMovie().getMovieID());
-            return Response.status(Response.Status.OK).type(MediaType.APPLICATION_JSON).entity(ticketDTO).build();
-        } catch (GeneralManagerException exception) {
-            return Response.status(Response.Status.NOT_FOUND).type(MediaType.APPLICATION_JSON).entity(exception.getMessage()).build();
+            return ResponseEntity.ok().contentType(MediaType.APPLICATION_JSON).body(ticketDTO);
+        } catch (TicketServiceTicketNotFoundException exception) {
+            return ResponseEntity.notFound().build();
+        } catch (GeneralServiceException exception) {
+            return ResponseEntity.badRequest().contentType(MediaType.APPLICATION_JSON).body(exception.getMessage());
         }
     }
 
-    @GET
-    @Path("/all")
-    @Produces(MediaType.APPLICATION_JSON)
+    @GetMapping(value = "/all", produces = MediaType.APPLICATION_JSON_VALUE)
     @Override
-    public Response findAll() {
+    public ResponseEntity<?> findAll() {
         try {
-            List<Ticket> listOfFoundTickets = this.ticketManager.findAll();
+            List<Ticket> listOfFoundTickets = this.ticketService.findAll();
             List<TicketDTO> listOfDTOs = new ArrayList<>();
             for (Ticket ticket : listOfFoundTickets) {
                 listOfDTOs.add(new TicketDTO(ticket.getTicketID(), ticket.getMovieTime(), ticket.getTicketFinalPrice(), ticket.getClient().getClientID(), ticket.getMovie().getMovieID()));
             }
-            return Response.status(Response.Status.OK).type(MediaType.APPLICATION_JSON).entity(listOfDTOs).build();
-        } catch (GeneralManagerException exception) {
-            return Response.status(Response.Status.BAD_REQUEST).type(MediaType.APPLICATION_JSON).entity(exception.getMessage()).build();
+
+            if (listOfDTOs.isEmpty()) {
+                return ResponseEntity.notFound().build();
+            } else {
+                return ResponseEntity.ok().contentType(MediaType.APPLICATION_JSON).body(listOfDTOs);
+            }
+        } catch (GeneralServiceException exception) {
+            return ResponseEntity.badRequest().contentType(MediaType.APPLICATION_JSON).body(exception.getMessage());
         }
     }
 
-    @PUT
-    @Consumes(MediaType.APPLICATION_JSON)
-    @Produces(MediaType.APPLICATION_JSON)
+    @PutMapping(consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
     @Override
-    public Response update(TicketDTO ticketDTO) {
+    public ResponseEntity<?> update(@RequestBody TicketDTO ticketDTO) {
         try {
-            Ticket ticket = this.ticketManager.findByUUID(ticketDTO.getTicketID());
+            Ticket ticket = this.ticketService.findByUUID(ticketDTO.getTicketID());
             ticket.setMovieTime(ticketDTO.getMovieTime());
+
             Set<ConstraintViolation<Ticket>> violationSet = validator.validate(ticket);
             List<String> messages = violationSet.stream().map(ConstraintViolation::getMessage).toList();
             if (!violationSet.isEmpty()) {
-                return Response.status(Response.Status.BAD_REQUEST).entity(messages).build();
+                return ResponseEntity.badRequest().body(messages);
             }
-            this.ticketManager.update(ticket);
-            return Response.status(Response.Status.NO_CONTENT).type(MediaType.APPLICATION_JSON).build();
-        } catch (GeneralManagerException exception) {
-            return Response.status(Response.Status.BAD_REQUEST).type(MediaType.APPLICATION_JSON).entity(exception.getMessage()).build();
+
+            this.ticketService.update(ticket);
+            return ResponseEntity.noContent().build();
+        } catch (GeneralServiceException exception) {
+            return ResponseEntity.badRequest().contentType(MediaType.APPLICATION_JSON).body(exception.getMessage());
         }
     }
 
-    @DELETE
-    @Path("/{id}")
+    @DeleteMapping(value = "/{id}")
     @Override
-    public Response delete(@PathParam("id") UUID ticketID) {
+    public ResponseEntity<?> delete(@PathVariable("id") UUID ticketID) {
         try {
-            this.ticketManager.delete(ticketID);
-            return Response.status(Response.Status.NO_CONTENT).build();
-        } catch (GeneralManagerException exception) {
-            return Response.status(Response.Status.BAD_REQUEST).entity(exception.getMessage()).build();
+            this.ticketService.delete(ticketID);
+            return ResponseEntity.noContent().build();
+        } catch (GeneralServiceException exception) {
+            return ResponseEntity.badRequest().contentType(MediaType.APPLICATION_JSON).body(exception.getMessage());
         }
     }
 }

@@ -10,8 +10,7 @@ import lombok.Setter;
 
 import java.util.UUID;
 
-@Getter
-@Setter
+@Getter @Setter
 @NoArgsConstructor
 public class TicketInputDTO {
 
