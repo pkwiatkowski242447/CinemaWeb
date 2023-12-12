@@ -1,5 +1,7 @@
 package pl.pas.gr3.dto.users;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.json.bind.annotation.JsonbCreator;
 import jakarta.json.bind.annotation.JsonbProperty;
 import jakarta.validation.constraints.NotNull;
@@ -13,21 +15,23 @@ import java.util.UUID;
 @NoArgsConstructor
 public class AdminDTO {
 
-
+    @JsonProperty("id")
     @JsonbProperty("id")
-    @NotNull
     protected UUID adminID;
 
+    @JsonProperty("login")
     @JsonbProperty("login")
     protected String adminLogin;
 
+    @JsonProperty("status-active")
     @JsonbProperty("status-active")
     protected boolean adminStatusActive;
 
+    @JsonCreator
     @JsonbCreator
-    public AdminDTO(@JsonbProperty("id") UUID adminID,
-                    @JsonbProperty("login") String adminLogin,
-                    @JsonbProperty("status-active") boolean adminStatusActive) {
+    public AdminDTO(@JsonProperty("id") @JsonbProperty("id") UUID adminID,
+                    @JsonProperty("login") @JsonbProperty("login") String adminLogin,
+                    @JsonProperty("status-active") @JsonbProperty("status-active") boolean adminStatusActive) {
         this.adminID = adminID;
         this.adminLogin = adminLogin;
         this.adminStatusActive = adminStatusActive;

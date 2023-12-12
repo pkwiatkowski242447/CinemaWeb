@@ -25,11 +25,16 @@ import pl.pas.gr3.cinema.mapping.docs.TicketDoc;
 import pl.pas.gr3.cinema.mapping.docs.users.ClientDoc;
 import pl.pas.gr3.cinema.mapping.mappers.MovieMapper;
 import pl.pas.gr3.cinema.mapping.mappers.TicketMapper;
+import pl.pas.gr3.cinema.mapping.mappers.users.AdminMapper;
+import pl.pas.gr3.cinema.mapping.mappers.users.ClientMapper;
+import pl.pas.gr3.cinema.mapping.mappers.users.StaffMapper;
 import pl.pas.gr3.cinema.messages.repositories.MongoRepositoryMessages;
 import pl.pas.gr3.cinema.model.Movie;
 import pl.pas.gr3.cinema.model.Ticket;
 import pl.pas.gr3.cinema.model.TicketType;
+import pl.pas.gr3.cinema.model.users.Admin;
 import pl.pas.gr3.cinema.model.users.Client;
+import pl.pas.gr3.cinema.model.users.Staff;
 import pl.pas.gr3.cinema.repositories.interfaces.TicketRepositoryInterface;
 
 import jakarta.annotation.PostConstruct;
@@ -100,18 +105,55 @@ public class TicketRepository extends MongoRepository implements TicketRepositor
 
     @PostConstruct
     private void initializeDatabaseState() {
+        // Client data
+
         UUID clientIDNo1 = UUID.fromString("26c4727c-c791-4170-ab9d-faf7392e80b2");
         UUID clientIDNo2 = UUID.fromString("0b08f526-b018-4d23-8baa-93f0fb884edf");
-        Client clientNo1 = new Client(clientIDNo1, "ClientLoginNo1", "ClientPasswordNo1");
-        Client clientNo2 = new Client(clientIDNo2, "ClientLoginNo2", "ClientPasswordNo2");
+        UUID clientIDNo3 = UUID.fromString("30392328-2cae-4e76-abb8-b1aa8f58a9e4");
+        UUID adminID = UUID.fromString("17dad3c7-7605-4808-bec5-d6f46abd23b8");
+        UUID staffID = UUID.fromString("3d8ef63c-f99d-445c-85d0-4b14e68fc5a1");
+        Client clientNo1 = new Client(clientIDNo1, "NewFirstClientLogin", "ClientPasswordNo1");
+        Client clientNo2 = new Client(clientIDNo2, "NewSecondClientLogin", "ClientPasswordNo2");
+        Client clientNo3 = new Client(clientIDNo3, "NewThirdClientLogin", "ClientPasswordNo3");
+        Admin admin = new Admin(adminID, "NewSecretAdminLogin", "AdminPassword");
+        Staff staff = new Staff(staffID, "NewSecretStaffLogin", "StaffPassword");
+
+        List<Client> listOfClients = List.of(clientNo1, clientNo2, clientNo3, admin, staff);
+        for (Client client : listOfClients) {
+            Bson filter = Filters.eq(MongoRepositoryConstants.GENERAL_IDENTIFIER, client.getClientID());
+            if (this.getClientCollection().find(filter).first() == null && client.getClass().equals(Client.class)) {
+                this.getClientCollection().insertOne(ClientMapper.toClientDoc(client));
+            } else if (this.getClientCollection().find(filter).first() == null && client.getClass().equals(Admin.class)) {
+                this.getClientCollection().insertOne(AdminMapper.toAdminDoc(client));
+            } else if (this.getClientCollection().find(filter).first() == null && client.getClass().equals(Staff.class)) {
+                this.getClientCollection().insertOne(StaffMapper.toStaffDoc(client));
+            }
+        }
+
+        // Movie data
+
         UUID movieNo1ID = UUID.fromString("f3e66584-f793-4f5e-9dec-904ca00e2dd6");
         UUID movieNo2ID = UUID.fromString("9b9e1de2-099b-415d-96b4-f7cfc8897318");
+        UUID movieNo3ID = UUID.fromString("b69b4714-e307-4ebf-b491-e3720f963f53");
         Movie movieNo1 = new Movie(movieNo1ID, "Pulp Fiction", 45.75, 1, 100);
         Movie movieNo2 = new Movie(movieNo2ID, "Cars", 30.50, 2, 50);
+        Movie movieNo3 = new Movie(movieNo3ID, "Joker", 50.00, 3, 75);
+
+        List<Movie> listOfMovies = List.of(movieNo1, movieNo2, movieNo3);
+        for (Movie movie : listOfMovies) {
+            Bson filter = Filters.eq(MongoRepositoryConstants.GENERAL_IDENTIFIER, movie.getMovieID());
+            if (this.getMovieCollection().find(filter).first() == null) {
+                this.getMovieCollection().insertOne(MovieMapper.toMovieDoc(movie));
+            }
+        }
+
+        // Creating tickets
+
         UUID ticketIDNo1 = UUID.fromString("a0ed1047-b56b-4e22-b797-c5a28df24d11");
         UUID ticketIDNo2 = UUID.fromString("1caa19c8-12c5-45ae-8019-ba93ba83a927");
         LocalDateTime movieTimeNo1 = LocalDateTime.now().plusDays(2).plusHours(4).truncatedTo(ChronoUnit.SECONDS);
         LocalDateTime movieTimeNo2 = LocalDateTime.now().plusDays(4).plusHours(2).plusMinutes(30).truncatedTo(ChronoUnit.SECONDS);
+
         try {
             Ticket ticketNo1 = new Ticket(ticketIDNo1, movieTimeNo1, clientNo1, movieNo1, TicketType.NORMAL);
             Ticket ticketNo2 = new Ticket(ticketIDNo2, movieTimeNo2, clientNo2, movieNo2, TicketType.REDUCED);

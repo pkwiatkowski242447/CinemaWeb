@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE composition
+        PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+        "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<ui:composition xmlns:ui="http://xmlns.jcp.org/jsf/facelets"
+                xmlns:h="http://xmlns.jcp.org/jsf/html"
+                xmlns:f="http://xmlns.jcp.org/jsf/core"
+                template="templates/template.xhtml">
+
+    <ui:define name="top">
+        <h:outputLink value="index.xhtml">Main page</h:outputLink>
+        > Show clients
+    </ui:define>
+
+    <ui:define name="menu">
+        <ui:include src="templates/menu.xhtml"/>
+    </ui:define>
+
+    <ui:define name="content">
+        <h:outputText value="Lista wszystkich dostępnych klientów:" />
+
+        <h:form>
+            <h:inputText value="#{clientBean.clientLogin}" />
+            <h:commandButton value="Filter by login" action="#{clientBean.findAllClientsMatchingLogin()}" />
+
+            <h:dataTable value="#{clientBean.listOfDTOs}" var="client">
+                <h:column>
+                    <f:facet name="header">ID</f:facet>
+                    <h:outputText value="#{client.clientID}" />
+                </h:column>
+                <h:column>
+                    <f:facet name="header">Login</f:facet>
+                    <h:outputText value="#{client.clientLogin}" />
+                </h:column>
+                <h:column>
+                    <f:facet name="header">Active</f:facet>
+                    <h:outputText value="#{client.clientStatusActive}" />
+                </h:column>
+            </h:dataTable>
+        </h:form>
+    </ui:define>
+
+</ui:composition>

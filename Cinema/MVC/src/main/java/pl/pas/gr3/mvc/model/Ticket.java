@@ -27,7 +27,7 @@ public class Ticket {
     @NotEmpty
     private String ticketType;
 
-    public Ticket(String movieTime, UUID clientID, UUID movieID, String ticketType) {
+    public Ticket(@NotNull String movieTime, @NotNull UUID clientID, @NotNull UUID movieID, @NotNull String ticketType) {
         this.movieTime = movieTime;
         this.clientID = clientID;
         this.movieID = movieID;

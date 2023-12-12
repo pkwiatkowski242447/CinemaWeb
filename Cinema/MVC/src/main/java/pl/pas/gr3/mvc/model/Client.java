@@ -24,7 +24,7 @@ public class Client {
     @Size(max = ClientConstants.PASSWORD_MAX_LENGTH, message = ClientValidationMessages.PASSWORD_TOO_LONG)
     private String clientPassword;
 
-    public Client(String clientLogin, String clientPassword) {
+    public Client(@NotNull String clientLogin, @NotNull String clientPassword) {
         this.clientLogin = clientLogin;
         this.clientPassword = clientPassword;
     }

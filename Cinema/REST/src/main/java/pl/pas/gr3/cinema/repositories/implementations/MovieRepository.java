@@ -105,9 +105,14 @@ public class MovieRepository extends MongoRepository implements MovieRepositoryI
         Movie movieNo1 = new Movie(movieNo1ID, "Pulp Fiction", 45.75, 1, 100);
         Movie movieNo2 = new Movie(movieNo2ID, "Cars", 30.50, 2, 50);
         Movie movieNo3 = new Movie(movieNo3ID, "Joker", 50.00, 3, 75);
-        this.getMovieCollection().insertOne(MovieMapper.toMovieDoc(movieNo1));
-        this.getMovieCollection().insertOne(MovieMapper.toMovieDoc(movieNo2));
-        this.getMovieCollection().insertOne(MovieMapper.toMovieDoc(movieNo3));
+
+        List<Movie> listOfMovies = List.of(movieNo1, movieNo2, movieNo3);
+        for (Movie movie : listOfMovies) {
+            Bson filter = Filters.eq(MongoRepositoryConstants.GENERAL_IDENTIFIER, movie.getMovieID());
+            if (this.getMovieCollection().find(filter).first() == null) {
+                this.getMovieCollection().insertOne(MovieMapper.toMovieDoc(movie));
+            }
+        }
     }
 
     @PreDestroy

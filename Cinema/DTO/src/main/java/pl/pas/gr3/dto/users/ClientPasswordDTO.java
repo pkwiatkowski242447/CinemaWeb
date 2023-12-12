@@ -1,5 +1,7 @@
 package pl.pas.gr3.dto.users;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.json.bind.annotation.JsonbCreator;
 import jakarta.json.bind.annotation.JsonbProperty;
 import lombok.Getter;
@@ -12,14 +14,16 @@ import java.util.UUID;
 @NoArgsConstructor
 public class ClientPasswordDTO extends ClientDTO {
 
-    @JsonbProperty("client-password")
+    @JsonProperty("password")
+    @JsonbProperty("password")
     private String clientPassword;
 
+    @JsonCreator
     @JsonbCreator
-    public ClientPasswordDTO(@JsonbProperty("id") UUID clientID,
-                             @JsonbProperty("login") String clientLogin,
-                             @JsonbProperty("password") String clientPassword,
-                             @JsonbProperty("status-active") boolean clientStatusActive) {
+    public ClientPasswordDTO(@JsonProperty("id") @JsonbProperty("id") UUID clientID,
+                             @JsonProperty("login") @JsonbProperty("login") String clientLogin,
+                             @JsonProperty("password") @JsonbProperty("password") String clientPassword,
+                             @JsonProperty("status-active") @JsonbProperty("status-active") boolean clientStatusActive) {
         super(clientID, clientLogin, clientStatusActive);
         this.clientPassword = clientPassword;
     }

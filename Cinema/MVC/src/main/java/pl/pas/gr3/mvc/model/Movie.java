@@ -29,7 +29,7 @@ public class Movie {
     @Max(value = MovieConstants.NUMBER_OF_AVAILABLE_SEATS_MAX_VALUE, message = MovieValidationMessages.NUMBER_OF_AVAILABLE_SEATS_ABOVE_LIMIT)
     private int numberOfAvailableSeats;
 
-    public Movie(String movieTitle, double movieBasePrice, int scrRoomNumber, int numberOfAvailableSeats) {
+    public Movie(@NotNull String movieTitle, double movieBasePrice, int scrRoomNumber, int numberOfAvailableSeats) {
         this.movieTitle = movieTitle;
         this.movieBasePrice = movieBasePrice;
         this.scrRoomNumber = scrRoomNumber;

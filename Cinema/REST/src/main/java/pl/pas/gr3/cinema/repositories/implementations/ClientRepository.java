@@ -108,11 +108,18 @@ public class ClientRepository extends MongoRepository implements ClientRepositor
         Client clientNo3 = new Client(clientIDNo3, "NewThirdClientLogin", "ClientPasswordNo3");
         Admin admin = new Admin(adminID, "NewSecretAdminLogin", "AdminPassword");
         Staff staff = new Staff(staffID, "NewSecretStaffLogin", "StaffPassword");
-        this.getClientCollection().insertOne(ClientMapper.toClientDoc(clientNo1));
-        this.getClientCollection().insertOne(ClientMapper.toClientDoc(clientNo2));
-        this.getClientCollection().insertOne(ClientMapper.toClientDoc(clientNo3));
-        this.getClientCollection().insertOne(AdminMapper.toAdminDoc(admin));
-        this.getClientCollection().insertOne(StaffMapper.toStaffDoc(staff));
+
+        List<Client> listOfClients = List.of(clientNo1, clientNo2, clientNo3, admin, staff);
+        for (Client client : listOfClients) {
+            Bson filter = Filters.eq(MongoRepositoryConstants.GENERAL_IDENTIFIER, client.getClientID());
+            if (this.getClientCollection().find(filter).first() == null && client.getClass().equals(Client.class)) {
+                this.getClientCollection().insertOne(ClientMapper.toClientDoc(client));
+            } else if (this.getClientCollection().find(filter).first() == null && client.getClass().equals(Admin.class)) {
+                this.getClientCollection().insertOne(AdminMapper.toAdminDoc(client));
+            } else if (this.getClientCollection().find(filter).first() == null && client.getClass().equals(Staff.class)) {
+                this.getClientCollection().insertOne(StaffMapper.toStaffDoc(client));
+            }
+        }
     }
 
     @PreDestroy
