@@ -173,6 +173,7 @@ public class TicketRepository extends MongoRepository implements TicketRepositor
         } catch (TicketRepositoryException exception) {
             logger.debug(exception.getMessage());
         }
+        this.close();
     }
 
     public TicketRepository(String databaseName) {

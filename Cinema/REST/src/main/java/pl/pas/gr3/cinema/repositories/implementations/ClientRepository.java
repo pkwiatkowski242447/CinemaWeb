@@ -141,6 +141,7 @@ public class ClientRepository extends MongoRepository implements ClientRepositor
         } catch (ClientRepositoryException exception) {
             logger.debug(exception.getMessage());
         }
+        this.close();
     }
 
     public ClientRepository(String databaseName) {

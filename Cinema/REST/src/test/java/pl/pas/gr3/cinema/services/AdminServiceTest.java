@@ -60,7 +60,7 @@ public class AdminServiceTest {
 
     @AfterAll
     public static void destroy() {
-        adminService.close();
+        clientRepository.close();
     }
 
     // Create tests

@@ -10,12 +10,11 @@ import pl.pas.gr3.cinema.model.Movie;
 import pl.pas.gr3.cinema.model.Ticket;
 import pl.pas.gr3.cinema.repositories.implementations.MovieRepository;
 
-import java.io.Closeable;
 import java.util.List;
 import java.util.UUID;
 
 @Service
-public class MovieService implements MovieManagerInterface, Closeable {
+public class MovieService implements MovieManagerInterface {
 
     private MovieRepository movieRepository;
 
@@ -77,10 +76,5 @@ public class MovieService implements MovieManagerInterface, Closeable {
     @Override
     public List<Ticket> getListOfTicketsForCertainMovie(UUID movieID) {
         return this.movieRepository.getListOfTicketsForMovie(movieID);
-    }
-
-    @Override
-    public void close() {
-        this.movieRepository.close();
     }
 }

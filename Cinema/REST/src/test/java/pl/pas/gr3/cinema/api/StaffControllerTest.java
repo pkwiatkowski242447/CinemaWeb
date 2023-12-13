@@ -75,7 +75,7 @@ public class StaffControllerTest {
 
     @AfterAll
     public static void destroy() {
-        staffManager.close();
+        clientRepository.close();
     }
 
     // Create tests

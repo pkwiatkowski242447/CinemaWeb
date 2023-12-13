@@ -54,7 +54,7 @@ public class MovieServiceTest {
 
     @AfterAll
     public static void destroy() {
-        movieService.close();
+        movieRepository.close();
     }
 
     // Create tests

@@ -10,14 +10,13 @@ import pl.pas.gr3.cinema.model.Ticket;
 import pl.pas.gr3.cinema.model.TicketType;
 import pl.pas.gr3.cinema.repositories.implementations.TicketRepository;
 
-import java.io.Closeable;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeParseException;
 import java.util.List;
 import java.util.UUID;
 
 @Service
-public class TicketService implements TicketManagerInterface, Closeable {
+public class TicketService implements TicketManagerInterface {
 
     private TicketRepository ticketRepository;
 
@@ -79,10 +78,5 @@ public class TicketService implements TicketManagerInterface, Closeable {
         } catch (TicketRepositoryException exception) {
             throw new TicketServiceDeleteException(exception.getMessage(), exception);
         }
-    }
-
-    @Override
-    public void close() {
-        this.ticketRepository.close();
     }
 }

@@ -74,7 +74,7 @@ public class MovieControllerTest {
 
     @AfterAll
     public static void destroy() {
-        movieService.close();
+        movieRepository.close();
     }
 
     // Create tests

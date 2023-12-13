@@ -12,12 +12,11 @@ import pl.pas.gr3.cinema.model.Ticket;
 import pl.pas.gr3.cinema.model.users.Staff;
 import pl.pas.gr3.cinema.repositories.implementations.ClientRepository;
 
-import java.io.Closeable;
 import java.util.List;
 import java.util.UUID;
 
 @Service
-public class StaffService implements UserManagerInterface<Staff>, Closeable {
+public class StaffService implements UserManagerInterface<Staff> {
 
     private ClientRepository clientRepository;
 
@@ -123,10 +122,5 @@ public class StaffService implements UserManagerInterface<Staff>, Closeable {
         } catch (ClientRepositoryException exception) {
             throw new StaffServiceDeleteException(exception.getMessage(), exception);
         }
-    }
-
-    @Override
-    public void close() {
-        this.clientRepository.close();
     }
 }

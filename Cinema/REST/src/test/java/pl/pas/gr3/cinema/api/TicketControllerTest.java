@@ -206,11 +206,9 @@ public class TicketControllerTest {
 
     @AfterAll
     public static void destroy() {
-        ticketService.close();
-        clientService.close();
-        adminService.close();
-        staffService.close();
-        movieService.close();
+        ticketRepository.close();
+        clientRepository.close();
+        movieRepository.close();
     }
 
     // Create tests

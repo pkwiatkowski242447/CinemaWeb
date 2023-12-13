@@ -12,12 +12,11 @@ import pl.pas.gr3.cinema.model.Ticket;
 import pl.pas.gr3.cinema.model.users.Client;
 import pl.pas.gr3.cinema.repositories.implementations.ClientRepository;
 
-import java.io.Closeable;
 import java.util.List;
 import java.util.UUID;
 
 @Service
-public class ClientService implements UserManagerInterface<Client>, Closeable {
+public class ClientService implements UserManagerInterface<Client> {
 
     private ClientRepository clientRepository;
 
@@ -28,6 +27,7 @@ public class ClientService implements UserManagerInterface<Client>, Closeable {
     public ClientService(ClientRepository clientRepository) {
         this.clientRepository = clientRepository;
     }
+
 
     @Override
     public Client create(String login, String password) throws ClientServiceCreateException {
@@ -123,10 +123,5 @@ public class ClientService implements UserManagerInterface<Client>, Closeable {
         } catch (ClientRepositoryException exception) {
             throw new ClientServiceDeleteException(exception.getMessage(), exception);
         }
-    }
-
-    @Override
-    public void close() {
-        this.clientRepository.close();
     }
 }

@@ -76,7 +76,7 @@ public class AdminControllerTest {
 
     @AfterAll
     public static void destroy() {
-        adminService.close();
+        clientRepository.close();
     }
 
     // Create tests

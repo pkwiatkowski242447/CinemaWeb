@@ -183,8 +183,8 @@ public class TicketServiceTest {
     @AfterAll
     public static void destroy() {
         clientRepository.close();
-        movieService.close();
-        ticketService.close();
+        movieRepository.close();
+        ticketRepository.close();
     }
 
     // Create tests

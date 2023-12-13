@@ -58,7 +58,7 @@ public class StaffServiceTest {
 
     @AfterAll
     public static void destroy() {
-        staffService.close();
+        clientRepository.close();
     }
 
     // Create tests

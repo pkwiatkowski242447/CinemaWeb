@@ -124,6 +124,7 @@ public class MovieRepository extends MongoRepository implements MovieRepositoryI
         } catch (MovieRepositoryException exception) {
             logger.debug(exception.getMessage());
         }
+        this.close();
     }
 
     public MovieRepository(String databaseName) {

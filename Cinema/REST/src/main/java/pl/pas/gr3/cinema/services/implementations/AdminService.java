@@ -12,12 +12,11 @@ import pl.pas.gr3.cinema.model.Ticket;
 import pl.pas.gr3.cinema.model.users.Admin;
 import pl.pas.gr3.cinema.repositories.implementations.ClientRepository;
 
-import java.io.Closeable;
 import java.util.List;
 import java.util.UUID;
 
 @Service
-public class AdminService implements UserManagerInterface<Admin>, Closeable {
+public class AdminService implements UserManagerInterface<Admin> {
 
     private ClientRepository clientRepository;
 
@@ -123,10 +122,5 @@ public class AdminService implements UserManagerInterface<Admin>, Closeable {
         } catch (ClientRepositoryException exception) {
             throw new AdminServiceDeleteException(exception.getMessage(), exception);
         }
-    }
-
-    @Override
-    public void close() {
-        this.clientRepository.close();
     }
 }

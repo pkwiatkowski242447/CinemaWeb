@@ -59,7 +59,7 @@ public class ClientServiceTest {
 
     @AfterAll
     public static void destroy() {
-        clientService.close();
+        clientRepository.close();
     }
 
     // Create tests
