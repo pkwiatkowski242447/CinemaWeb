@@ -49,7 +49,7 @@ public class AdminController implements UserServiceInterface<Admin> {
             }
 
             AdminDTO adminDTO = new AdminDTO(admin.getClientID(), admin.getClientLogin(), admin.isClientStatusActive());
-            return ResponseEntity.created(URI.create("/" + adminDTO.getAdminID().toString())).contentType(MediaType.APPLICATION_JSON).body(adminDTO);
+            return ResponseEntity.created(URI.create("http://localhost:8000/api/v1/admins/" + adminDTO.getAdminID().toString())).contentType(MediaType.APPLICATION_JSON).body(adminDTO);
         } catch (AdminServiceCreateAdminDuplicateLoginException exception) {
             return ResponseEntity.status(HttpStatus.CONFLICT).contentType(MediaType.APPLICATION_JSON).body(exception.getMessage());
         } catch (GeneralServiceException exception) {

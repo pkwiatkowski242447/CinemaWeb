@@ -49,7 +49,7 @@ public class MovieController implements MovieServiceInterface {
             }
 
             MovieDTO movieDTO = new MovieDTO(movie.getMovieID(), movie.getMovieTitle(), movie.getMovieBasePrice(), movie.getScrRoomNumber(), movie.getNumberOfAvailableSeats());
-            return ResponseEntity.created(URI.create("/" + movieDTO.getMovieID().toString())).contentType(MediaType.APPLICATION_JSON).body(movieDTO);
+            return ResponseEntity.created(URI.create("http://localhost:8000/api/v1/movies/" + movieDTO.getMovieID().toString())).contentType(MediaType.APPLICATION_JSON).body(movieDTO);
         } catch (GeneralServiceException exception) {
             return ResponseEntity.badRequest().contentType(MediaType.APPLICATION_JSON).body(exception.getMessage());
         }

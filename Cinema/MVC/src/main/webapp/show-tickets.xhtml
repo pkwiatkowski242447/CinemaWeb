@@ -5,11 +5,12 @@
 
 <ui:composition xmlns:ui="http://xmlns.jcp.org/jsf/facelets"
                 xmlns:h="http://xmlns.jcp.org/jsf/html"
+                xmlns:f="http://xmlns.jcp.org/jsf/core"
                 template="templates/template.xhtml">
 
     <ui:define name="top">
-        <h:outputLink value="index.xhtml">Main page</h:outputLink>
-        > Show tickets
+        <h:outputLink value="index.xhtml">Strona główna</h:outputLink>
+        > Pokaż bilety
     </ui:define>
 
     <ui:define name="menu">
@@ -17,7 +18,29 @@
     </ui:define>
 
     <ui:define name="content">
-        <h:outputText value="Show tickets" />
+        <h:outputText value="Lista wszystkich biletów:" />
+        <h:dataTable value="#{ticketBean.listOfTicketDTOs}" var="ticket">
+            <h:column>
+                <f:facet name="header">ID Biletu</f:facet>
+                <h:outputText value="#{ticket.ticketID}" />
+            </h:column>
+            <h:column>
+                <f:facet name="header">Czas emsji filmu</f:facet>
+                <h:outputText value="#{ticket.movieTime}" />
+            </h:column>
+            <h:column>
+                <f:facet name="header">Cena biletu</f:facet>
+                <h:outputText value="#{ticket.ticketFinalPrice}" />
+            </h:column>
+            <h:column>
+                <f:facet name="header">ID Klienta</f:facet>
+                <h:outputText value="#{ticket.clientID}" />
+            </h:column>
+            <h:column>
+                <f:facet name="header">ID Filmu</f:facet>
+                <h:outputText value="#{ticket.movieID}" />
+            </h:column>
+        </h:dataTable>
     </ui:define>
 
 </ui:composition>

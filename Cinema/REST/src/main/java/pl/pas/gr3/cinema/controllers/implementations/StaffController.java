@@ -52,7 +52,7 @@ public class StaffController implements UserServiceInterface<Staff> {
             }
 
             StaffDTO staffDTO = new StaffDTO(staff.getClientID(), staff.getClientLogin(), staff.isClientStatusActive());
-            return ResponseEntity.created(URI.create("/" + staffDTO.getStaffID().toString())).contentType(MediaType.APPLICATION_JSON).body(staffDTO);
+            return ResponseEntity.created(URI.create("http://localhost:8000/api/v1/staffs/" + staffDTO.getStaffID().toString())).contentType(MediaType.APPLICATION_JSON).body(staffDTO);
         } catch (StaffServiceCreateStaffDuplicateLoginException exception) {
             return ResponseEntity.status(HttpStatus.CONFLICT).contentType(MediaType.APPLICATION_JSON).body(exception.getMessage());
         } catch (GeneralServiceException exception) {

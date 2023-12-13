@@ -51,7 +51,7 @@ public class ClientController implements UserServiceInterface<Client> {
             }
 
             ClientDTO clientDTO = new ClientDTO(client.getClientID(), client.getClientLogin(), client.isClientStatusActive());
-            return ResponseEntity.created(URI.create("/" + clientDTO.getClientID().toString())).contentType(MediaType.APPLICATION_JSON).body(clientDTO);
+            return ResponseEntity.created(URI.create("http://localhost:8000/api/v1/clients/" + clientDTO.getClientID().toString())).contentType(MediaType.APPLICATION_JSON).body(clientDTO);
         } catch (ClientServiceCreateClientDuplicateLoginException exception) {
             return ResponseEntity.status(HttpStatus.CONFLICT).contentType(MediaType.APPLICATION_JSON).body(exception.getMessage());
         } catch (GeneralServiceException exception) {

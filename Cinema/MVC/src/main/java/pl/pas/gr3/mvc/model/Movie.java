@@ -8,7 +8,6 @@ import lombok.Setter;
 import pl.pas.gr3.mvc.constants.MovieConstants;
 import pl.pas.gr3.mvc.messages.MovieValidationMessages;
 
-@Valid
 @Getter @Setter @NoArgsConstructor
 public class Movie {
 

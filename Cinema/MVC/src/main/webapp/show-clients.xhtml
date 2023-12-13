@@ -9,8 +9,8 @@
                 template="templates/template.xhtml">
 
     <ui:define name="top">
-        <h:outputLink value="index.xhtml">Main page</h:outputLink>
-        > Show clients
+        <h:outputLink value="index.xhtml">Strona główna</h:outputLink>
+        > Pokaż klientów
     </ui:define>
 
     <ui:define name="menu">
@@ -24,7 +24,7 @@
             <h:inputText value="#{clientBean.clientLogin}" />
             <h:commandButton value="Filter by login" action="#{clientBean.findAllClientsMatchingLogin()}" />
 
-            <h:dataTable value="#{clientBean.listOfDTOs}" var="client">
+            <h:dataTable value="#{clientBean.listOfClientDTOs}" var="client">
                 <h:column>
                     <f:facet name="header">ID</f:facet>
                     <h:outputText value="#{client.clientID}" />
@@ -34,7 +34,7 @@
                     <h:outputText value="#{client.clientLogin}" />
                 </h:column>
                 <h:column>
-                    <f:facet name="header">Active</f:facet>
+                    <f:facet name="header">Aktywny</f:facet>
                     <h:outputText value="#{client.clientStatusActive}" />
                 </h:column>
             </h:dataTable>

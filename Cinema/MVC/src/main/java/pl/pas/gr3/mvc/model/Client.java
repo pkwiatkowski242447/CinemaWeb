@@ -1,7 +1,5 @@
 package pl.pas.gr3.mvc.model;
 
-import jakarta.enterprise.context.ApplicationScoped;
-import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 import lombok.Getter;
@@ -10,7 +8,6 @@ import lombok.Setter;
 import pl.pas.gr3.mvc.constants.ClientConstants;
 import pl.pas.gr3.mvc.messages.ClientValidationMessages;
 
-@Valid @ApplicationScoped
 @Getter @Setter @NoArgsConstructor
 public class Client {
 
@@ -24,7 +21,7 @@ public class Client {
     @Size(max = ClientConstants.PASSWORD_MAX_LENGTH, message = ClientValidationMessages.PASSWORD_TOO_LONG)
     private String clientPassword;
 
-    public Client(@NotNull String clientLogin, @NotNull String clientPassword) {
+    public Client(String clientLogin, String clientPassword) {
         this.clientLogin = clientLogin;
         this.clientPassword = clientPassword;
     }

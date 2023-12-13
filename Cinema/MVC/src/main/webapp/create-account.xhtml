@@ -9,8 +9,8 @@
                 template="templates/template.xhtml">
 
     <ui:define name="top">
-        <h:outputLink value="index.xhtml">Main page</h:outputLink>
-        > Create account
+        <h:outputLink value="index.xhtml">Strona główna</h:outputLink>
+        > Utwórz konto
     </ui:define>
 
     <ui:define name="menu">
@@ -20,27 +20,20 @@
     <ui:define name="content">
         Status code:
         <h:outputText value="#{clientBean.operationStatusCode}" />
+
         <h:form>
-            <h:outputLabel for="loginInput">Enter login</h:outputLabel>
+            <h:outputLabel for="loginInput">Podaj login</h:outputLabel>
             <h:inputText id="loginInput" value="#{clientBean.client.clientLogin}" required="true" maxlength="20" />
             <br />
-            <h:outputLabel for="passworFirstInput">Enter password</h:outputLabel>
+
+            <h:outputLabel for="passworFirstInput">Podaj password</h:outputLabel>
             <h:inputSecret id="passworFirstInput" value="#{clientBean.client.clientPassword}" required="true" maxlength="40" />
             <br />
-            <h:commandButton value="Submit" action="#{clientBean.createClient()}" />
+
+            <h:commandButton value="Załóż konto" action="#{clientBean.createClient()}"/>
         </h:form>
 
-        <p>${clientBean.message}</p>
-
-        <h:panelGroup rendered="#{clientBean.operationStatusCode eq '201'}">
-            <p><h:outputText>Konto klienta zostało utworzone pomyślnie.</h:outputText></p>
-        </h:panelGroup>
-        <h:panelGroup rendered="#{clientBean.operationStatusCode eq '409'}">
-            <p><h:outputText>Ten login jest już zajęty.</h:outputText></p>
-        </h:panelGroup>
-        <h:panelGroup rendered="#{clientBean.operationStatusCode eq '400'}">
-            <p><h:outputText>Podany format danych jest nieprawidłowy.</h:outputText></p>
-        </h:panelGroup>
+        <p><h:outputText id="outputMessage" value="#{clientBean.message}"/></p>
     </ui:define>
 
 </ui:composition>

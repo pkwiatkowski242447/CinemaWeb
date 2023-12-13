@@ -9,7 +9,6 @@ import lombok.Setter;
 
 import java.util.UUID;
 
-@Valid
 @Getter @Setter @NoArgsConstructor
 public class Ticket {
 
