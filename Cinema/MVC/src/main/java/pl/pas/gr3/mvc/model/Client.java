@@ -8,7 +8,8 @@ import lombok.Setter;
 import pl.pas.gr3.mvc.constants.ClientConstants;
 import pl.pas.gr3.mvc.messages.ClientValidationMessages;
 
-@Getter @Setter @NoArgsConstructor
+@Getter @Setter
+@NoArgsConstructor
 public class Client {
 
     @NotNull(message = ClientValidationMessages.NULL_LOGIN)
@@ -21,8 +22,17 @@ public class Client {
     @Size(max = ClientConstants.PASSWORD_MAX_LENGTH, message = ClientValidationMessages.PASSWORD_TOO_LONG)
     private String clientPassword;
 
-    public Client(String clientLogin, String clientPassword) {
+    private boolean clientStatusActive;
+
+    public Client(@NotNull(message = ClientValidationMessages.NULL_LOGIN)
+                  @Size(min = ClientConstants.LOGIN_MIN_LENGTH, message = ClientValidationMessages.LOGIN_TOO_SHORT)
+                  @Size(max = ClientConstants.LOGIN_MAX_LENGTH, message = ClientValidationMessages.LOGIN_TOO_LONG) String clientLogin,
+                  @NotNull(message = ClientValidationMessages.NULL_PASSWORD)
+                  @Size(min = ClientConstants.PASSWORD_MIN_LENGTH, message = ClientValidationMessages.PASSWORD_TOO_SHORT)
+                  @Size(max = ClientConstants.PASSWORD_MAX_LENGTH, message = ClientValidationMessages.PASSWORD_TOO_LONG) String clientPassword,
+                  boolean clientStatusActive) {
         this.clientLogin = clientLogin;
         this.clientPassword = clientPassword;
+        this.clientStatusActive = clientStatusActive;
     }
 }

@@ -5,7 +5,7 @@ import org.springframework.stereotype.Service;
 import pl.pas.gr3.cinema.exceptions.repositories.crud.movie.MovieRepositoryMovieNotFoundException;
 import pl.pas.gr3.cinema.exceptions.services.crud.movie.*;
 import pl.pas.gr3.cinema.exceptions.repositories.MovieRepositoryException;
-import pl.pas.gr3.cinema.services.interfaces.MovieManagerInterface;
+import pl.pas.gr3.cinema.services.interfaces.MovieServiceInterface;
 import pl.pas.gr3.cinema.model.Movie;
 import pl.pas.gr3.cinema.model.Ticket;
 import pl.pas.gr3.cinema.repositories.implementations.MovieRepository;
@@ -14,7 +14,7 @@ import java.util.List;
 import java.util.UUID;
 
 @Service
-public class MovieService implements MovieManagerInterface {
+public class MovieService implements MovieServiceInterface {
 
     private MovieRepository movieRepository;
 

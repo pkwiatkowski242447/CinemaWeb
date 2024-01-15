@@ -3,8 +3,7 @@ package pl.pas.gr3.cinema.model;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import pl.pas.gr3.cinema.exceptions.model.MovieNullReferenceException;
-import pl.pas.gr3.cinema.exceptions.model.TicketCreateException;
+import pl.pas.gr3.cinema.exceptions.repositories.crud.other.TicketNullReferenceException;
 import pl.pas.gr3.cinema.model.users.Client;
 
 import java.time.LocalDateTime;
@@ -26,8 +25,6 @@ public class TicketTest {
     private static Client clientNo2;
     private static Movie movieNo1;
     private static Movie movieNo2;
-    private static TicketType ticketTypeNo1;
-    private static TicketType ticketTypeNo2;
 
     private static double movieBasePriceNo1;
     private static double movieBasePriceNo2;
@@ -43,70 +40,64 @@ public class TicketTest {
     public static void initializeVariables() {
         ticketIDNo1 = UUID.randomUUID();
         ticketIDNo2 = UUID.randomUUID();
+
         movieTimeNo1 = LocalDateTime.now().plusDays(3).truncatedTo(ChronoUnit.SECONDS);
         movieTimeNo2 = LocalDateTime.now().plusDays(3).truncatedTo(ChronoUnit.SECONDS);
+
         ticketFinalPriceNo1 = 50.00;
+
         clientNo1 = new Client(UUID.randomUUID(), "SomeExampleLogin", "SomeExamplePassword");
         clientNo2 = new Client(UUID.randomUUID(), "SomeExampleLogin", "SomeExamplePassword");
+
         movieBasePriceNo1 = 45.00;
         movieBasePriceNo2 = 47.50;
+
         numberOfAvailableSeatsNo1 = 45;
         numberOfAvailableSeatsNo2 = 60;
+
         movieNo1 = new Movie(UUID.randomUUID(), "SomeExampleTitle", movieBasePriceNo1, 1, numberOfAvailableSeatsNo1);
         movieNo2 = new Movie(UUID.randomUUID(), "SomeExampleTitle", movieBasePriceNo2, 2, numberOfAvailableSeatsNo2);
-        ticketTypeNo1 = TicketType.NORMAL;
-        ticketTypeNo2 = TicketType.REDUCED;
     }
 
     @BeforeEach
-    public void initializeTickets() throws TicketCreateException  {
-        ticketNo1 = new Ticket(ticketIDNo1, movieTimeNo1, clientNo1, movieNo1, TicketType.NORMAL);
-        ticketNo2 = new Ticket(ticketIDNo2, movieTimeNo2, clientNo2, movieNo2, TicketType.REDUCED);
+    public void initializeTickets()  {
+        ticketNo1 = new Ticket(ticketIDNo1, movieTimeNo1, movieNo1.getMovieBasePrice(), clientNo1.getUserID(), movieNo1.getMovieID());
+        ticketNo2 = new Ticket(ticketIDNo2, movieTimeNo2, movieNo1.getMovieBasePrice(), clientNo2.getUserID(), movieNo2.getMovieID());
         ticketNo3 = new Ticket(ticketNo1.getTicketID(),
                 ticketNo1.getMovieTime(),
-                ticketNo1.getTicketFinalPrice(),
-                ticketNo1.getClient(),
-                ticketNo1.getMovie());
+                ticketNo1.getTicketPrice(),
+                ticketNo1.getUserID(),
+                ticketNo1.getMovieID());
     }
 
     @Test
-    public void ticketModelLayerConstructorAndGettersTestPositive() throws TicketCreateException {
-        Ticket testTicketNo1 = new Ticket(ticketIDNo1, movieTimeNo1, clientNo1, movieNo1, ticketTypeNo1);
+    public void ticketModelLayerConstructorAndGettersTestPositive() {
+        Ticket testTicketNo1 = new Ticket(ticketIDNo1, movieTimeNo1, movieNo1.getMovieBasePrice(), clientNo1.getUserID(), movieNo1.getMovieID());
         assertNotNull(testTicketNo1);
         assertEquals(ticketIDNo1, testTicketNo1.getTicketID());
         assertEquals(movieTimeNo1, testTicketNo1.getMovieTime());
-        assertEquals(clientNo1, testTicketNo1.getClient());
-        assertEquals(movieNo1, testTicketNo1.getMovie());
-        assertEquals(testTicketNo1.getTicketFinalPrice(), movieBasePriceNo1);
+        assertEquals(clientNo1.getUserID(), testTicketNo1.getUserID());
+        assertEquals(movieNo1.getMovieID(), testTicketNo1.getMovieID());
+        assertEquals(testTicketNo1.getTicketPrice(), movieBasePriceNo1);
 
-        Ticket testTicketNo2 = new Ticket(ticketIDNo2, movieTimeNo2, clientNo2, movieNo2, ticketTypeNo2);
+        Ticket testTicketNo2 = new Ticket(ticketIDNo2, movieTimeNo2, movieNo2.getMovieBasePrice(), clientNo2.getUserID(), movieNo2.getMovieID());
         assertNotNull(testTicketNo2);
         assertEquals(ticketIDNo2, testTicketNo2.getTicketID());
         assertEquals(movieTimeNo2, testTicketNo2.getMovieTime());
-        assertEquals(clientNo2, testTicketNo2.getClient());
-        assertEquals(movieNo2, testTicketNo2.getMovie());
-        assertEquals(testTicketNo2.getTicketFinalPrice(), movieBasePriceNo2 * 0.75);
+        assertEquals(clientNo2.getUserID(), testTicketNo2.getUserID());
+        assertEquals(movieNo2.getMovieID(), testTicketNo2.getMovieID());
+        assertEquals(testTicketNo2.getTicketPrice(), movieBasePriceNo2);
     }
 
     @Test
     public void ticketDataLayerConstructorAndGettersTestPositive() {
-        Ticket testTicket = new Ticket(ticketIDNo1, movieTimeNo1, ticketFinalPriceNo1, clientNo1, movieNo1);
+        Ticket testTicket = new Ticket(ticketIDNo1, movieTimeNo1, ticketFinalPriceNo1, clientNo1.getUserID(), movieNo1.getMovieID());
         assertNotNull(testTicket);
         assertEquals(ticketIDNo1, testTicket.getTicketID());
         assertEquals(movieTimeNo1, testTicket.getMovieTime());
-        assertEquals(ticketFinalPriceNo1, testTicket.getTicketFinalPrice());
-        assertEquals(clientNo1, testTicket.getClient());
-        assertEquals(movieNo1, testTicket.getMovie());
-    }
-
-    @Test
-    public void ticketModelLayerConstructorWithNullMovieTestNegative() {
-        assertThrows(MovieNullReferenceException.class, () -> new Ticket(ticketIDNo1, movieTimeNo1, clientNo1, null, ticketTypeNo1));
-    }
-
-    @Test
-    public void ticketModelLayerConstructorWithNullTicketTypeTestNegative() {
-        assertThrows(MovieNullReferenceException.class, () -> new Ticket(ticketIDNo1, movieTimeNo1, clientNo1, movieNo1, null));
+        assertEquals(ticketFinalPriceNo1, testTicket.getTicketPrice());
+        assertEquals(clientNo1.getUserID(), testTicket.getUserID());
+        assertEquals(movieNo1.getMovieID(), testTicket.getMovieID());
     }
 
     @Test

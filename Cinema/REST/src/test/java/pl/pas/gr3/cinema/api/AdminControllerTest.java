@@ -18,7 +18,7 @@ import pl.pas.gr3.cinema.exceptions.services.crud.admin.AdminServiceDeleteExcept
 import pl.pas.gr3.cinema.exceptions.services.crud.admin.AdminServiceReadException;
 import pl.pas.gr3.cinema.services.implementations.AdminService;
 import pl.pas.gr3.cinema.model.users.Admin;
-import pl.pas.gr3.cinema.repositories.implementations.ClientRepository;
+import pl.pas.gr3.cinema.repositories.implementations.UserRepository;
 
 import java.net.URISyntaxException;
 import java.util.List;
@@ -32,7 +32,7 @@ public class AdminControllerTest {
     private static String adminsBaseURL;
 
     private static final String databaseName = "default";
-    private static ClientRepository clientRepository;
+    private static UserRepository userRepository;
     private static AdminService adminService;
 
     private Admin adminNo1;
@@ -40,8 +40,8 @@ public class AdminControllerTest {
 
     @BeforeAll
     public static void init() {
-        clientRepository = new ClientRepository(databaseName);
-        adminService = new AdminService(clientRepository);
+        userRepository = new UserRepository(databaseName);
+        adminService = new AdminService(userRepository);
 
         adminsBaseURL = "http://localhost:8000/api/v1/admins";
         RestAssured.baseURI = adminsBaseURL;
@@ -67,7 +67,7 @@ public class AdminControllerTest {
         try {
             List<Admin> listOfAdmins = adminService.findAll();
             for (Admin admin : listOfAdmins) {
-                adminService.delete(admin.getClientID());
+                adminService.delete(admin.getUserID());
             }
         } catch (AdminServiceReadException | AdminServiceDeleteException exception) {
             logger.debug(exception.getMessage());
@@ -76,7 +76,7 @@ public class AdminControllerTest {
 
     @AfterAll
     public static void destroy() {
-        clientRepository.close();
+        userRepository.close();
     }
 
     // Create tests
@@ -306,7 +306,7 @@ public class AdminControllerTest {
 
     @Test
     public void adminControllerCreateAdminWithLoginThatIsAlreadyInTheDatabaseTestNegative() throws Exception {
-        String adminLogin = adminNo1.getClientLogin();
+        String adminLogin = adminNo1.getUserLogin();
         String adminPassword = "SecretAdminPasswordNo1";
         AdminInputDTO adminInputDTO = new AdminInputDTO(adminLogin, adminPassword);
 
@@ -524,7 +524,7 @@ public class AdminControllerTest {
 
     @Test
     public void adminControllerFindAdminByIDTestPositive() throws Exception {
-        UUID searchedAdminID = adminNo1.getClientID();
+        UUID searchedAdminID = adminNo1.getUserID();
         try (Jsonb jsonb = JsonbBuilder.create()) {
             String path = adminsBaseURL + "/" + searchedAdminID;
 
@@ -542,9 +542,9 @@ public class AdminControllerTest {
 
             AdminDTO adminDTO = jsonb.fromJson(response.asString(), AdminDTO.class);
 
-            assertEquals(adminNo1.getClientID(), adminDTO.getAdminID());
-            assertEquals(adminNo1.getClientLogin(), adminDTO.getAdminLogin());
-            assertEquals(adminNo1.isClientStatusActive(), adminDTO.isAdminStatusActive());
+            assertEquals(adminNo1.getUserID(), adminDTO.getAdminID());
+            assertEquals(adminNo1.getUserLogin(), adminDTO.getAdminLogin());
+            assertEquals(adminNo1.isUserStatusActive(), adminDTO.isAdminStatusActive());
         }
     }
 
@@ -567,7 +567,7 @@ public class AdminControllerTest {
 
     @Test
     public void adminControllerFindAdminByLoginTestPositive() throws Exception {
-        String searchedAdminLogin = adminNo1.getClientLogin();
+        String searchedAdminLogin = adminNo1.getUserLogin();
         try (Jsonb jsonb = JsonbBuilder.create()) {
             String path = adminsBaseURL + "/login/" + searchedAdminLogin;
 
@@ -585,9 +585,9 @@ public class AdminControllerTest {
 
             AdminDTO adminDTO = jsonb.fromJson(response.asString(), AdminDTO.class);
 
-            assertEquals(adminNo1.getClientID(), adminDTO.getAdminID());
-            assertEquals(adminNo1.getClientLogin(), adminDTO.getAdminLogin());
-            assertEquals(adminNo1.isClientStatusActive(), adminDTO.isAdminStatusActive());
+            assertEquals(adminNo1.getUserID(), adminDTO.getAdminID());
+            assertEquals(adminNo1.getUserLogin(), adminDTO.getAdminLogin());
+            assertEquals(adminNo1.isUserStatusActive(), adminDTO.isAdminStatusActive());
         }
     }
 
@@ -641,16 +641,16 @@ public class AdminControllerTest {
 
     @Test
     public void adminControllerUpdateAdminTestPositive() throws Exception {
-        String adminLoginBefore = adminNo1.getClientLogin();
-        String adminPasswordBefore = adminNo1.getClientPassword();
+        String adminLoginBefore = adminNo1.getUserLogin();
+        String adminPasswordBefore = adminNo1.getUserPassword();
         String newAdminLogin = "SomeNewAdminLoginNo1";
         String newAdminPassword = "SomeNewAdminPasswordNo1";
 
-        adminNo1.setClientLogin(newAdminLogin);
-        adminNo1.setClientPassword(newAdminPassword);
+        adminNo1.setUserLogin(newAdminLogin);
+        adminNo1.setUserPassword(newAdminPassword);
 
         try (Jsonb jsonb = JsonbBuilder.create()) {
-            AdminPasswordDTO adminPasswordDTO = new AdminPasswordDTO(adminNo1.getClientID(), adminNo1.getClientLogin(), adminNo1.getClientPassword(), adminNo1.isClientStatusActive());
+            AdminPasswordDTO adminPasswordDTO = new AdminPasswordDTO(adminNo1.getUserID(), adminNo1.getUserLogin(), adminNo1.getUserPassword(), adminNo1.isUserStatusActive());
             AdminPasswordDTO[] arr = new AdminPasswordDTO[1];
             arr[0] = adminPasswordDTO;
             String jsonPayload = jsonb.toJson(arr[0]);
@@ -668,10 +668,10 @@ public class AdminControllerTest {
             validatableResponse.statusCode(204);
         }
 
-        Admin foundAdmin = adminService.findByUUID(adminNo1.getClientID());
+        Admin foundAdmin = adminService.findByUUID(adminNo1.getUserID());
 
-        String adminLoginAfter = foundAdmin.getClientLogin();
-        String adminPasswordAfter = foundAdmin.getClientPassword();
+        String adminLoginAfter = foundAdmin.getUserLogin();
+        String adminPasswordAfter = foundAdmin.getUserPassword();
 
         assertEquals(newAdminLogin, adminLoginAfter);
         assertEquals(newAdminPassword, adminPasswordAfter);
@@ -682,9 +682,9 @@ public class AdminControllerTest {
     @Test
     public void adminControllerUpdateAdminWithNullLoginTestNegative() throws Exception {
         String newAdminLogin = null;
-        adminNo1.setClientLogin(newAdminLogin);
+        adminNo1.setUserLogin(newAdminLogin);
         try (Jsonb jsonb = JsonbBuilder.create()) {
-            AdminPasswordDTO adminPasswordDTO = new AdminPasswordDTO(adminNo1.getClientID(), adminNo1.getClientLogin(), adminNo1.getClientPassword(), adminNo1.isClientStatusActive());
+            AdminPasswordDTO adminPasswordDTO = new AdminPasswordDTO(adminNo1.getUserID(), adminNo1.getUserLogin(), adminNo1.getUserPassword(), adminNo1.isUserStatusActive());
             AdminPasswordDTO[] arr = new AdminPasswordDTO[1];
             arr[0] = adminPasswordDTO;
             String jsonPayload = jsonb.toJson(arr[0]);
@@ -707,9 +707,9 @@ public class AdminControllerTest {
     @Test
     public void adminControllerUpdateAdminWithEmptyLoginTestNegative() throws Exception {
         String newAdminLogin = "";
-        adminNo1.setClientLogin(newAdminLogin);
+        adminNo1.setUserLogin(newAdminLogin);
         try (Jsonb jsonb = JsonbBuilder.create()) {
-            AdminPasswordDTO adminPasswordDTO = new AdminPasswordDTO(adminNo1.getClientID(), adminNo1.getClientLogin(), adminNo1.getClientPassword(), adminNo1.isClientStatusActive());
+            AdminPasswordDTO adminPasswordDTO = new AdminPasswordDTO(adminNo1.getUserID(), adminNo1.getUserLogin(), adminNo1.getUserPassword(), adminNo1.isUserStatusActive());
             AdminPasswordDTO[] arr = new AdminPasswordDTO[1];
             arr[0] = adminPasswordDTO;
             String jsonPayload = jsonb.toJson(arr[0]);
@@ -732,9 +732,9 @@ public class AdminControllerTest {
     @Test
     public void adminControllerUpdateAdminWithLoginTooShortTestNegative() throws Exception {
         String newAdminLogin = "ddddfdd";
-        adminNo1.setClientLogin(newAdminLogin);
+        adminNo1.setUserLogin(newAdminLogin);
         try (Jsonb jsonb = JsonbBuilder.create()) {
-            AdminPasswordDTO adminPasswordDTO = new AdminPasswordDTO(adminNo1.getClientID(), adminNo1.getClientLogin(), adminNo1.getClientPassword(), adminNo1.isClientStatusActive());
+            AdminPasswordDTO adminPasswordDTO = new AdminPasswordDTO(adminNo1.getUserID(), adminNo1.getUserLogin(), adminNo1.getUserPassword(), adminNo1.isUserStatusActive());
             AdminPasswordDTO[] arr = new AdminPasswordDTO[1];
             arr[0] = adminPasswordDTO;
             String jsonPayload = jsonb.toJson(arr[0]);
@@ -757,9 +757,9 @@ public class AdminControllerTest {
     @Test
     public void adminControllerUpdateAdminWithLoginTooLongTestNegative() throws Exception {
         String newAdminLogin = "ddddfddddfddddfddddfddddfddddfddddfddddfd";
-        adminNo1.setClientLogin(newAdminLogin);
+        adminNo1.setUserLogin(newAdminLogin);
         try (Jsonb jsonb = JsonbBuilder.create()) {
-            AdminPasswordDTO adminPasswordDTO = new AdminPasswordDTO(adminNo1.getClientID(), adminNo1.getClientLogin(), adminNo1.getClientPassword(), adminNo1.isClientStatusActive());
+            AdminPasswordDTO adminPasswordDTO = new AdminPasswordDTO(adminNo1.getUserID(), adminNo1.getUserLogin(), adminNo1.getUserPassword(), adminNo1.isUserStatusActive());
             AdminPasswordDTO[] arr = new AdminPasswordDTO[1];
             arr[0] = adminPasswordDTO;
             String jsonPayload = jsonb.toJson(arr[0]);
@@ -781,11 +781,11 @@ public class AdminControllerTest {
 
     @Test
     public void adminControllerUpdateAdminWithLoginLengthEqualTo8TestPositive() throws Exception {
-        String adminLoginBefore = adminNo1.getClientLogin();
+        String adminLoginBefore = adminNo1.getUserLogin();
         String newAdminLogin = "ddddfddd";
-        adminNo1.setClientLogin(newAdminLogin);
+        adminNo1.setUserLogin(newAdminLogin);
         try (Jsonb jsonb = JsonbBuilder.create()) {
-            AdminPasswordDTO adminPasswordDTO = new AdminPasswordDTO(adminNo1.getClientID(), adminNo1.getClientLogin(), adminNo1.getClientPassword(), adminNo1.isClientStatusActive());
+            AdminPasswordDTO adminPasswordDTO = new AdminPasswordDTO(adminNo1.getUserID(), adminNo1.getUserLogin(), adminNo1.getUserPassword(), adminNo1.isUserStatusActive());
             AdminPasswordDTO[] arr = new AdminPasswordDTO[1];
             arr[0] = adminPasswordDTO;
             String jsonPayload = jsonb.toJson(arr[0]);
@@ -803,8 +803,8 @@ public class AdminControllerTest {
             validatableResponse.statusCode(204);
         }
 
-        Admin foundAdmin = adminService.findByUUID(adminNo1.getClientID());
-        String adminLoginAfter = foundAdmin.getClientLogin();
+        Admin foundAdmin = adminService.findByUUID(adminNo1.getUserID());
+        String adminLoginAfter = foundAdmin.getUserLogin();
 
         assertEquals(newAdminLogin, adminLoginAfter);
         assertNotEquals(adminLoginBefore, adminLoginAfter);
@@ -812,11 +812,11 @@ public class AdminControllerTest {
 
     @Test
     public void adminControllerUpdateAdminWithLoginLengthEqualTo20TestPositive() throws Exception {
-        String adminLoginBefore = adminNo1.getClientLogin();
+        String adminLoginBefore = adminNo1.getUserLogin();
         String newAdminLogin = "ddddfddddfddddfddddf";
-        adminNo1.setClientLogin(newAdminLogin);
+        adminNo1.setUserLogin(newAdminLogin);
         try (Jsonb jsonb = JsonbBuilder.create()) {
-            AdminPasswordDTO adminPasswordDTO = new AdminPasswordDTO(adminNo1.getClientID(), adminNo1.getClientLogin(), adminNo1.getClientPassword(), adminNo1.isClientStatusActive());
+            AdminPasswordDTO adminPasswordDTO = new AdminPasswordDTO(adminNo1.getUserID(), adminNo1.getUserLogin(), adminNo1.getUserPassword(), adminNo1.isUserStatusActive());
             AdminPasswordDTO[] arr = new AdminPasswordDTO[1];
             arr[0] = adminPasswordDTO;
             String jsonPayload = jsonb.toJson(arr[0]);
@@ -834,8 +834,8 @@ public class AdminControllerTest {
             validatableResponse.statusCode(204);
         }
 
-        Admin foundAdmin = adminService.findByUUID(adminNo1.getClientID());
-        String adminLoginAfter = foundAdmin.getClientLogin();
+        Admin foundAdmin = adminService.findByUUID(adminNo1.getUserID());
+        String adminLoginAfter = foundAdmin.getUserLogin();
 
         assertEquals(newAdminLogin, adminLoginAfter);
         assertNotEquals(adminLoginBefore, adminLoginAfter);
@@ -844,9 +844,9 @@ public class AdminControllerTest {
     @Test
     public void adminControllerUpdateAdminWithLoginThatViolatesRegExTestNegative() throws Exception {
         String newAdminLogin = "Some Invalid Login";
-        adminNo1.setClientLogin(newAdminLogin);
+        adminNo1.setUserLogin(newAdminLogin);
         try (Jsonb jsonb = JsonbBuilder.create()) {
-            AdminPasswordDTO adminPasswordDTO = new AdminPasswordDTO(adminNo1.getClientID(), adminNo1.getClientLogin(), adminNo1.getClientPassword(), adminNo1.isClientStatusActive());
+            AdminPasswordDTO adminPasswordDTO = new AdminPasswordDTO(adminNo1.getUserID(), adminNo1.getUserLogin(), adminNo1.getUserPassword(), adminNo1.isUserStatusActive());
             AdminPasswordDTO[] arr = new AdminPasswordDTO[1];
             arr[0] = adminPasswordDTO;
             String jsonPayload = jsonb.toJson(arr[0]);
@@ -869,9 +869,9 @@ public class AdminControllerTest {
     @Test
     public void adminControllerUpdateAdminWithNullPasswordTestNegative() throws Exception {
         String newAdminPassword = null;
-        adminNo1.setClientPassword(newAdminPassword);
+        adminNo1.setUserPassword(newAdminPassword);
         try (Jsonb jsonb = JsonbBuilder.create()) {
-            AdminPasswordDTO adminPasswordDTO = new AdminPasswordDTO(adminNo1.getClientID(), adminNo1.getClientLogin(), adminNo1.getClientPassword(), adminNo1.isClientStatusActive());
+            AdminPasswordDTO adminPasswordDTO = new AdminPasswordDTO(adminNo1.getUserID(), adminNo1.getUserLogin(), adminNo1.getUserPassword(), adminNo1.isUserStatusActive());
             AdminPasswordDTO[] arr = new AdminPasswordDTO[1];
             arr[0] = adminPasswordDTO;
             String jsonPayload = jsonb.toJson(arr[0]);
@@ -894,9 +894,9 @@ public class AdminControllerTest {
     @Test
     public void adminControllerUpdateAdminWithEmptyPasswordTestNegative() throws Exception {
         String newAdminPassword = "";
-        adminNo1.setClientPassword(newAdminPassword);
+        adminNo1.setUserPassword(newAdminPassword);
         try (Jsonb jsonb = JsonbBuilder.create()) {
-            AdminPasswordDTO adminPasswordDTO = new AdminPasswordDTO(adminNo1.getClientID(), adminNo1.getClientLogin(), adminNo1.getClientPassword(), adminNo1.isClientStatusActive());
+            AdminPasswordDTO adminPasswordDTO = new AdminPasswordDTO(adminNo1.getUserID(), adminNo1.getUserLogin(), adminNo1.getUserPassword(), adminNo1.isUserStatusActive());
             AdminPasswordDTO[] arr = new AdminPasswordDTO[1];
             arr[0] = adminPasswordDTO;
             String jsonPayload = jsonb.toJson(arr[0]);
@@ -919,9 +919,9 @@ public class AdminControllerTest {
     @Test
     public void adminControllerUpdateAdminWithPasswordTooShortTestNegative() throws Exception {
         String newAdminPassword = "ddddfdd";
-        adminNo1.setClientPassword(newAdminPassword);
+        adminNo1.setUserPassword(newAdminPassword);
         try (Jsonb jsonb = JsonbBuilder.create()) {
-            AdminPasswordDTO adminPasswordDTO = new AdminPasswordDTO(adminNo1.getClientID(), adminNo1.getClientLogin(), adminNo1.getClientPassword(), adminNo1.isClientStatusActive());
+            AdminPasswordDTO adminPasswordDTO = new AdminPasswordDTO(adminNo1.getUserID(), adminNo1.getUserLogin(), adminNo1.getUserPassword(), adminNo1.isUserStatusActive());
             AdminPasswordDTO[] arr = new AdminPasswordDTO[1];
             arr[0] = adminPasswordDTO;
             String jsonPayload = jsonb.toJson(arr[0]);
@@ -944,9 +944,9 @@ public class AdminControllerTest {
     @Test
     public void adminControllerUpdateAdminWithPasswordTooLongTestNegative() throws Exception {
         String newAdminPassword = "ddddfddddfddddfddddfddddfddddfddddfddddfd";
-        adminNo1.setClientPassword(newAdminPassword);
+        adminNo1.setUserPassword(newAdminPassword);
         try (Jsonb jsonb = JsonbBuilder.create()) {
-            AdminPasswordDTO adminPasswordDTO = new AdminPasswordDTO(adminNo1.getClientID(), adminNo1.getClientLogin(), adminNo1.getClientPassword(), adminNo1.isClientStatusActive());
+            AdminPasswordDTO adminPasswordDTO = new AdminPasswordDTO(adminNo1.getUserID(), adminNo1.getUserLogin(), adminNo1.getUserPassword(), adminNo1.isUserStatusActive());
             AdminPasswordDTO[] arr = new AdminPasswordDTO[1];
             arr[0] = adminPasswordDTO;
             String jsonPayload = jsonb.toJson(arr[0]);
@@ -968,11 +968,11 @@ public class AdminControllerTest {
 
     @Test
     public void adminControllerUpdateAdminWithPasswordLengthEqualTo8TestPositive() throws Exception {
-        String adminPasswordBefore = adminNo1.getClientPassword();
+        String adminPasswordBefore = adminNo1.getUserPassword();
         String newAdminPassword = "ddddfddd";
-        adminNo1.setClientPassword(newAdminPassword);
+        adminNo1.setUserPassword(newAdminPassword);
         try (Jsonb jsonb = JsonbBuilder.create()) {
-            AdminPasswordDTO adminPasswordDTO = new AdminPasswordDTO(adminNo1.getClientID(), adminNo1.getClientLogin(), adminNo1.getClientPassword(), adminNo1.isClientStatusActive());
+            AdminPasswordDTO adminPasswordDTO = new AdminPasswordDTO(adminNo1.getUserID(), adminNo1.getUserLogin(), adminNo1.getUserPassword(), adminNo1.isUserStatusActive());
             AdminPasswordDTO[] arr = new AdminPasswordDTO[1];
             arr[0] = adminPasswordDTO;
             String jsonPayload = jsonb.toJson(arr[0]);
@@ -990,8 +990,8 @@ public class AdminControllerTest {
             validatableResponse.statusCode(204);
         }
 
-        Admin foundAdmin = adminService.findByUUID(adminNo1.getClientID());
-        String adminPasswordAfter = foundAdmin.getClientPassword();
+        Admin foundAdmin = adminService.findByUUID(adminNo1.getUserID());
+        String adminPasswordAfter = foundAdmin.getUserPassword();
 
         assertEquals(newAdminPassword, adminPasswordAfter);
         assertNotEquals(adminPasswordBefore, adminPasswordAfter);
@@ -999,11 +999,11 @@ public class AdminControllerTest {
 
     @Test
     public void adminControllerUpdateAdminWithPasswordLengthEqualTo40TestPositive() throws Exception {
-        String adminPasswordBefore = adminNo1.getClientPassword();
+        String adminPasswordBefore = adminNo1.getUserPassword();
         String newAdminPassword = "ddddfddddfddddfddddfddddfddddfddddfddddf";
-        adminNo1.setClientPassword(newAdminPassword);
+        adminNo1.setUserPassword(newAdminPassword);
         try (Jsonb jsonb = JsonbBuilder.create()) {
-            AdminPasswordDTO adminPasswordDTO = new AdminPasswordDTO(adminNo1.getClientID(), adminNo1.getClientLogin(), adminNo1.getClientPassword(), adminNo1.isClientStatusActive());
+            AdminPasswordDTO adminPasswordDTO = new AdminPasswordDTO(adminNo1.getUserID(), adminNo1.getUserLogin(), adminNo1.getUserPassword(), adminNo1.isUserStatusActive());
             AdminPasswordDTO[] arr = new AdminPasswordDTO[1];
             arr[0] = adminPasswordDTO;
             String jsonPayload = jsonb.toJson(arr[0]);
@@ -1024,8 +1024,8 @@ public class AdminControllerTest {
 
         }
 
-        Admin foundAdmin = adminService.findByUUID(adminNo1.getClientID());
-        String adminPasswordAfter = foundAdmin.getClientPassword();
+        Admin foundAdmin = adminService.findByUUID(adminNo1.getUserID());
+        String adminPasswordAfter = foundAdmin.getUserPassword();
 
         assertEquals(newAdminPassword, adminPasswordAfter);
         assertNotEquals(adminPasswordBefore, adminPasswordAfter);
@@ -1034,9 +1034,9 @@ public class AdminControllerTest {
     @Test
     public void adminControllerUpdateAdminWithPasswordThatViolatesRegExTestNegative() throws Exception {
         String newAdminPassword = "Some Invalid Password";
-        adminNo1.setClientPassword(newAdminPassword);
+        adminNo1.setUserPassword(newAdminPassword);
         try (Jsonb jsonb = JsonbBuilder.create()) {
-            AdminPasswordDTO adminPasswordDTO = new AdminPasswordDTO(adminNo1.getClientID(), adminNo1.getClientLogin(), adminNo1.getClientPassword(), adminNo1.isClientStatusActive());
+            AdminPasswordDTO adminPasswordDTO = new AdminPasswordDTO(adminNo1.getUserID(), adminNo1.getUserLogin(), adminNo1.getUserPassword(), adminNo1.isUserStatusActive());
             AdminPasswordDTO[] arr = new AdminPasswordDTO[1];
             arr[0] = adminPasswordDTO;
             String jsonPayload = jsonb.toJson(arr[0]);
@@ -1060,7 +1060,7 @@ public class AdminControllerTest {
 
     @Test
     public void adminControllerActivateAdminTestPositive() throws Exception {
-        UUID activatedAdminID = adminNo1.getClientID();
+        UUID activatedAdminID = adminNo1.getUserID();
         String path = adminsBaseURL + "/" + activatedAdminID + "/deactivate";
 
         RequestSpecification requestSpecification = RestAssured.given();
@@ -1071,7 +1071,7 @@ public class AdminControllerTest {
         validatableResponse.statusCode(204);
 
         Admin foundAdmin = adminService.findByUUID(activatedAdminID);
-        boolean adminStatusActiveBefore = foundAdmin.isClientStatusActive();
+        boolean adminStatusActiveBefore = foundAdmin.isUserStatusActive();
 
         path = adminsBaseURL + "/" + activatedAdminID + "/activate";
 
@@ -1083,7 +1083,7 @@ public class AdminControllerTest {
         validatableResponse.statusCode(204);
 
         foundAdmin = adminService.findByUUID(activatedAdminID);
-        boolean adminStatusActiveAfter = foundAdmin.isClientStatusActive();
+        boolean adminStatusActiveAfter = foundAdmin.isUserStatusActive();
 
         assertTrue(adminStatusActiveAfter);
         assertFalse(adminStatusActiveBefore);
@@ -1106,8 +1106,8 @@ public class AdminControllerTest {
 
     @Test
     public void adminControllerDeactivateAdminTestPositive() throws Exception {
-        boolean adminStatusActiveBefore = adminNo1.isClientStatusActive();
-        UUID deactivatedAdminID = adminNo1.getClientID();
+        boolean adminStatusActiveBefore = adminNo1.isUserStatusActive();
+        UUID deactivatedAdminID = adminNo1.getUserID();
         String path = adminsBaseURL + "/" + deactivatedAdminID + "/deactivate";
 
         RequestSpecification requestSpecification = RestAssured.given();
@@ -1118,7 +1118,7 @@ public class AdminControllerTest {
         validatableResponse.statusCode(204);
 
         Admin foundAdmin = adminService.findByUUID(deactivatedAdminID);
-        boolean adminStatusActiveAfter = foundAdmin.isClientStatusActive();
+        boolean adminStatusActiveAfter = foundAdmin.isUserStatusActive();
 
         assertFalse(adminStatusActiveAfter);
         assertTrue(adminStatusActiveBefore);

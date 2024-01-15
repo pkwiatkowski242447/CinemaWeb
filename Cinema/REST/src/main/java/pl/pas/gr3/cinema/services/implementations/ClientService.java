@@ -2,40 +2,40 @@ package pl.pas.gr3.cinema.services.implementations;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-import pl.pas.gr3.cinema.consts.repositories.MongoRepositoryConstants;
-import pl.pas.gr3.cinema.exceptions.repositories.crud.client.ClientRepositoryClientNotFoundException;
+import pl.pas.gr3.cinema.consts.model.UserConstants;
+import pl.pas.gr3.cinema.exceptions.repositories.UserRepositoryException;
+import pl.pas.gr3.cinema.exceptions.repositories.crud.user.UserRepositoryCreateUserDuplicateLoginException;
+import pl.pas.gr3.cinema.exceptions.repositories.crud.user.UserRepositoryUserNotFoundException;
 import pl.pas.gr3.cinema.exceptions.services.crud.client.*;
-import pl.pas.gr3.cinema.exceptions.repositories.ClientRepositoryException;
-import pl.pas.gr3.cinema.exceptions.repositories.crud.client.ClientRepositoryCreateClientDuplicateLoginException;
-import pl.pas.gr3.cinema.services.interfaces.UserManagerInterface;
+import pl.pas.gr3.cinema.repositories.implementations.UserRepository;
+import pl.pas.gr3.cinema.services.interfaces.UserServiceInterface;
 import pl.pas.gr3.cinema.model.Ticket;
 import pl.pas.gr3.cinema.model.users.Client;
-import pl.pas.gr3.cinema.repositories.implementations.ClientRepository;
 
 import java.util.List;
 import java.util.UUID;
 
 @Service
-public class ClientService implements UserManagerInterface<Client> {
+public class ClientService implements UserServiceInterface<Client> {
 
-    private ClientRepository clientRepository;
+    private UserRepository userRepository;
 
     public ClientService() {
     }
 
     @Autowired
-    public ClientService(ClientRepository clientRepository) {
-        this.clientRepository = clientRepository;
+    public ClientService(UserRepository userRepository) {
+        this.userRepository = userRepository;
     }
 
 
     @Override
     public Client create(String login, String password) throws ClientServiceCreateException {
         try {
-            return this.clientRepository.createClient(login, password);
-        } catch (ClientRepositoryCreateClientDuplicateLoginException exception) {
+            return this.userRepository.createClient(login, password);
+        } catch (UserRepositoryCreateUserDuplicateLoginException exception) {
             throw new ClientServiceCreateClientDuplicateLoginException(exception.getMessage(), exception);
-        } catch (ClientRepositoryException exception) {
+        } catch (UserRepositoryException exception) {
             throw new ClientServiceCreateException(exception.getMessage(), exception);
         }
     }
@@ -43,10 +43,10 @@ public class ClientService implements UserManagerInterface<Client> {
     @Override
     public Client findByUUID(UUID clientID) throws ClientServiceReadException {
         try {
-            return this.clientRepository.findClientByUUID(clientID);
-        } catch (ClientRepositoryClientNotFoundException exception) {
+            return this.userRepository.findClientByUUID(clientID);
+        } catch (UserRepositoryUserNotFoundException exception) {
             throw new ClientServiceClientNotFoundException(exception.getMessage(), exception);
-        } catch (ClientRepositoryException exception) {
+        } catch (UserRepositoryException exception) {
             throw new ClientServiceReadException(exception.getMessage(), exception);
         }
     }
@@ -54,10 +54,10 @@ public class ClientService implements UserManagerInterface<Client> {
     @Override
     public Client findByLogin(String login) throws ClientServiceReadException {
         try {
-            return this.clientRepository.findClientByLogin(login);
-        } catch (ClientRepositoryClientNotFoundException exception) {
+            return this.userRepository.findClientByLogin(login);
+        } catch (UserRepositoryUserNotFoundException exception) {
             throw new ClientServiceClientNotFoundException(exception.getMessage(), exception);
-        } catch (ClientRepositoryException exception) {
+        } catch (UserRepositoryException exception) {
             throw new ClientServiceReadException(exception.getMessage(), exception);
         }
     }
@@ -65,8 +65,8 @@ public class ClientService implements UserManagerInterface<Client> {
     @Override
     public List<Client> findAllMatchingLogin(String loginToBeMatched) throws ClientServiceReadException {
         try {
-            return this.clientRepository.findAllClientsMatchingLogin(loginToBeMatched);
-        } catch (ClientRepositoryException exception) {
+            return this.userRepository.findAllClientsMatchingLogin(loginToBeMatched);
+        } catch (UserRepositoryException exception) {
             throw new ClientServiceReadException(exception.getMessage(), exception);
         }
     }
@@ -74,8 +74,8 @@ public class ClientService implements UserManagerInterface<Client> {
     @Override
     public List<Client> findAll() throws ClientServiceReadException {
         try {
-            return this.clientRepository.findAllClients();
-        } catch (ClientRepositoryException exception) {
+            return this.userRepository.findAllClients();
+        } catch (UserRepositoryException exception) {
             throw new ClientServiceReadException(exception.getMessage(), exception);
         }
     }
@@ -83,8 +83,8 @@ public class ClientService implements UserManagerInterface<Client> {
     @Override
     public void update(Client client) throws ClientServiceUpdateException {
         try {
-            this.clientRepository.updateClient(client);
-        } catch (ClientRepositoryException exception) {
+            this.userRepository.updateClient(client);
+        } catch (UserRepositoryException exception) {
             throw new ClientServiceUpdateException(exception.getMessage(), exception);
         }
     }
@@ -92,8 +92,8 @@ public class ClientService implements UserManagerInterface<Client> {
     @Override
     public void activate(UUID clientID) throws ClientServiceActivationException {
         try {
-            this.clientRepository.activate(this.clientRepository.findByUUID(clientID), MongoRepositoryConstants.CLIENT_SUBCLASS);
-        } catch (ClientRepositoryException exception) {
+            this.userRepository.activate(this.userRepository.findByUUID(clientID), UserConstants.CLIENT_DISCRIMINATOR);
+        } catch (UserRepositoryException exception) {
             throw new ClientServiceActivationException(exception.getMessage(), exception);
         }
     }
@@ -101,8 +101,8 @@ public class ClientService implements UserManagerInterface<Client> {
     @Override
     public void deactivate(UUID clientID) throws ClientServiceDeactivationException {
         try {
-            this.clientRepository.deactivate(this.clientRepository.findByUUID(clientID), MongoRepositoryConstants.CLIENT_SUBCLASS);
-        } catch (ClientRepositoryException exception) {
+            this.userRepository.deactivate(this.userRepository.findByUUID(clientID), UserConstants.CLIENT_DISCRIMINATOR);
+        } catch (UserRepositoryException exception) {
             throw new ClientServiceDeactivationException(exception.getMessage(), exception);
         }
     }
@@ -110,8 +110,8 @@ public class ClientService implements UserManagerInterface<Client> {
     @Override
     public List<Ticket> getTicketsForClient(UUID clientID) throws ClientServiceReadException {
         try {
-            return this.clientRepository.getListOfTicketsForClient(clientID, MongoRepositoryConstants.CLIENT_SUBCLASS);
-        } catch (ClientRepositoryException exception) {
+            return this.userRepository.getListOfTicketsForClient(clientID, UserConstants.CLIENT_DISCRIMINATOR);
+        } catch (UserRepositoryException exception) {
             throw new ClientServiceReadException(exception.getMessage(), exception);
         }
     }
@@ -119,8 +119,8 @@ public class ClientService implements UserManagerInterface<Client> {
     @Override
     public void delete(UUID userID) throws ClientServiceDeleteException {
         try {
-            this.clientRepository.delete(userID, MongoRepositoryConstants.CLIENT_SUBCLASS);
-        } catch (ClientRepositoryException exception) {
+            this.userRepository.delete(userID, UserConstants.CLIENT_DISCRIMINATOR);
+        } catch (UserRepositoryException exception) {
             throw new ClientServiceDeleteException(exception.getMessage(), exception);
         }
     }

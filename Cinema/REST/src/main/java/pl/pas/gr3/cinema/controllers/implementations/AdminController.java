@@ -48,7 +48,7 @@ public class AdminController implements UserServiceInterface<Admin> {
                 return ResponseEntity.status(HttpStatus.BAD_REQUEST).contentType(MediaType.APPLICATION_JSON).body(messages);
             }
 
-            AdminDTO adminDTO = new AdminDTO(admin.getClientID(), admin.getClientLogin(), admin.isClientStatusActive());
+            AdminDTO adminDTO = new AdminDTO(admin.getUserID(), admin.getUserLogin(), admin.isUserStatusActive());
             return ResponseEntity.created(URI.create("http://localhost:8000/api/v1/admins/" + adminDTO.getAdminID().toString())).contentType(MediaType.APPLICATION_JSON).body(adminDTO);
         } catch (AdminServiceCreateAdminDuplicateLoginException exception) {
             return ResponseEntity.status(HttpStatus.CONFLICT).contentType(MediaType.APPLICATION_JSON).body(exception.getMessage());
@@ -62,7 +62,7 @@ public class AdminController implements UserServiceInterface<Admin> {
     public ResponseEntity<?> findByUUID(@PathVariable("id") UUID adminID) {
         try {
             Admin admin = this.adminService.findByUUID(adminID);
-            AdminDTO adminDTO = new AdminDTO(admin.getClientID(), admin.getClientLogin(), admin.isClientStatusActive());
+            AdminDTO adminDTO = new AdminDTO(admin.getUserID(), admin.getUserLogin(), admin.isUserStatusActive());
             return this.generateResponseEntityForDTO(adminDTO);
         } catch (AdminServiceAdminNotFoundException exception) {
             return ResponseEntity.notFound().build();
@@ -76,7 +76,7 @@ public class AdminController implements UserServiceInterface<Admin> {
     public ResponseEntity<?> findByLogin(@PathVariable("login") String adminLogin) {
         try {
             Admin admin = this.adminService.findByLogin(adminLogin);
-            AdminDTO adminDTO = new AdminDTO(admin.getClientID(), admin.getClientLogin(), admin.isClientStatusActive());
+            AdminDTO adminDTO = new AdminDTO(admin.getUserID(), admin.getUserLogin(), admin.isUserStatusActive());
             return this.generateResponseEntityForDTO(adminDTO);
         } catch (AdminServiceAdminNotFoundException exception) {
             return ResponseEntity.notFound().build();
@@ -103,7 +103,7 @@ public class AdminController implements UserServiceInterface<Admin> {
             List<Ticket> listOfTicketsForAnAdmin = this.adminService.getTicketsForClient(adminID);
             List<TicketDTO> listOfDTOs = new ArrayList<>();
             for (Ticket ticket : listOfTicketsForAnAdmin) {
-                listOfDTOs.add(new TicketDTO(ticket.getTicketID(), ticket.getMovieTime(), ticket.getTicketFinalPrice(), ticket.getClient().getClientID(), ticket.getMovie().getMovieID()));
+                listOfDTOs.add(new TicketDTO(ticket.getTicketID(), ticket.getMovieTime(), ticket.getTicketPrice(), ticket.getUserID(), ticket.getMovieID()));
             }
             if (listOfTicketsForAnAdmin.isEmpty()) {
                 return ResponseEntity.noContent().build();
@@ -170,7 +170,7 @@ public class AdminController implements UserServiceInterface<Admin> {
     private List<AdminDTO> getListOfAdminDTOs(List<Admin> listOfAdmins) {
         List<AdminDTO> listOfDTOs = new ArrayList<>();
         for (Admin admin : listOfAdmins) {
-            listOfDTOs.add(new AdminDTO(admin.getClientID(), admin.getClientLogin(), admin.isClientStatusActive()));
+            listOfDTOs.add(new AdminDTO(admin.getUserID(), admin.getUserLogin(), admin.isUserStatusActive()));
         }
         return listOfDTOs;
     }

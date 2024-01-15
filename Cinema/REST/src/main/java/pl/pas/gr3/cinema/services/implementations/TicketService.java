@@ -5,9 +5,8 @@ import org.springframework.stereotype.Service;
 import pl.pas.gr3.cinema.exceptions.repositories.crud.ticket.TicketRepositoryTicketNotFoundException;
 import pl.pas.gr3.cinema.exceptions.services.crud.ticket.*;
 import pl.pas.gr3.cinema.exceptions.repositories.TicketRepositoryException;
-import pl.pas.gr3.cinema.services.interfaces.TicketManagerInterface;
+import pl.pas.gr3.cinema.services.interfaces.TicketServiceInterface;
 import pl.pas.gr3.cinema.model.Ticket;
-import pl.pas.gr3.cinema.model.TicketType;
 import pl.pas.gr3.cinema.repositories.implementations.TicketRepository;
 
 import java.time.LocalDateTime;
@@ -16,7 +15,7 @@ import java.util.List;
 import java.util.UUID;
 
 @Service
-public class TicketService implements TicketManagerInterface {
+public class TicketService implements TicketServiceInterface {
 
     private TicketRepository ticketRepository;
 
@@ -29,14 +28,10 @@ public class TicketService implements TicketManagerInterface {
     }
 
     @Override
-    public Ticket create(String movieTime, UUID clientID, UUID movieID, String ticketType) throws TicketServiceCreateException {
+    public Ticket create(String movieTime, UUID clientID, UUID movieID) throws TicketServiceCreateException {
         try {
             LocalDateTime movieTimeParsed = LocalDateTime.parse(movieTime);
-            if (ticketType.equals("reduced")) {
-                return this.ticketRepository.create(movieTimeParsed, clientID, movieID, TicketType.REDUCED);
-            } else {
-                return this.ticketRepository.create(movieTimeParsed, clientID, movieID, TicketType.NORMAL);
-            }
+            return this.ticketRepository.create(movieTimeParsed, clientID, movieID);
         } catch (TicketRepositoryException | DateTimeParseException exception) {
             throw new TicketServiceCreateException(exception.getMessage(), exception);
         }

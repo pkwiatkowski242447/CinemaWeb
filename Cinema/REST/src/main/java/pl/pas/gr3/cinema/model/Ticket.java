@@ -2,14 +2,15 @@ package pl.pas.gr3.cinema.model;
 
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.PositiveOrZero;
+import lombok.AccessLevel;
 import lombok.Data;
+import lombok.Setter;
 import org.apache.commons.lang3.builder.EqualsBuilder;
 import org.apache.commons.lang3.builder.HashCodeBuilder;
 import org.apache.commons.lang3.builder.ToStringBuilder;
-import pl.pas.gr3.cinema.exceptions.model.MovieNullReferenceException;
-import pl.pas.gr3.cinema.exceptions.model.TicketCreateException;
-import pl.pas.gr3.cinema.model.users.Client;
-import pl.pas.gr3.cinema.messages.errors.ModelErrorMessages;
+import org.bson.codecs.pojo.annotations.BsonCreator;
+import org.bson.codecs.pojo.annotations.BsonProperty;
+import pl.pas.gr3.cinema.consts.model.TicketConstants;
 import pl.pas.gr3.cinema.messages.validation.TicketValidationMessages;
 
 import java.time.LocalDateTime;
@@ -18,54 +19,47 @@ import java.util.UUID;
 @Data
 public class Ticket {
 
+    @BsonProperty(TicketConstants.GENERAL_IDENTIFIER)
     @NotNull(message = TicketValidationMessages.NULL_IDENTIFIER)
-    private final UUID ticketID;
+    @Setter(AccessLevel.NONE)
+    private UUID ticketID;
 
+    @BsonProperty(TicketConstants.MOVIE_TIME)
     private LocalDateTime movieTime;
 
+    @BsonProperty(TicketConstants.TICKET_FINAL_PRICE)
     @PositiveOrZero(message = TicketValidationMessages.INVALID_TICKET_FINAL_PRICE)
-    private final double ticketFinalPrice;
+    @Setter(AccessLevel.NONE)
+    private double ticketPrice;
 
+    @BsonProperty(TicketConstants.USER_ID)
     @NotNull(message = TicketValidationMessages.NULL_CLIENT_REFERENCE)
-    private final Client client;
+    @Setter(AccessLevel.NONE)
+    private UUID userID;
 
+    @BsonProperty(TicketConstants.MOVIE_ID)
     @NotNull(message = TicketValidationMessages.NULL_MOVIE_REFERENCE)
-    private final Movie movie;
+    @Setter(AccessLevel.NONE)
+    private UUID movieID;
 
     // Constructors
 
-    public Ticket(UUID ticketID, LocalDateTime movieTime, Client client, Movie movie,
-                  @NotNull(message = TicketValidationMessages.TICKET_TYPE_NULL) TicketType ticketType)
-    throws TicketCreateException {
+    @BsonCreator
+    public Ticket(@BsonProperty(TicketConstants.GENERAL_IDENTIFIER) UUID ticketID,
+                  @BsonProperty(TicketConstants.MOVIE_TIME) LocalDateTime movieTime,
+                  @BsonProperty(TicketConstants.TICKET_FINAL_PRICE) double ticketPrice,
+                  @BsonProperty(TicketConstants.USER_ID) UUID userID,
+                  @BsonProperty(TicketConstants.MOVIE_ID) UUID movieID) {
         this.ticketID = ticketID;
         this.movieTime = movieTime;
-        this.client = client;
-        this.movie = movie;
-        try {
-            movie.setNumberOfAvailableSeats(movie.getNumberOfAvailableSeats() - 1);
-            switch (ticketType) {
-                case REDUCED: {
-                    this.ticketFinalPrice = movie.getMovieBasePrice() * 0.75;
-                    break;
-                }
-                default: {
-                    this.ticketFinalPrice = movie.getMovieBasePrice();
-                }
-            }
-        } catch (NullPointerException exception) {
-            throw new MovieNullReferenceException(ModelErrorMessages.MOVIE_NULL_EX);
-        }
+        this.ticketPrice = ticketPrice;
+        this.userID = userID;
+        this.movieID = movieID;
     }
 
-    public Ticket(UUID ticketID, LocalDateTime movieTime, double ticketFinalPrice, Client client, Movie movie) {
-        this.ticketID = ticketID;
-        this.movieTime = movieTime;
-        this.ticketFinalPrice = ticketFinalPrice;
-        this.client = client;
-        this.movie = movie;
-    }
+    // Other methods
 
-    // Equals method
+    // Equals
 
     @Override
     public boolean equals(Object o) {
@@ -78,25 +72,24 @@ public class Ticket {
         return new EqualsBuilder()
                 .append(ticketID, ticket.ticketID)
                 .append(movieTime, ticket.movieTime)
-                .append(ticketFinalPrice, ticket.ticketFinalPrice)
-                .append(client, ticket.client)
-                .append(movie, ticket.movie)
+                .append(ticketPrice, ticket.ticketPrice)
+                .append(userID, ticket.userID)
+                .append(movieID, ticket.movieID)
                 .isEquals();
     }
 
-    // HashCode method
+    // HashCode
 
     @Override
     public int hashCode() {
         return new HashCodeBuilder(17, 37)
                 .append(ticketID)
                 .append(movieTime)
-                .append(ticketFinalPrice)
-                .append(client)
-                .append(movie)
+                .append(ticketPrice)
+                .append(userID)
+                .append(movieID)
                 .toHashCode();
     }
-
 
     // ToString method
 
@@ -105,9 +98,9 @@ public class Ticket {
         return new ToStringBuilder(this)
                 .append("Ticket ID: ", ticketID)
                 .append("Movie time: ", movieTime)
-                .append("Ticket final price: ", ticketFinalPrice)
-                .append("Client: ", client.toString())
-                .append("Movie: ", movie.toString())
+                .append("Ticket final price: ", ticketPrice)
+                .append("Client: ", userID.toString())
+                .append("Movie: ", movieID.toString())
                 .toString();
     }
 }

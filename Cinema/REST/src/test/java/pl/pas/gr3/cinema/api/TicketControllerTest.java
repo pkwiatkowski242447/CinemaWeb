@@ -30,11 +30,10 @@ import pl.pas.gr3.cinema.exceptions.services.crud.ticket.TicketServiceDeleteExce
 import pl.pas.gr3.cinema.exceptions.services.crud.ticket.TicketServiceReadException;
 import pl.pas.gr3.cinema.model.Movie;
 import pl.pas.gr3.cinema.model.Ticket;
-import pl.pas.gr3.cinema.model.TicketType;
 import pl.pas.gr3.cinema.model.users.Admin;
 import pl.pas.gr3.cinema.model.users.Client;
 import pl.pas.gr3.cinema.model.users.Staff;
-import pl.pas.gr3.cinema.repositories.implementations.ClientRepository;
+import pl.pas.gr3.cinema.repositories.implementations.UserRepository;
 import pl.pas.gr3.cinema.repositories.implementations.MovieRepository;
 import pl.pas.gr3.cinema.repositories.implementations.TicketRepository;
 
@@ -58,7 +57,7 @@ public class TicketControllerTest {
     private static final String databaseName = "default";
 
     private static TicketRepository ticketRepository;
-    private static ClientRepository clientRepository;
+    private static UserRepository userRepository;
     private static MovieRepository movieRepository;
 
     private static TicketService ticketService;
@@ -99,13 +98,13 @@ public class TicketControllerTest {
         moviesBaseURL = baseURL + "/movies";
 
         ticketRepository = new TicketRepository(databaseName);
-        clientRepository = new ClientRepository(databaseName);
+        userRepository = new UserRepository(databaseName);
         movieRepository = new MovieRepository(databaseName);
 
         ticketService = new TicketService(ticketRepository);
-        clientService = new ClientService(clientRepository);
-        adminService = new AdminService(clientRepository);
-        staffService = new StaffService(clientRepository);
+        clientService = new ClientService(userRepository);
+        adminService = new AdminService(userRepository);
+        staffService = new StaffService(userRepository);
         movieService = new MovieService(movieRepository);
     }
 
@@ -143,14 +142,14 @@ public class TicketControllerTest {
         movieTimeNo2 = LocalDateTime.now().plusDays(3).plusHours(6).truncatedTo(ChronoUnit.SECONDS);
 
         try {
-            ticketNo1 = ticketService.create(movieTimeNo1.toString(), clientNo1.getClientID(), movieNo1.getMovieID(), "normal");
-            ticketNo2 = ticketService.create(movieTimeNo2.toString(), clientNo1.getClientID(), movieNo2.getMovieID(), "normal");
+            ticketNo1 = ticketService.create(movieTimeNo1.toString(), clientNo1.getUserID(), movieNo1.getMovieID());
+            ticketNo2 = ticketService.create(movieTimeNo2.toString(), clientNo1.getUserID(), movieNo2.getMovieID());
 
-            ticketNo3 = ticketService.create(movieTimeNo1.toString(), adminNo1.getClientID(), movieNo1.getMovieID(), "normal");
-            ticketNo4 = ticketService.create(movieTimeNo2.toString(), adminNo1.getClientID(), movieNo2.getMovieID(), "normal");
+            ticketNo3 = ticketService.create(movieTimeNo1.toString(), adminNo1.getUserID(), movieNo1.getMovieID());
+            ticketNo4 = ticketService.create(movieTimeNo2.toString(), adminNo1.getUserID(), movieNo2.getMovieID());
 
-            ticketNo5 = ticketService.create(movieTimeNo1.toString(), staffNo1.getClientID(), movieNo1.getMovieID(), "normal");
-            ticketNo6 = ticketService.create(movieTimeNo2.toString(), staffNo1.getClientID(), movieNo2.getMovieID(), "normal");
+            ticketNo5 = ticketService.create(movieTimeNo1.toString(), staffNo1.getUserID(), movieNo1.getMovieID());
+            ticketNo6 = ticketService.create(movieTimeNo2.toString(), staffNo1.getUserID(), movieNo2.getMovieID());
         } catch (TicketServiceCreateException exception) {
             logger.error(exception.getMessage());
         }
@@ -179,7 +178,7 @@ public class TicketControllerTest {
         try {
             List<Client> listOfClients = clientService.findAll();
             for (Client client : listOfClients) {
-                clientService.delete(client.getClientID());
+                clientService.delete(client.getUserID());
             }
         } catch (ClientServiceReadException | ClientServiceDeleteException exception) {
             logger.error(exception.getMessage());
@@ -188,7 +187,7 @@ public class TicketControllerTest {
         try {
             List<Admin> listOfAdmins = adminService.findAll();
             for (Admin admin : listOfAdmins) {
-                adminService.delete(admin.getClientID());
+                adminService.delete(admin.getUserID());
             }
         } catch (AdminServiceReadException | AdminServiceDeleteException exception) {
             logger.error(exception.getMessage());
@@ -197,7 +196,7 @@ public class TicketControllerTest {
         try {
             List<Staff> listOfStaffs = staffService.findAll();
             for (Staff staff : listOfStaffs) {
-                staffService.delete(staff.getClientID());
+                staffService.delete(staff.getUserID());
             }
         } catch (StaffServiceReadException | StaffServiceDeleteException exception) {
             logger.error(exception.getMessage());
@@ -207,7 +206,7 @@ public class TicketControllerTest {
     @AfterAll
     public static void destroy() {
         ticketRepository.close();
-        clientRepository.close();
+        userRepository.close();
         movieRepository.close();
     }
 
@@ -215,7 +214,7 @@ public class TicketControllerTest {
 
     @Test
     public void ticketControllerCreateNormalTicketTestPositive() throws Exception {
-        TicketInputDTO ticketInputDTO = new TicketInputDTO(movieTimeNo1.toString(), clientNo1.getClientID(), movieNo1.getMovieID(), "normal");
+        TicketInputDTO ticketInputDTO = new TicketInputDTO(movieTimeNo1.toString(), clientNo1.getUserID(), movieNo1.getMovieID());
         try (Jsonb jsonb = JsonbBuilder.create()) {
             String jsonPayload = jsonb.toJson(ticketInputDTO);
             logger.info("Json: " + jsonPayload);
@@ -237,7 +236,7 @@ public class TicketControllerTest {
             assertNotNull(ticketDTO);
             assertNotNull(ticketDTO.getTicketID());
             assertEquals(movieTimeNo1, ticketDTO.getMovieTime());
-            assertEquals(clientNo1.getClientID(), ticketDTO.getClientID());
+            assertEquals(clientNo1.getUserID(), ticketDTO.getClientID());
             assertEquals(movieNo1.getMovieID(), ticketDTO.getMovieID());
             assertEquals(movieNo1.getMovieBasePrice(), ticketDTO.getTicketFinalPrice());
         }
@@ -245,7 +244,7 @@ public class TicketControllerTest {
 
     @Test
     public void ticketControllerCreateReducedTicketTestPositive() throws Exception {
-        TicketInputDTO ticketInputDTO = new TicketInputDTO(movieTimeNo1.toString(), clientNo1.getClientID(), movieNo1.getMovieID(), "reduced");
+        TicketInputDTO ticketInputDTO = new TicketInputDTO(movieTimeNo1.toString(), clientNo1.getUserID(), movieNo1.getMovieID());
         try (Jsonb jsonb = JsonbBuilder.create()) {
             String jsonPayload = jsonb.toJson(ticketInputDTO);
             logger.info("Json: " + jsonPayload);
@@ -267,16 +266,16 @@ public class TicketControllerTest {
             assertNotNull(ticketDTO);
             assertNotNull(ticketDTO.getTicketID());
             assertEquals(movieTimeNo1, ticketDTO.getMovieTime());
-            assertEquals(clientNo1.getClientID(), ticketDTO.getClientID());
+            assertEquals(clientNo1.getUserID(), ticketDTO.getClientID());
             assertEquals(movieNo1.getMovieID(), ticketDTO.getMovieID());
-            assertEquals(movieNo1.getMovieBasePrice() * 0.75, ticketDTO.getTicketFinalPrice());
+            assertEquals(movieNo1.getMovieBasePrice(), ticketDTO.getTicketFinalPrice());
         }
     }
 
     @Test
     public void ticketControllerCreateTicketWithNullClientTestNegative() throws Exception {
         UUID clientID = null;
-        TicketInputDTO ticketInputDTO = new TicketInputDTO(movieTimeNo1.toString(), clientID, movieNo1.getMovieID(), "normal");
+        TicketInputDTO ticketInputDTO = new TicketInputDTO(movieTimeNo1.toString(), clientID, movieNo1.getMovieID());
         try (Jsonb jsonb = JsonbBuilder.create()) {
             String jsonPayload = jsonb.toJson(ticketInputDTO);
             logger.info("Json: " + jsonPayload);
@@ -299,7 +298,7 @@ public class TicketControllerTest {
     @Test
     public void ticketControllerCreateTicketWithNullMovieTestNegative() throws Exception {
         UUID movieID = null;
-        TicketInputDTO ticketInputDTO = new TicketInputDTO(movieTimeNo1.toString(), clientNo1.getClientID(), movieID, "normal");
+        TicketInputDTO ticketInputDTO = new TicketInputDTO(movieTimeNo1.toString(), clientNo1.getUserID(), movieID);
         try (Jsonb jsonb = JsonbBuilder.create()) {
             String jsonPayload = jsonb.toJson(ticketInputDTO);
             logger.info("Json: " + jsonPayload);
@@ -316,37 +315,6 @@ public class TicketControllerTest {
 
             ValidatableResponse validatableResponse = response.then();
             validatableResponse.statusCode(400);
-        }
-    }
-
-    @Test
-    public void ticketControllerCreateTicketWithEmptyTicketTypeTestNegative() throws Exception {
-        String ticketType = "";
-        TicketInputDTO ticketInputDTO = new TicketInputDTO(movieTimeNo1.toString(), clientNo1.getClientID(), movieNo1.getMovieID(), ticketType);
-        try (Jsonb jsonb = JsonbBuilder.create()) {
-            String jsonPayload = jsonb.toJson(ticketInputDTO);
-            logger.info("Json: " + jsonPayload);
-
-            RequestSpecification requestSpecification = RestAssured.given();
-            requestSpecification.contentType(ContentType.JSON);
-            requestSpecification.accept(ContentType.JSON);
-            requestSpecification.body(jsonPayload);
-
-            Response response = requestSpecification.post(ticketsBaseURL);
-
-            assertNotNull(response.asString());
-            logger.info("Response: " + response.asString());
-
-            ValidatableResponse validatableResponse = response.then();
-            validatableResponse.statusCode(201);
-
-            TicketDTO ticketDTO = jsonb.fromJson(response.asString(), TicketDTO.class);
-            assertNotNull(ticketDTO);
-            assertNotNull(ticketDTO.getTicketID());
-            assertEquals(movieTimeNo1, ticketDTO.getMovieTime());
-            assertEquals(clientNo1.getClientID(), ticketDTO.getClientID());
-            assertEquals(movieNo1.getMovieID(), ticketDTO.getMovieID());
-            assertEquals(movieNo1.getMovieBasePrice(), ticketDTO.getTicketFinalPrice());
         }
     }
 
@@ -370,9 +338,9 @@ public class TicketControllerTest {
             assertNotNull(ticketDTO);
             assertEquals(ticketNo1.getTicketID(), ticketDTO.getTicketID());
             assertEquals(ticketNo1.getMovieTime(), ticketDTO.getMovieTime());
-            assertEquals(ticketNo1.getClient().getClientID(), ticketDTO.getClientID());
-            assertEquals(ticketNo1.getMovie().getMovieID(), ticketDTO.getMovieID());
-            assertEquals(ticketNo1.getTicketFinalPrice(), ticketDTO.getTicketFinalPrice());
+            assertEquals(ticketNo1.getUserID(), ticketDTO.getClientID());
+            assertEquals(ticketNo1.getMovieID(), ticketDTO.getMovieID());
+            assertEquals(ticketNo1.getTicketPrice(), ticketDTO.getTicketFinalPrice());
         }
     }
 
@@ -415,7 +383,7 @@ public class TicketControllerTest {
         LocalDateTime newMovieTime = LocalDateTime.now().truncatedTo(ChronoUnit.SECONDS);
         ticketNo1.setMovieTime(newMovieTime);
 
-        TicketDTO ticketDTO = new TicketDTO(ticketNo1.getTicketID(), ticketNo1.getMovieTime(), ticketNo1.getTicketFinalPrice(), ticketNo1.getClient().getClientID(), ticketNo1.getMovie().getMovieID());
+        TicketDTO ticketDTO = new TicketDTO(ticketNo1.getTicketID(), ticketNo1.getMovieTime(), ticketNo1.getTicketPrice(), ticketNo1.getUserID(), ticketNo1.getMovieID());
         try (Jsonb jsonb = JsonbBuilder.create()) {
             TicketDTO[] arr = new TicketDTO[1];
             arr[0] = ticketDTO;
@@ -444,7 +412,7 @@ public class TicketControllerTest {
     public void ticketControllerUpdateTicketWithNullMovieTimeTestPositive() throws Exception {
         LocalDateTime newMovieTime = null;
         ticketNo1.setMovieTime(newMovieTime);
-        TicketDTO ticketDTO = new TicketDTO(ticketNo1.getTicketID(), ticketNo1.getMovieTime(), ticketNo1.getTicketFinalPrice(), ticketNo1.getClient().getClientID(), ticketNo1.getMovie().getMovieID());
+        TicketDTO ticketDTO = new TicketDTO(ticketNo1.getTicketID(), ticketNo1.getMovieTime(), ticketNo1.getTicketPrice(), ticketNo1.getUserID(), ticketNo1.getMovieID());
         try (Jsonb jsonb = JsonbBuilder.create()) {
             TicketDTO[] arr = new TicketDTO[1];
             arr[0] = ticketDTO;
@@ -464,9 +432,9 @@ public class TicketControllerTest {
 
     @Test
     public void ticketControllerUpdateTicketThatIsNotInTheDatabaseTestNegative() throws Exception {
-        Ticket ticket = new Ticket(UUID.randomUUID(), movieTimeNo1, clientNo1, movieNo1, TicketType.NORMAL);
+        Ticket ticket = new Ticket(UUID.randomUUID(), movieTimeNo1, movieNo1.getMovieBasePrice(), clientNo1.getUserID(), movieNo1.getMovieID());
         assertNotNull(ticket);
-        TicketDTO ticketDTO = new TicketDTO(ticket.getTicketID(), ticket.getMovieTime(), ticket.getTicketFinalPrice(), ticket.getClient().getClientID(), ticket.getMovie().getMovieID());
+        TicketDTO ticketDTO = new TicketDTO(ticket.getTicketID(), ticket.getMovieTime(), ticket.getTicketPrice(), ticket.getUserID(), ticket.getMovieID());
         try (Jsonb jsonb = JsonbBuilder.create()) {
             TicketDTO[] arr = new TicketDTO[1];
             arr[0] = ticketDTO;
@@ -526,8 +494,8 @@ public class TicketControllerTest {
     @Test
     public void ticketControllerAllocateTwoTicketsOnePositiveAndOneNegativeTestPositive() throws Exception {
         Movie testMovie = movieService.create("SomeMovieTitleNo1", 31.20, 3, 1);
-        TicketInputDTO ticketInputDTONo1 = new TicketInputDTO(movieTimeNo1.toString(), clientNo1.getClientID(), testMovie.getMovieID(), "normal");
-        TicketInputDTO ticketInputDTONo2 = new TicketInputDTO(movieTimeNo1.toString(), clientNo2.getClientID(), testMovie.getMovieID(), "normal");
+        TicketInputDTO ticketInputDTONo1 = new TicketInputDTO(movieTimeNo1.toString(), clientNo1.getUserID(), testMovie.getMovieID());
+        TicketInputDTO ticketInputDTONo2 = new TicketInputDTO(movieTimeNo1.toString(), clientNo2.getUserID(), testMovie.getMovieID());
         try (Jsonb jsonb = JsonbBuilder.create()) {
             String jsonPayload = jsonb.toJson(ticketInputDTONo1);
             logger.info("Json: " + jsonPayload);
@@ -549,7 +517,7 @@ public class TicketControllerTest {
             assertNotNull(ticketDTO);
             assertNotNull(ticketDTO.getTicketID());
             assertEquals(movieTimeNo1, ticketDTO.getMovieTime());
-            assertEquals(clientNo1.getClientID(), ticketDTO.getClientID());
+            assertEquals(clientNo1.getUserID(), ticketDTO.getClientID());
             assertEquals(testMovie.getMovieID(), ticketDTO.getMovieID());
             assertEquals(testMovie.getMovieBasePrice(), ticketDTO.getTicketFinalPrice());
 
@@ -574,8 +542,8 @@ public class TicketControllerTest {
     @Test
     public void ticketControllerAllocateTwoTicketsTwoPositiveTestPositive() throws Exception {
         Movie testMovie = movieService.create("SomeMovieTitleNo1", 31.20, 3, 1);
-        TicketInputDTO ticketInputDTONo1 = new TicketInputDTO(movieTimeNo1.toString(), clientNo1.getClientID(), testMovie.getMovieID(), "normal");
-        TicketInputDTO ticketInputDTONo2 = new TicketInputDTO(movieTimeNo1.toString(), clientNo2.getClientID(), testMovie.getMovieID(), "normal");
+        TicketInputDTO ticketInputDTONo1 = new TicketInputDTO(movieTimeNo1.toString(), clientNo1.getUserID(), testMovie.getMovieID());
+        TicketInputDTO ticketInputDTONo2 = new TicketInputDTO(movieTimeNo1.toString(), clientNo2.getUserID(), testMovie.getMovieID());
         try (Jsonb jsonb = JsonbBuilder.create()) {
             String jsonPayload = jsonb.toJson(ticketInputDTONo1);
             logger.info("Json: " + jsonPayload);
@@ -597,7 +565,7 @@ public class TicketControllerTest {
             assertNotNull(ticketDTO);
             assertNotNull(ticketDTO.getTicketID());
             assertEquals(movieTimeNo1, ticketDTO.getMovieTime());
-            assertEquals(clientNo1.getClientID(), ticketDTO.getClientID());
+            assertEquals(clientNo1.getUserID(), ticketDTO.getClientID());
             assertEquals(testMovie.getMovieID(), ticketDTO.getMovieID());
             assertEquals(testMovie.getMovieBasePrice(), ticketDTO.getTicketFinalPrice());
 
@@ -626,7 +594,7 @@ public class TicketControllerTest {
             assertNotNull(ticketDTO);
             assertNotNull(ticketDTO.getTicketID());
             assertEquals(movieTimeNo1, ticketDTO.getMovieTime());
-            assertEquals(clientNo2.getClientID(), ticketDTO.getClientID());
+            assertEquals(clientNo2.getUserID(), ticketDTO.getClientID());
             assertEquals(testMovie.getMovieID(), ticketDTO.getMovieID());
             assertEquals(testMovie.getMovieBasePrice(), ticketDTO.getTicketFinalPrice());
         }
@@ -636,7 +604,7 @@ public class TicketControllerTest {
 
     @Test
     public void adminControllerFindAllTicketsTestPositive() {
-        UUID searchedAdminID = adminNo1.getClientID();
+        UUID searchedAdminID = adminNo1.getUserID();
         String path = adminsBaseURL + "/" + searchedAdminID + "/ticket-list";
 
         RequestSpecification requestSpecification = RestAssured.given();
@@ -655,7 +623,7 @@ public class TicketControllerTest {
 
     @Test
     public void clientControllerFindAllTicketsTestPositive() {
-        UUID searchedClientID = clientNo1.getClientID();
+        UUID searchedClientID = clientNo1.getUserID();
         String path = clientsBaseURL + "/" + searchedClientID + "/ticket-list";
 
         RequestSpecification requestSpecification = RestAssured.given();
@@ -674,7 +642,7 @@ public class TicketControllerTest {
 
     @Test
     public void staffControllerFindAllTicketsTestPositive() {
-        UUID searchedStaffID = staffNo1.getClientID();
+        UUID searchedStaffID = staffNo1.getUserID();
         String path = staffsBaseURL + "/" + searchedStaffID + "/ticket-list";
 
         RequestSpecification requestSpecification = RestAssured.given();

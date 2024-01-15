@@ -50,7 +50,7 @@ public class ClientController implements UserServiceInterface<Client> {
                 return ResponseEntity.badRequest().contentType(MediaType.APPLICATION_JSON).body(messages);
             }
 
-            ClientDTO clientDTO = new ClientDTO(client.getClientID(), client.getClientLogin(), client.isClientStatusActive());
+            ClientDTO clientDTO = new ClientDTO(client.getUserID(), client.getUserLogin(), client.isUserStatusActive());
             return ResponseEntity.created(URI.create("http://localhost:8000/api/v1/clients/" + clientDTO.getClientID().toString())).contentType(MediaType.APPLICATION_JSON).body(clientDTO);
         } catch (ClientServiceCreateClientDuplicateLoginException exception) {
             return ResponseEntity.status(HttpStatus.CONFLICT).contentType(MediaType.APPLICATION_JSON).body(exception.getMessage());
@@ -75,7 +75,7 @@ public class ClientController implements UserServiceInterface<Client> {
     public ResponseEntity<?> findByUUID(@PathVariable("id") UUID clientID) {
         try {
             Client client = this.clientService.findByUUID(clientID);
-            ClientDTO clientDTO = new ClientDTO(client.getClientID(), client.getClientLogin(), client.isClientStatusActive());
+            ClientDTO clientDTO = new ClientDTO(client.getUserID(), client.getUserLogin(), client.isUserStatusActive());
             return this.generateResponseForDTO(clientDTO);
         } catch (ClientServiceClientNotFoundException exception) {
             return ResponseEntity.notFound().build();
@@ -89,7 +89,7 @@ public class ClientController implements UserServiceInterface<Client> {
     public ResponseEntity<?> findByLogin(@PathVariable("login") String clientLogin) {
         try {
             Client client = this.clientService.findByLogin(clientLogin);
-            ClientDTO clientDTO = new ClientDTO(client.getClientID(), client.getClientLogin(), client.isClientStatusActive());
+            ClientDTO clientDTO = new ClientDTO(client.getUserID(), client.getUserLogin(), client.isUserStatusActive());
             return this.generateResponseForDTO(clientDTO);
         } catch (ClientServiceClientNotFoundException exception) {
             return ResponseEntity.notFound().build();
@@ -116,7 +116,7 @@ public class ClientController implements UserServiceInterface<Client> {
             List<Ticket> listOfTicketsForAClient = this.clientService.getTicketsForClient(clientID);
             List<TicketDTO> listOfDTOs = new ArrayList<>();
             for (Ticket ticket : listOfTicketsForAClient) {
-                listOfDTOs.add(new TicketDTO(ticket.getTicketID(), ticket.getMovieTime(), ticket.getTicketFinalPrice(), ticket.getClient().getClientID(), ticket.getMovie().getMovieID()));
+                listOfDTOs.add(new TicketDTO(ticket.getTicketID(), ticket.getMovieTime(), ticket.getTicketPrice(), ticket.getUserID(), ticket.getMovieID()));
             }
             if (listOfTicketsForAClient.isEmpty()) {
                 return ResponseEntity.noContent().build();
@@ -171,7 +171,7 @@ public class ClientController implements UserServiceInterface<Client> {
     private List<ClientDTO> getListOfClientDTOs(List<Client> listOfClients) {
         List<ClientDTO> listOfDTOs = new ArrayList<>();
         for (Client client : listOfClients) {
-            listOfDTOs.add(new ClientDTO(client.getClientID(), client.getClientLogin(), client.isClientStatusActive()));
+            listOfDTOs.add(new ClientDTO(client.getUserID(), client.getUserLogin(), client.isUserStatusActive()));
         }
         return listOfDTOs;
     }

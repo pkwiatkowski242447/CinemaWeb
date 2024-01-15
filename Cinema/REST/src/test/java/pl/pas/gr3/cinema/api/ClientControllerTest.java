@@ -13,9 +13,9 @@ import org.slf4j.LoggerFactory;
 import pl.pas.gr3.cinema.exceptions.services.crud.client.ClientServiceCreateException;
 import pl.pas.gr3.cinema.exceptions.services.crud.client.ClientServiceDeleteException;
 import pl.pas.gr3.cinema.exceptions.services.crud.client.ClientServiceReadException;
+import pl.pas.gr3.cinema.repositories.implementations.UserRepository;
 import pl.pas.gr3.cinema.services.implementations.ClientService;
 import pl.pas.gr3.cinema.model.users.Client;
-import pl.pas.gr3.cinema.repositories.implementations.ClientRepository;
 import pl.pas.gr3.dto.users.ClientDTO;
 import pl.pas.gr3.dto.users.ClientInputDTO;
 import pl.pas.gr3.dto.users.ClientPasswordDTO;
@@ -31,7 +31,7 @@ public class ClientControllerTest {
     private static String clientsBaseURL;
 
     private static final String databaseName = "default";
-    private static ClientRepository clientRepository;
+    private static UserRepository userRepository;
     private static ClientService clientService;
 
     private Client clientNo1;
@@ -39,8 +39,8 @@ public class ClientControllerTest {
 
     @BeforeAll
     public static void init() {
-        clientRepository = new ClientRepository(databaseName);
-        clientService = new ClientService(clientRepository);
+        userRepository = new UserRepository(databaseName);
+        clientService = new ClientService(userRepository);
 
         clientsBaseURL = "http://localhost:8000/api/v1/clients";
         RestAssured.baseURI = clientsBaseURL;
@@ -66,7 +66,7 @@ public class ClientControllerTest {
         try {
             List<Client> listOfClients = clientService.findAll();
             for (Client client : listOfClients) {
-                clientService.delete(client.getClientID());
+                clientService.delete(client.getUserID());
             }
         } catch (ClientServiceReadException | ClientServiceDeleteException exception) {
             logger.debug(exception.getMessage());
@@ -75,7 +75,7 @@ public class ClientControllerTest {
 
     @AfterAll
     public static void destroy() {
-        clientRepository.close();
+        userRepository.close();
     }
 
     // Create tests
@@ -305,7 +305,7 @@ public class ClientControllerTest {
 
     @Test
     public void clientControllerCreateClientWithLoginThatIsAlreadyInTheDatabaseTestNegative() throws Exception {
-        String clientLogin = clientNo1.getClientLogin();
+        String clientLogin = clientNo1.getUserLogin();
         String clientPassword = "SecretClientPasswordNo1";
         ClientInputDTO clientInputDTO = new ClientInputDTO(clientLogin, clientPassword);
 
@@ -523,7 +523,7 @@ public class ClientControllerTest {
 
     @Test
     public void clientControllerFindClientByIDTestPositive() throws Exception {
-        UUID searchedClientID = clientNo1.getClientID();
+        UUID searchedClientID = clientNo1.getUserID();
         try (Jsonb jsonb = JsonbBuilder.create()) {
             String path = clientsBaseURL + "/" + searchedClientID;
 
@@ -543,9 +543,9 @@ public class ClientControllerTest {
 
             ClientDTO clientDTO = jsonb.fromJson(response.asString(), ClientDTO.class);
 
-            assertEquals(clientNo1.getClientID(), clientDTO.getClientID());
-            assertEquals(clientNo1.getClientLogin(), clientDTO.getClientLogin());
-            assertEquals(clientNo1.isClientStatusActive(), clientDTO.isClientStatusActive());
+            assertEquals(clientNo1.getUserID(), clientDTO.getClientID());
+            assertEquals(clientNo1.getUserLogin(), clientDTO.getClientLogin());
+            assertEquals(clientNo1.isUserStatusActive(), clientDTO.isClientStatusActive());
         }
     }
 
@@ -568,7 +568,7 @@ public class ClientControllerTest {
 
     @Test
     public void clientControllerFindClientByLoginTestPositive() throws Exception {
-        String searchedClientLogin = clientNo1.getClientLogin();
+        String searchedClientLogin = clientNo1.getUserLogin();
         try (Jsonb jsonb = JsonbBuilder.create()) {
             String path = clientsBaseURL + "/login/" + searchedClientLogin;
 
@@ -586,9 +586,9 @@ public class ClientControllerTest {
 
             ClientDTO clientDTO = jsonb.fromJson(response.asString(), ClientDTO.class);
 
-            assertEquals(clientNo1.getClientID(), clientDTO.getClientID());
-            assertEquals(clientNo1.getClientLogin(), clientDTO.getClientLogin());
-            assertEquals(clientNo1.isClientStatusActive(), clientDTO.isClientStatusActive());
+            assertEquals(clientNo1.getUserID(), clientDTO.getClientID());
+            assertEquals(clientNo1.getUserLogin(), clientDTO.getClientLogin());
+            assertEquals(clientNo1.isUserStatusActive(), clientDTO.isClientStatusActive());
         }
     }
 
@@ -642,16 +642,16 @@ public class ClientControllerTest {
 
     @Test
     public void clientControllerUpdateClientTestPositive() throws Exception {
-        String clientLoginBefore = clientNo1.getClientLogin();
-        String clientPasswordBefore = clientNo1.getClientPassword();
+        String clientLoginBefore = clientNo1.getUserLogin();
+        String clientPasswordBefore = clientNo1.getUserPassword();
         String newClientLogin = "SomeNewClientLogNo1";
         String newClientPassword = "SomeNewClientPasswordNo1";
 
-        clientNo1.setClientLogin(newClientLogin);
-        clientNo1.setClientPassword(newClientPassword);
+        clientNo1.setUserLogin(newClientLogin);
+        clientNo1.setUserPassword(newClientPassword);
 
         try (Jsonb jsonb = JsonbBuilder.create()) {
-            ClientPasswordDTO clientPasswordDTO = new ClientPasswordDTO(clientNo1.getClientID(), clientNo1.getClientLogin(), clientNo1.getClientPassword(), clientNo1.isClientStatusActive());
+            ClientPasswordDTO clientPasswordDTO = new ClientPasswordDTO(clientNo1.getUserID(), clientNo1.getUserLogin(), clientNo1.getUserPassword(), clientNo1.isUserStatusActive());
             ClientPasswordDTO[] arr = new ClientPasswordDTO[1];
             arr[0] = clientPasswordDTO;
             String jsonPayload = jsonb.toJson(arr[0]);
@@ -669,10 +669,10 @@ public class ClientControllerTest {
             validatableResponse.statusCode(204);
         }
 
-        Client foundClient = clientService.findByUUID(clientNo1.getClientID());
+        Client foundClient = clientService.findByUUID(clientNo1.getUserID());
 
-        String clientLoginAfter = foundClient.getClientLogin();
-        String clientPasswordAfter = foundClient.getClientPassword();
+        String clientLoginAfter = foundClient.getUserLogin();
+        String clientPasswordAfter = foundClient.getUserPassword();
 
         assertEquals(newClientLogin, clientLoginAfter);
         assertEquals(newClientPassword, clientPasswordAfter);
@@ -683,9 +683,9 @@ public class ClientControllerTest {
     @Test
     public void clientControllerUpdateClientWithNullLoginTestNegative() throws Exception {
         String newClientLogin = null;
-        clientNo1.setClientLogin(newClientLogin);
+        clientNo1.setUserLogin(newClientLogin);
         try (Jsonb jsonb = JsonbBuilder.create()) {
-            ClientPasswordDTO clientPasswordDTO = new ClientPasswordDTO(clientNo1.getClientID(), clientNo1.getClientLogin(), clientNo1.getClientPassword(), clientNo1.isClientStatusActive());
+            ClientPasswordDTO clientPasswordDTO = new ClientPasswordDTO(clientNo1.getUserID(), clientNo1.getUserLogin(), clientNo1.getUserPassword(), clientNo1.isUserStatusActive());
             ClientPasswordDTO[] arr = new ClientPasswordDTO[1];
             arr[0] = clientPasswordDTO;
             String jsonPayload = jsonb.toJson(arr[0]);
@@ -708,9 +708,9 @@ public class ClientControllerTest {
     @Test
     public void clientControllerUpdateClientWithEmptyLoginTestNegative() throws Exception {
         String newClientLogin = "";
-        clientNo1.setClientLogin(newClientLogin);
+        clientNo1.setUserLogin(newClientLogin);
         try (Jsonb jsonb = JsonbBuilder.create()) {
-            ClientPasswordDTO clientPasswordDTO = new ClientPasswordDTO(clientNo1.getClientID(), clientNo1.getClientLogin(), clientNo1.getClientPassword(), clientNo1.isClientStatusActive());
+            ClientPasswordDTO clientPasswordDTO = new ClientPasswordDTO(clientNo1.getUserID(), clientNo1.getUserLogin(), clientNo1.getUserPassword(), clientNo1.isUserStatusActive());
             ClientPasswordDTO[] arr = new ClientPasswordDTO[1];
             arr[0] = clientPasswordDTO;
             String jsonPayload = jsonb.toJson(arr[0]);
@@ -733,9 +733,9 @@ public class ClientControllerTest {
     @Test
     public void clientControllerUpdateClientWithLoginTooShortTestNegative() throws Exception {
         String newClientLogin = "ddddfdd";
-        clientNo1.setClientLogin(newClientLogin);
+        clientNo1.setUserLogin(newClientLogin);
         try (Jsonb jsonb = JsonbBuilder.create()) {
-            ClientPasswordDTO clientPasswordDTO = new ClientPasswordDTO(clientNo1.getClientID(), clientNo1.getClientLogin(), clientNo1.getClientPassword(), clientNo1.isClientStatusActive());
+            ClientPasswordDTO clientPasswordDTO = new ClientPasswordDTO(clientNo1.getUserID(), clientNo1.getUserLogin(), clientNo1.getUserPassword(), clientNo1.isUserStatusActive());
             ClientPasswordDTO[] arr = new ClientPasswordDTO[1];
             arr[0] = clientPasswordDTO;
             String jsonPayload = jsonb.toJson(arr[0]);
@@ -758,9 +758,9 @@ public class ClientControllerTest {
     @Test
     public void clientControllerUpdateClientWithLoginTooLongTestNegative() throws Exception {
         String newClientLogin = "ddddfddddfddddfddddfddddfddddfddddfddddfd";
-        clientNo1.setClientLogin(newClientLogin);
+        clientNo1.setUserLogin(newClientLogin);
         try (Jsonb jsonb = JsonbBuilder.create()) {
-            ClientPasswordDTO clientPasswordDTO = new ClientPasswordDTO(clientNo1.getClientID(), clientNo1.getClientLogin(), clientNo1.getClientPassword(), clientNo1.isClientStatusActive());
+            ClientPasswordDTO clientPasswordDTO = new ClientPasswordDTO(clientNo1.getUserID(), clientNo1.getUserLogin(), clientNo1.getUserPassword(), clientNo1.isUserStatusActive());
             ClientPasswordDTO[] arr = new ClientPasswordDTO[1];
             arr[0] = clientPasswordDTO;
             String jsonPayload = jsonb.toJson(arr[0]);
@@ -782,11 +782,11 @@ public class ClientControllerTest {
 
     @Test
     public void clientControllerUpdateClientWithLoginLengthEqualTo8TestPositive() throws Exception {
-        String clientLoginBefore = clientNo1.getClientLogin();
+        String clientLoginBefore = clientNo1.getUserLogin();
         String newClientLogin = "ddddfddd";
-        clientNo1.setClientLogin(newClientLogin);
+        clientNo1.setUserLogin(newClientLogin);
         try (Jsonb jsonb = JsonbBuilder.create()) {
-            ClientPasswordDTO clientPasswordDTO = new ClientPasswordDTO(clientNo1.getClientID(), clientNo1.getClientLogin(), clientNo1.getClientPassword(), clientNo1.isClientStatusActive());
+            ClientPasswordDTO clientPasswordDTO = new ClientPasswordDTO(clientNo1.getUserID(), clientNo1.getUserLogin(), clientNo1.getUserPassword(), clientNo1.isUserStatusActive());
             ClientPasswordDTO[] arr = new ClientPasswordDTO[1];
             arr[0] = clientPasswordDTO;
             String jsonPayload = jsonb.toJson(arr[0]);
@@ -804,8 +804,8 @@ public class ClientControllerTest {
             validatableResponse.statusCode(204);
         }
 
-        Client foundClient = clientService.findByUUID(clientNo1.getClientID());
-        String clientLoginAfter = foundClient.getClientLogin();
+        Client foundClient = clientService.findByUUID(clientNo1.getUserID());
+        String clientLoginAfter = foundClient.getUserLogin();
 
         assertEquals(newClientLogin, clientLoginAfter);
         assertNotEquals(clientLoginBefore, clientLoginAfter);
@@ -813,11 +813,11 @@ public class ClientControllerTest {
 
     @Test
     public void clientControllerUpdateClientWithLoginLengthEqualTo20TestPositive() throws Exception {
-        String clientLoginBefore = clientNo1.getClientLogin();
+        String clientLoginBefore = clientNo1.getUserLogin();
         String newClientLogin = "ddddfddddfddddfddddf";
-        clientNo1.setClientLogin(newClientLogin);
+        clientNo1.setUserLogin(newClientLogin);
         try (Jsonb jsonb = JsonbBuilder.create()) {
-            ClientPasswordDTO clientPasswordDTO = new ClientPasswordDTO(clientNo1.getClientID(), clientNo1.getClientLogin(), clientNo1.getClientPassword(), clientNo1.isClientStatusActive());
+            ClientPasswordDTO clientPasswordDTO = new ClientPasswordDTO(clientNo1.getUserID(), clientNo1.getUserLogin(), clientNo1.getUserPassword(), clientNo1.isUserStatusActive());
             ClientPasswordDTO[] arr = new ClientPasswordDTO[1];
             arr[0] = clientPasswordDTO;
             String jsonPayload = jsonb.toJson(arr[0]);
@@ -835,8 +835,8 @@ public class ClientControllerTest {
             validatableResponse.statusCode(204);
         }
 
-        Client foundClient = clientService.findByUUID(clientNo1.getClientID());
-        String clientLoginAfter = foundClient.getClientLogin();
+        Client foundClient = clientService.findByUUID(clientNo1.getUserID());
+        String clientLoginAfter = foundClient.getUserLogin();
 
         assertEquals(newClientLogin, clientLoginAfter);
         assertNotEquals(clientLoginBefore, clientLoginAfter);
@@ -845,9 +845,9 @@ public class ClientControllerTest {
     @Test
     public void clientControllerUpdateClientWithLoginThatViolatesRegExTestNegative() throws Exception {
         String newClientLogin = "Some Invalid Login";
-        clientNo1.setClientLogin(newClientLogin);
+        clientNo1.setUserLogin(newClientLogin);
         try (Jsonb jsonb = JsonbBuilder.create()) {
-            ClientPasswordDTO clientPasswordDTO = new ClientPasswordDTO(clientNo1.getClientID(), clientNo1.getClientLogin(), clientNo1.getClientPassword(), clientNo1.isClientStatusActive());
+            ClientPasswordDTO clientPasswordDTO = new ClientPasswordDTO(clientNo1.getUserID(), clientNo1.getUserLogin(), clientNo1.getUserPassword(), clientNo1.isUserStatusActive());
             ClientPasswordDTO[] arr = new ClientPasswordDTO[1];
             arr[0] = clientPasswordDTO;
             String jsonPayload = jsonb.toJson(arr[0]);
@@ -870,9 +870,9 @@ public class ClientControllerTest {
     @Test
     public void clientControllerUpdateClientWithNullPasswordTestNegative() throws Exception {
         String newClientPassword = null;
-        clientNo1.setClientPassword(newClientPassword);
+        clientNo1.setUserPassword(newClientPassword);
         try (Jsonb jsonb = JsonbBuilder.create()) {
-            ClientPasswordDTO clientPasswordDTO = new ClientPasswordDTO(clientNo1.getClientID(), clientNo1.getClientLogin(), clientNo1.getClientPassword(), clientNo1.isClientStatusActive());
+            ClientPasswordDTO clientPasswordDTO = new ClientPasswordDTO(clientNo1.getUserID(), clientNo1.getUserLogin(), clientNo1.getUserPassword(), clientNo1.isUserStatusActive());
             ClientPasswordDTO[] arr = new ClientPasswordDTO[1];
             arr[0] = clientPasswordDTO;
             String jsonPayload = jsonb.toJson(arr[0]);
@@ -895,9 +895,9 @@ public class ClientControllerTest {
     @Test
     public void clientControllerUpdateClientWithEmptyPasswordTestNegative() throws Exception {
         String newClientPassword = "";
-        clientNo1.setClientPassword(newClientPassword);
+        clientNo1.setUserPassword(newClientPassword);
         try (Jsonb jsonb = JsonbBuilder.create()) {
-            ClientPasswordDTO clientPasswordDTO = new ClientPasswordDTO(clientNo1.getClientID(), clientNo1.getClientLogin(), clientNo1.getClientPassword(), clientNo1.isClientStatusActive());
+            ClientPasswordDTO clientPasswordDTO = new ClientPasswordDTO(clientNo1.getUserID(), clientNo1.getUserLogin(), clientNo1.getUserPassword(), clientNo1.isUserStatusActive());
             ClientPasswordDTO[] arr = new ClientPasswordDTO[1];
             arr[0] = clientPasswordDTO;
             String jsonPayload = jsonb.toJson(arr[0]);
@@ -920,9 +920,9 @@ public class ClientControllerTest {
     @Test
     public void clientControllerUpdateClientWithPasswordTooShortTestNegative() throws Exception {
         String newClientPassword = "ddddfdd";
-        clientNo1.setClientPassword(newClientPassword);
+        clientNo1.setUserPassword(newClientPassword);
         try (Jsonb jsonb = JsonbBuilder.create()) {
-            ClientPasswordDTO clientPasswordDTO = new ClientPasswordDTO(clientNo1.getClientID(), clientNo1.getClientLogin(), clientNo1.getClientPassword(), clientNo1.isClientStatusActive());
+            ClientPasswordDTO clientPasswordDTO = new ClientPasswordDTO(clientNo1.getUserID(), clientNo1.getUserLogin(), clientNo1.getUserPassword(), clientNo1.isUserStatusActive());
             ClientPasswordDTO[] arr = new ClientPasswordDTO[1];
             arr[0] = clientPasswordDTO;
             String jsonPayload = jsonb.toJson(arr[0]);
@@ -945,9 +945,9 @@ public class ClientControllerTest {
     @Test
     public void clientControllerUpdateClientWithPasswordTooLongTestNegative() throws Exception {
         String newClientPassword = "ddddfddddfddddfddddfddddfddddfddddfddddfd";
-        clientNo1.setClientPassword(newClientPassword);
+        clientNo1.setUserPassword(newClientPassword);
         try (Jsonb jsonb = JsonbBuilder.create()) {
-            ClientPasswordDTO clientPasswordDTO = new ClientPasswordDTO(clientNo1.getClientID(), clientNo1.getClientLogin(), clientNo1.getClientPassword(), clientNo1.isClientStatusActive());
+            ClientPasswordDTO clientPasswordDTO = new ClientPasswordDTO(clientNo1.getUserID(), clientNo1.getUserLogin(), clientNo1.getUserPassword(), clientNo1.isUserStatusActive());
             ClientPasswordDTO[] arr = new ClientPasswordDTO[1];
             arr[0] = clientPasswordDTO;
             String jsonPayload = jsonb.toJson(arr[0]);
@@ -969,11 +969,11 @@ public class ClientControllerTest {
 
     @Test
     public void clientControllerUpdateClientWithPasswordLengthEqualTo8TestPositive() throws Exception {
-        String clientPasswordBefore = clientNo1.getClientPassword();
+        String clientPasswordBefore = clientNo1.getUserPassword();
         String newClientPassword = "ddddfddd";
-        clientNo1.setClientPassword(newClientPassword);
+        clientNo1.setUserPassword(newClientPassword);
         try (Jsonb jsonb = JsonbBuilder.create()) {
-            ClientPasswordDTO clientPasswordDTO = new ClientPasswordDTO(clientNo1.getClientID(), clientNo1.getClientLogin(), clientNo1.getClientPassword(), clientNo1.isClientStatusActive());
+            ClientPasswordDTO clientPasswordDTO = new ClientPasswordDTO(clientNo1.getUserID(), clientNo1.getUserLogin(), clientNo1.getUserPassword(), clientNo1.isUserStatusActive());
             ClientPasswordDTO[] arr = new ClientPasswordDTO[1];
             arr[0] = clientPasswordDTO;
             String jsonPayload = jsonb.toJson(arr[0]);
@@ -991,8 +991,8 @@ public class ClientControllerTest {
             validatableResponse.statusCode(204);
         }
 
-        Client foundClient = clientService.findByUUID(clientNo1.getClientID());
-        String clientPasswordAfter = foundClient.getClientPassword();
+        Client foundClient = clientService.findByUUID(clientNo1.getUserID());
+        String clientPasswordAfter = foundClient.getUserPassword();
 
         assertEquals(newClientPassword, clientPasswordAfter);
         assertNotEquals(clientPasswordBefore, clientPasswordAfter);
@@ -1000,11 +1000,11 @@ public class ClientControllerTest {
 
     @Test
     public void clientControllerUpdateClientWithPasswordLengthEqualTo40TestPositive() throws Exception {
-        String clientPasswordBefore = clientNo1.getClientPassword();
+        String clientPasswordBefore = clientNo1.getUserPassword();
         String newClientPassword = "ddddfddddfddddfddddfddddfddddfddddfddddf";
-        clientNo1.setClientPassword(newClientPassword);
+        clientNo1.setUserPassword(newClientPassword);
         try (Jsonb jsonb = JsonbBuilder.create()) {
-            ClientPasswordDTO clientPasswordDTO = new ClientPasswordDTO(clientNo1.getClientID(), clientNo1.getClientLogin(), clientNo1.getClientPassword(), clientNo1.isClientStatusActive());
+            ClientPasswordDTO clientPasswordDTO = new ClientPasswordDTO(clientNo1.getUserID(), clientNo1.getUserLogin(), clientNo1.getUserPassword(), clientNo1.isUserStatusActive());
             ClientPasswordDTO[] arr = new ClientPasswordDTO[1];
             arr[0] = clientPasswordDTO;
             String jsonPayload = jsonb.toJson(arr[0]);
@@ -1022,8 +1022,8 @@ public class ClientControllerTest {
             validatableResponse.statusCode(204);
         }
 
-        Client foundClient = clientService.findByUUID(clientNo1.getClientID());
-        String clientPasswordAfter = foundClient.getClientPassword();
+        Client foundClient = clientService.findByUUID(clientNo1.getUserID());
+        String clientPasswordAfter = foundClient.getUserPassword();
 
         assertEquals(newClientPassword, clientPasswordAfter);
         assertNotEquals(clientPasswordBefore, clientPasswordAfter);
@@ -1032,9 +1032,9 @@ public class ClientControllerTest {
     @Test
     public void clientControllerUpdateClientWithPasswordThatViolatesRegExTestNegative() throws Exception {
         String newClientPassword = "Some Invalid Password";
-        clientNo1.setClientPassword(newClientPassword);
+        clientNo1.setUserPassword(newClientPassword);
         try (Jsonb jsonb = JsonbBuilder.create()) {
-            ClientPasswordDTO clientPasswordDTO = new ClientPasswordDTO(clientNo1.getClientID(), clientNo1.getClientLogin(), clientNo1.getClientPassword(), clientNo1.isClientStatusActive());
+            ClientPasswordDTO clientPasswordDTO = new ClientPasswordDTO(clientNo1.getUserID(), clientNo1.getUserLogin(), clientNo1.getUserPassword(), clientNo1.isUserStatusActive());
             ClientPasswordDTO[] arr = new ClientPasswordDTO[1];
             arr[0] = clientPasswordDTO;
             String jsonPayload = jsonb.toJson(arr[0]);
@@ -1058,7 +1058,7 @@ public class ClientControllerTest {
 
     @Test
     public void clientControllerActivateClientTestPositive() throws Exception {
-        UUID activatedClientID = clientNo1.getClientID();
+        UUID activatedClientID = clientNo1.getUserID();
         String path = clientsBaseURL + "/" + activatedClientID + "/deactivate";
 
         RequestSpecification requestSpecification = RestAssured.given();
@@ -1069,7 +1069,7 @@ public class ClientControllerTest {
         validatableResponse.statusCode(204);
 
         Client foundClient = clientService.findByUUID(activatedClientID);
-        boolean clientStatusActiveBefore = foundClient.isClientStatusActive();
+        boolean clientStatusActiveBefore = foundClient.isUserStatusActive();
 
         path = clientsBaseURL + "/" + activatedClientID + "/activate";
 
@@ -1081,7 +1081,7 @@ public class ClientControllerTest {
         validatableResponse.statusCode(204);
 
         foundClient = clientService.findByUUID(activatedClientID);
-        boolean clientStatusActiveAfter = foundClient.isClientStatusActive();
+        boolean clientStatusActiveAfter = foundClient.isUserStatusActive();
 
         assertTrue(clientStatusActiveAfter);
         assertFalse(clientStatusActiveBefore);
@@ -1104,8 +1104,8 @@ public class ClientControllerTest {
 
     @Test
     public void clientControllerDeactivateClientTestPositive() throws Exception {
-        boolean clientStatusActiveBefore = clientNo1.isClientStatusActive();
-        UUID deactivatedClientID = clientNo1.getClientID();
+        boolean clientStatusActiveBefore = clientNo1.isUserStatusActive();
+        UUID deactivatedClientID = clientNo1.getUserID();
         String path = clientsBaseURL + "/" + deactivatedClientID + "/deactivate";
 
         RequestSpecification requestSpecification = RestAssured.given();
@@ -1116,7 +1116,7 @@ public class ClientControllerTest {
         validatableResponse.statusCode(204);
 
         Client foundClient = clientService.findByUUID(deactivatedClientID);
-        boolean clientStatusActiveAfter = foundClient.isClientStatusActive();
+        boolean clientStatusActiveAfter = foundClient.isUserStatusActive();
 
         assertFalse(clientStatusActiveAfter);
         assertTrue(clientStatusActiveBefore);

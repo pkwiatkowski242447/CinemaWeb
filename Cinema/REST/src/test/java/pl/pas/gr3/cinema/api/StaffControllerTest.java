@@ -14,7 +14,7 @@ import pl.pas.gr3.cinema.exceptions.services.crud.staff.StaffServiceCreateExcept
 import pl.pas.gr3.cinema.exceptions.services.crud.staff.StaffServiceDeleteException;
 import pl.pas.gr3.cinema.exceptions.services.crud.staff.StaffServiceReadException;
 import pl.pas.gr3.cinema.model.users.Staff;
-import pl.pas.gr3.cinema.repositories.implementations.ClientRepository;
+import pl.pas.gr3.cinema.repositories.implementations.UserRepository;
 import pl.pas.gr3.cinema.services.implementations.StaffService;
 import pl.pas.gr3.dto.users.StaffDTO;
 import pl.pas.gr3.dto.users.StaffInputDTO;
@@ -31,7 +31,7 @@ public class StaffControllerTest {
     private static String staffsBaseURL;
 
     private static final String databaseName = "default";
-    private static ClientRepository clientRepository;
+    private static UserRepository userRepository;
     private static StaffService staffManager;
 
     private Staff staffNo1;
@@ -39,8 +39,8 @@ public class StaffControllerTest {
 
     @BeforeAll
     public static void init() {
-        clientRepository = new ClientRepository(databaseName);
-        staffManager = new StaffService(clientRepository);
+        userRepository = new UserRepository(databaseName);
+        staffManager = new StaffService(userRepository);
 
         staffsBaseURL = "http://localhost:8000/api/v1/staffs";
         RestAssured.baseURI = staffsBaseURL;
@@ -66,7 +66,7 @@ public class StaffControllerTest {
         try {
             List<Staff> listOfStaff = staffManager.findAll();
             for (Staff staff : listOfStaff) {
-                staffManager.delete(staff.getClientID());
+                staffManager.delete(staff.getUserID());
             }
         } catch (StaffServiceReadException | StaffServiceDeleteException exception) {
             logger.debug(exception.getMessage());
@@ -75,7 +75,7 @@ public class StaffControllerTest {
 
     @AfterAll
     public static void destroy() {
-        clientRepository.close();
+        userRepository.close();
     }
 
     // Create tests
@@ -305,7 +305,7 @@ public class StaffControllerTest {
 
     @Test
     public void staffControllerCreateStaffWithLoginThatIsAlreadyInTheDatabaseTestNegative() throws Exception {
-        String staffLogin = staffNo1.getClientLogin();
+        String staffLogin = staffNo1.getUserLogin();
         String staffPassword = "SecretStaffPasswordNo1";
         StaffInputDTO staffInputDTO = new StaffInputDTO(staffLogin, staffPassword);
 
@@ -523,7 +523,7 @@ public class StaffControllerTest {
 
     @Test
     public void staffControllerFindStaffByIDTestPositive() throws Exception {
-        UUID searchedStaffID = staffNo1.getClientID();
+        UUID searchedStaffID = staffNo1.getUserID();
         try (Jsonb jsonb = JsonbBuilder.create()) {
             String path = staffsBaseURL + "/" + searchedStaffID;
 
@@ -543,9 +543,9 @@ public class StaffControllerTest {
 
             StaffDTO staffDTO = jsonb.fromJson(response.asString(), StaffDTO.class);
 
-            assertEquals(staffNo1.getClientID(), staffDTO.getStaffID());
-            assertEquals(staffNo1.getClientLogin(), staffDTO.getStaffLogin());
-            assertEquals(staffNo1.isClientStatusActive(), staffDTO.isStaffStatusActive());
+            assertEquals(staffNo1.getUserID(), staffDTO.getStaffID());
+            assertEquals(staffNo1.getUserLogin(), staffDTO.getStaffLogin());
+            assertEquals(staffNo1.isUserStatusActive(), staffDTO.isStaffStatusActive());
         }
     }
 
@@ -568,7 +568,7 @@ public class StaffControllerTest {
 
     @Test
     public void staffControllerFindStaffByLoginTestPositive() throws Exception {
-        String searchedStaffLogin = staffNo1.getClientLogin();
+        String searchedStaffLogin = staffNo1.getUserLogin();
         try (Jsonb jsonb = JsonbBuilder.create()) {
             String path = staffsBaseURL + "/login/" + searchedStaffLogin;
 
@@ -586,9 +586,9 @@ public class StaffControllerTest {
 
             StaffDTO staffDTO = jsonb.fromJson(response.asString(), StaffDTO.class);
 
-            assertEquals(staffNo1.getClientID(), staffDTO.getStaffID());
-            assertEquals(staffNo1.getClientLogin(), staffDTO.getStaffLogin());
-            assertEquals(staffNo1.isClientStatusActive(), staffDTO.isStaffStatusActive());
+            assertEquals(staffNo1.getUserID(), staffDTO.getStaffID());
+            assertEquals(staffNo1.getUserLogin(), staffDTO.getStaffLogin());
+            assertEquals(staffNo1.isUserStatusActive(), staffDTO.isStaffStatusActive());
         }
     }
 
@@ -642,16 +642,16 @@ public class StaffControllerTest {
 
     @Test
     public void staffControllerUpdateStaffTestPositive() throws Exception {
-        String staffLoginBefore = staffNo1.getClientLogin();
-        String staffPasswordBefore = staffNo1.getClientPassword();
+        String staffLoginBefore = staffNo1.getUserLogin();
+        String staffPasswordBefore = staffNo1.getUserPassword();
         String newStaffLogin = "SomeNewStaffLoginNo1";
         String newStaffPassword = "SomeNewStaffPasswordNo1";
 
-        staffNo1.setClientLogin(newStaffLogin);
-        staffNo1.setClientPassword(newStaffPassword);
+        staffNo1.setUserLogin(newStaffLogin);
+        staffNo1.setUserPassword(newStaffPassword);
 
         try (Jsonb jsonb = JsonbBuilder.create()) {
-            StaffPasswordDTO staffPasswordDTO = new StaffPasswordDTO(staffNo1.getClientID(), staffNo1.getClientLogin(), staffNo1.getClientPassword(), staffNo1.isClientStatusActive());
+            StaffPasswordDTO staffPasswordDTO = new StaffPasswordDTO(staffNo1.getUserID(), staffNo1.getUserLogin(), staffNo1.getUserPassword(), staffNo1.isUserStatusActive());
             StaffPasswordDTO[] arr = new StaffPasswordDTO[1];
             arr[0] = staffPasswordDTO;
             String jsonPayload = jsonb.toJson(arr[0]);
@@ -669,10 +669,10 @@ public class StaffControllerTest {
             validatableResponse.statusCode(204);
         }
 
-        Staff foundStaff = staffManager.findByUUID(staffNo1.getClientID());
+        Staff foundStaff = staffManager.findByUUID(staffNo1.getUserID());
 
-        String staffLoginAfter = foundStaff.getClientLogin();
-        String staffPasswordAfter = foundStaff.getClientPassword();
+        String staffLoginAfter = foundStaff.getUserLogin();
+        String staffPasswordAfter = foundStaff.getUserPassword();
 
         assertEquals(newStaffLogin, staffLoginAfter);
         assertEquals(newStaffPassword, staffPasswordAfter);
@@ -683,9 +683,9 @@ public class StaffControllerTest {
     @Test
     public void staffControllerUpdateStaffWithNullLoginTestNegative() throws Exception {
         String newStaffLogin = null;
-        staffNo1.setClientLogin(newStaffLogin);
+        staffNo1.setUserLogin(newStaffLogin);
         try (Jsonb jsonb = JsonbBuilder.create()) {
-            StaffPasswordDTO staffPasswordDTO = new StaffPasswordDTO(staffNo1.getClientID(), staffNo1.getClientLogin(), staffNo1.getClientPassword(), staffNo1.isClientStatusActive());
+            StaffPasswordDTO staffPasswordDTO = new StaffPasswordDTO(staffNo1.getUserID(), staffNo1.getUserLogin(), staffNo1.getUserPassword(), staffNo1.isUserStatusActive());
             StaffPasswordDTO[] arr = new StaffPasswordDTO[1];
             arr[0] = staffPasswordDTO;
             String jsonPayload = jsonb.toJson(arr[0]);
@@ -708,9 +708,9 @@ public class StaffControllerTest {
     @Test
     public void staffControllerUpdateStaffWithEmptyLoginTestNegative() throws Exception {
         String newStaffLogin = "";
-        staffNo1.setClientLogin(newStaffLogin);
+        staffNo1.setUserLogin(newStaffLogin);
         try (Jsonb jsonb = JsonbBuilder.create()) {
-            StaffPasswordDTO staffPasswordDTO = new StaffPasswordDTO(staffNo1.getClientID(), staffNo1.getClientLogin(), staffNo1.getClientPassword(), staffNo1.isClientStatusActive());
+            StaffPasswordDTO staffPasswordDTO = new StaffPasswordDTO(staffNo1.getUserID(), staffNo1.getUserLogin(), staffNo1.getUserPassword(), staffNo1.isUserStatusActive());
             StaffPasswordDTO[] arr = new StaffPasswordDTO[1];
             arr[0] = staffPasswordDTO;
             String jsonPayload = jsonb.toJson(arr[0]);
@@ -733,9 +733,9 @@ public class StaffControllerTest {
     @Test
     public void staffControllerUpdateStaffWithLoginTooShortTestNegative() throws Exception {
         String newStaffLogin = "ddddfdd";
-        staffNo1.setClientLogin(newStaffLogin);
+        staffNo1.setUserLogin(newStaffLogin);
         try (Jsonb jsonb = JsonbBuilder.create()) {
-            StaffPasswordDTO staffPasswordDTO = new StaffPasswordDTO(staffNo1.getClientID(), staffNo1.getClientLogin(), staffNo1.getClientPassword(), staffNo1.isClientStatusActive());
+            StaffPasswordDTO staffPasswordDTO = new StaffPasswordDTO(staffNo1.getUserID(), staffNo1.getUserLogin(), staffNo1.getUserPassword(), staffNo1.isUserStatusActive());
             StaffPasswordDTO[] arr = new StaffPasswordDTO[1];
             arr[0] = staffPasswordDTO;
             String jsonPayload = jsonb.toJson(arr[0]);
@@ -758,9 +758,9 @@ public class StaffControllerTest {
     @Test
     public void staffControllerUpdateStaffWithLoginTooLongTestNegative() throws Exception {
         String newStaffsLogin = "ddddfddddfddddfddddfddddfddddfddddfddddfd";
-        staffNo1.setClientLogin(newStaffsLogin);
+        staffNo1.setUserLogin(newStaffsLogin);
         try (Jsonb jsonb = JsonbBuilder.create()) {
-            StaffPasswordDTO staffPasswordDTO = new StaffPasswordDTO(staffNo1.getClientID(), staffNo1.getClientLogin(), staffNo1.getClientPassword(), staffNo1.isClientStatusActive());
+            StaffPasswordDTO staffPasswordDTO = new StaffPasswordDTO(staffNo1.getUserID(), staffNo1.getUserLogin(), staffNo1.getUserPassword(), staffNo1.isUserStatusActive());
             StaffPasswordDTO[] arr = new StaffPasswordDTO[1];
             arr[0] = staffPasswordDTO;
             String jsonPayload = jsonb.toJson(arr[0]);
@@ -782,11 +782,11 @@ public class StaffControllerTest {
 
     @Test
     public void staffControllerUpdateStaffWithLoginLengthEqualTo8TestPositive() throws Exception {
-        String staffLoginBefore = staffNo1.getClientLogin();
+        String staffLoginBefore = staffNo1.getUserLogin();
         String newStaffLogin = "ddddfddd";
-        staffNo1.setClientLogin(newStaffLogin);
+        staffNo1.setUserLogin(newStaffLogin);
         try (Jsonb jsonb = JsonbBuilder.create()) {
-            StaffPasswordDTO staffPasswordDTO = new StaffPasswordDTO(staffNo1.getClientID(), staffNo1.getClientLogin(), staffNo1.getClientPassword(), staffNo1.isClientStatusActive());
+            StaffPasswordDTO staffPasswordDTO = new StaffPasswordDTO(staffNo1.getUserID(), staffNo1.getUserLogin(), staffNo1.getUserPassword(), staffNo1.isUserStatusActive());
             StaffPasswordDTO[] arr = new StaffPasswordDTO[1];
             arr[0] = staffPasswordDTO;
             String jsonPayload = jsonb.toJson(arr[0]);
@@ -804,8 +804,8 @@ public class StaffControllerTest {
             validatableResponse.statusCode(204);
         }
 
-        Staff foundStaff = staffManager.findByUUID(staffNo1.getClientID());
-        String staffLoginAfter = foundStaff.getClientLogin();
+        Staff foundStaff = staffManager.findByUUID(staffNo1.getUserID());
+        String staffLoginAfter = foundStaff.getUserLogin();
 
         assertEquals(newStaffLogin, staffLoginAfter);
         assertNotEquals(staffLoginBefore, staffLoginAfter);
@@ -813,11 +813,11 @@ public class StaffControllerTest {
 
     @Test
     public void staffControllerUpdateStaffWithLoginLengthEqualTo20TestPositive() throws Exception {
-        String staffLoginBefore = staffNo1.getClientLogin();
+        String staffLoginBefore = staffNo1.getUserLogin();
         String newStaffLogin = "ddddfddddfddddfddddf";
-        staffNo1.setClientLogin(newStaffLogin);
+        staffNo1.setUserLogin(newStaffLogin);
         try (Jsonb jsonb = JsonbBuilder.create()) {
-            StaffPasswordDTO staffPasswordDTO = new StaffPasswordDTO(staffNo1.getClientID(), staffNo1.getClientLogin(), staffNo1.getClientPassword(), staffNo1.isClientStatusActive());
+            StaffPasswordDTO staffPasswordDTO = new StaffPasswordDTO(staffNo1.getUserID(), staffNo1.getUserLogin(), staffNo1.getUserPassword(), staffNo1.isUserStatusActive());
             StaffPasswordDTO[] arr = new StaffPasswordDTO[1];
             arr[0] = staffPasswordDTO;
             String jsonPayload = jsonb.toJson(arr[0]);
@@ -835,8 +835,8 @@ public class StaffControllerTest {
             validatableResponse.statusCode(204);
         }
 
-        Staff foundStaff = staffManager.findByUUID(staffNo1.getClientID());
-        String staffLoginAfter = foundStaff.getClientLogin();
+        Staff foundStaff = staffManager.findByUUID(staffNo1.getUserID());
+        String staffLoginAfter = foundStaff.getUserLogin();
 
         assertEquals(newStaffLogin, staffLoginAfter);
         assertNotEquals(staffLoginBefore, staffLoginAfter);
@@ -845,9 +845,9 @@ public class StaffControllerTest {
     @Test
     public void staffControllerUpdateStaffWithLoginThatViolatesRegExTestNegative() throws Exception {
         String newStaffLogin = "Some Invalid Login";
-        staffNo1.setClientLogin(newStaffLogin);
+        staffNo1.setUserLogin(newStaffLogin);
         try (Jsonb jsonb = JsonbBuilder.create()) {
-            StaffPasswordDTO staffPasswordDTO = new StaffPasswordDTO(staffNo1.getClientID(), staffNo1.getClientLogin(), staffNo1.getClientPassword(), staffNo1.isClientStatusActive());
+            StaffPasswordDTO staffPasswordDTO = new StaffPasswordDTO(staffNo1.getUserID(), staffNo1.getUserLogin(), staffNo1.getUserPassword(), staffNo1.isUserStatusActive());
             StaffPasswordDTO[] arr = new StaffPasswordDTO[1];
             arr[0] = staffPasswordDTO;
             String jsonPayload = jsonb.toJson(arr[0]);
@@ -870,9 +870,9 @@ public class StaffControllerTest {
     @Test
     public void staffControllerUpdateStaffWithNullPasswordTestNegative() throws Exception {
         String newStaffPassword = null;
-        staffNo1.setClientPassword(newStaffPassword);
+        staffNo1.setUserPassword(newStaffPassword);
         try (Jsonb jsonb = JsonbBuilder.create()) {
-            StaffPasswordDTO staffPasswordDTO = new StaffPasswordDTO(staffNo1.getClientID(), staffNo1.getClientLogin(), staffNo1.getClientPassword(), staffNo1.isClientStatusActive());
+            StaffPasswordDTO staffPasswordDTO = new StaffPasswordDTO(staffNo1.getUserID(), staffNo1.getUserLogin(), staffNo1.getUserPassword(), staffNo1.isUserStatusActive());
             StaffPasswordDTO[] arr = new StaffPasswordDTO[1];
             arr[0] = staffPasswordDTO;
             String jsonPayload = jsonb.toJson(arr[0]);
@@ -895,9 +895,9 @@ public class StaffControllerTest {
     @Test
     public void staffControllerUpdateStaffWithEmptyPasswordTestNegative() throws Exception {
         String newStaffPassword = "";
-        staffNo1.setClientPassword(newStaffPassword);
+        staffNo1.setUserPassword(newStaffPassword);
         try (Jsonb jsonb = JsonbBuilder.create()) {
-            StaffPasswordDTO staffPasswordDTO = new StaffPasswordDTO(staffNo1.getClientID(), staffNo1.getClientLogin(), staffNo1.getClientPassword(), staffNo1.isClientStatusActive());
+            StaffPasswordDTO staffPasswordDTO = new StaffPasswordDTO(staffNo1.getUserID(), staffNo1.getUserLogin(), staffNo1.getUserPassword(), staffNo1.isUserStatusActive());
             StaffPasswordDTO[] arr = new StaffPasswordDTO[1];
             arr[0] = staffPasswordDTO;
             String jsonPayload = jsonb.toJson(arr[0]);
@@ -920,9 +920,9 @@ public class StaffControllerTest {
     @Test
     public void staffControllerUpdateStaffWithPasswordTooShortTestNegative() throws Exception {
         String newStaffPassword = "ddddfdd";
-        staffNo1.setClientPassword(newStaffPassword);
+        staffNo1.setUserPassword(newStaffPassword);
         try (Jsonb jsonb = JsonbBuilder.create()) {
-            StaffPasswordDTO staffPasswordDTO = new StaffPasswordDTO(staffNo1.getClientID(), staffNo1.getClientLogin(), staffNo1.getClientPassword(), staffNo1.isClientStatusActive());
+            StaffPasswordDTO staffPasswordDTO = new StaffPasswordDTO(staffNo1.getUserID(), staffNo1.getUserLogin(), staffNo1.getUserPassword(), staffNo1.isUserStatusActive());
             StaffPasswordDTO[] arr = new StaffPasswordDTO[1];
             arr[0] = staffPasswordDTO;
             String jsonPayload = jsonb.toJson(arr[0]);
@@ -945,9 +945,9 @@ public class StaffControllerTest {
     @Test
     public void staffControllerUpdateStaffWithPasswordTooLongTestNegative() throws Exception {
         String newStaffPassword = "ddddfddddfddddfddddfddddfddddfddddfddddfd";
-        staffNo1.setClientPassword(newStaffPassword);
+        staffNo1.setUserPassword(newStaffPassword);
         try (Jsonb jsonb = JsonbBuilder.create()) {
-            StaffPasswordDTO staffPasswordDTO = new StaffPasswordDTO(staffNo1.getClientID(), staffNo1.getClientLogin(), staffNo1.getClientPassword(), staffNo1.isClientStatusActive());
+            StaffPasswordDTO staffPasswordDTO = new StaffPasswordDTO(staffNo1.getUserID(), staffNo1.getUserLogin(), staffNo1.getUserPassword(), staffNo1.isUserStatusActive());
             StaffPasswordDTO[] arr = new StaffPasswordDTO[1];
             arr[0] = staffPasswordDTO;
             String jsonPayload = jsonb.toJson(arr[0]);
@@ -969,11 +969,11 @@ public class StaffControllerTest {
 
     @Test
     public void staffControllerUpdateStaffWithPasswordLengthEqualTo8TestPositive() throws Exception {
-        String staffPasswordBefore = staffNo1.getClientPassword();
+        String staffPasswordBefore = staffNo1.getUserPassword();
         String newStaffPassword = "ddddfddd";
-        staffNo1.setClientPassword(newStaffPassword);
+        staffNo1.setUserPassword(newStaffPassword);
         try (Jsonb jsonb = JsonbBuilder.create()) {
-            StaffPasswordDTO staffPasswordDTO = new StaffPasswordDTO(staffNo1.getClientID(), staffNo1.getClientLogin(), staffNo1.getClientPassword(), staffNo1.isClientStatusActive());
+            StaffPasswordDTO staffPasswordDTO = new StaffPasswordDTO(staffNo1.getUserID(), staffNo1.getUserLogin(), staffNo1.getUserPassword(), staffNo1.isUserStatusActive());
             StaffPasswordDTO[] arr = new StaffPasswordDTO[1];
             arr[0] = staffPasswordDTO;
             String jsonPayload = jsonb.toJson(arr[0]);
@@ -991,8 +991,8 @@ public class StaffControllerTest {
             validatableResponse.statusCode(204);
         }
 
-        Staff foundStaff = staffManager.findByUUID(staffNo1.getClientID());
-        String staffPasswordAfter = foundStaff.getClientPassword();
+        Staff foundStaff = staffManager.findByUUID(staffNo1.getUserID());
+        String staffPasswordAfter = foundStaff.getUserPassword();
 
         assertEquals(newStaffPassword, staffPasswordAfter);
         assertNotEquals(staffPasswordBefore, staffPasswordAfter);
@@ -1000,11 +1000,11 @@ public class StaffControllerTest {
 
     @Test
     public void staffControllerUpdateStaffWithPasswordLengthEqualTo40TestPositive() throws Exception {
-        String staffPasswordBefore = staffNo1.getClientPassword();
+        String staffPasswordBefore = staffNo1.getUserPassword();
         String newStaffPassword = "ddddfddddfddddfddddfddddfddddfddddfddddf";
-        staffNo1.setClientPassword(newStaffPassword);
+        staffNo1.setUserPassword(newStaffPassword);
         try (Jsonb jsonb = JsonbBuilder.create()) {
-            StaffPasswordDTO staffPasswordDTO = new StaffPasswordDTO(staffNo1.getClientID(), staffNo1.getClientLogin(), staffNo1.getClientPassword(), staffNo1.isClientStatusActive());
+            StaffPasswordDTO staffPasswordDTO = new StaffPasswordDTO(staffNo1.getUserID(), staffNo1.getUserLogin(), staffNo1.getUserPassword(), staffNo1.isUserStatusActive());
             StaffPasswordDTO[] arr = new StaffPasswordDTO[1];
             arr[0] = staffPasswordDTO;
             String jsonPayload = jsonb.toJson(arr[0]);
@@ -1022,8 +1022,8 @@ public class StaffControllerTest {
             validatableResponse.statusCode(204);
         }
 
-        Staff foundStaff = staffManager.findByUUID(staffNo1.getClientID());
-        String staffPasswordAfter = foundStaff.getClientPassword();
+        Staff foundStaff = staffManager.findByUUID(staffNo1.getUserID());
+        String staffPasswordAfter = foundStaff.getUserPassword();
 
         assertEquals(newStaffPassword, staffPasswordAfter);
         assertNotEquals(staffPasswordBefore, staffPasswordAfter);
@@ -1032,9 +1032,9 @@ public class StaffControllerTest {
     @Test
     public void staffControllerUpdateStaffWithPasswordThatViolatesRegExTestNegative() throws Exception {
         String newStaffPassword = "Some Invalid Password";
-        staffNo1.setClientPassword(newStaffPassword);
+        staffNo1.setUserPassword(newStaffPassword);
         try (Jsonb jsonb = JsonbBuilder.create()) {
-            StaffPasswordDTO staffPasswordDTO = new StaffPasswordDTO(staffNo1.getClientID(), staffNo1.getClientLogin(), staffNo1.getClientPassword(), staffNo1.isClientStatusActive());
+            StaffPasswordDTO staffPasswordDTO = new StaffPasswordDTO(staffNo1.getUserID(), staffNo1.getUserLogin(), staffNo1.getUserPassword(), staffNo1.isUserStatusActive());
             StaffPasswordDTO[] arr = new StaffPasswordDTO[1];
             arr[0] = staffPasswordDTO;
             String jsonPayload = jsonb.toJson(arr[0]);
@@ -1058,7 +1058,7 @@ public class StaffControllerTest {
 
     @Test
     public void staffControllerActivateStaffTestPositive() throws Exception {
-        UUID activatedStaffID = staffNo1.getClientID();
+        UUID activatedStaffID = staffNo1.getUserID();
         String path = staffsBaseURL + "/" + activatedStaffID + "/deactivate";
 
         RequestSpecification requestSpecification = RestAssured.given();
@@ -1069,7 +1069,7 @@ public class StaffControllerTest {
         validatableResponse.statusCode(204);
 
         Staff foundStaff = staffManager.findByUUID(activatedStaffID);
-        boolean staffStatusActiveBefore = foundStaff.isClientStatusActive();
+        boolean staffStatusActiveBefore = foundStaff.isUserStatusActive();
 
         path = staffsBaseURL + "/" + activatedStaffID + "/activate";
 
@@ -1081,7 +1081,7 @@ public class StaffControllerTest {
         validatableResponse.statusCode(204);
 
         foundStaff = staffManager.findByUUID(activatedStaffID);
-        boolean staffStatusActiveAfter = foundStaff.isClientStatusActive();
+        boolean staffStatusActiveAfter = foundStaff.isUserStatusActive();
 
         assertTrue(staffStatusActiveAfter);
         assertFalse(staffStatusActiveBefore);
@@ -1104,8 +1104,8 @@ public class StaffControllerTest {
 
     @Test
     public void staffControllerDeactivateStaffTestPositive() throws Exception {
-        boolean staffStatusActiveBefore = staffNo1.isClientStatusActive();
-        UUID deactivatedStaffID = staffNo1.getClientID();
+        boolean staffStatusActiveBefore = staffNo1.isUserStatusActive();
+        UUID deactivatedStaffID = staffNo1.getUserID();
         String path = staffsBaseURL + "/" + deactivatedStaffID + "/deactivate";
 
         RequestSpecification requestSpecification = RestAssured.given();
@@ -1116,7 +1116,7 @@ public class StaffControllerTest {
         validatableResponse.statusCode(204);
 
         Staff foundStaff = staffManager.findByUUID(deactivatedStaffID);
-        boolean staffStatusActiveAfter = foundStaff.isClientStatusActive();
+        boolean staffStatusActiveAfter = foundStaff.isUserStatusActive();
 
         assertFalse(staffStatusActiveAfter);
         assertTrue(staffStatusActiveBefore);

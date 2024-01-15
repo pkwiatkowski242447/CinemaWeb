@@ -9,8 +9,6 @@
             <default-locale>pl</default-locale>
             <supported-locale>pl</supported-locale>
             <supported-locale>en</supported-locale>
-            <supported-locale>de</supported-locale>
-            <supported-locale>cn</supported-locale>
         </locale-config>
 
         <resource-bundle>
@@ -22,9 +20,5 @@
             i18n.jsf_messages
         </message-bundle>
     </application>
-
-    <navigation-rule>
-        <from-view-id>faces-config.xml</from-view-id>
-    </navigation-rule>
 
 </faces-config>

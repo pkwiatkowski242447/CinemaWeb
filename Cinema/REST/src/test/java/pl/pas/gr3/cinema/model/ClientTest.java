@@ -50,111 +50,105 @@ public class ClientTest {
     public void initializeClientObjects() {
         clientNo1 = new Client(uuidNo1, loginNo1, passwordNo1);
         clientNo2 = new Client(uuidNo2, loginNo2, passwordNo2);
-        clientNo3 = new Client(clientNo1.getClientID(),
-                clientNo1.getClientLogin(),
-                clientNo1.getClientPassword());
+        clientNo3 = new Client(clientNo1.getUserID(),
+                clientNo1.getUserLogin(),
+                clientNo1.getUserPassword());
 
         clientNo4 = new Client(uuidNo1, loginNo2, passwordNo2);
         clientNo5 = new Client(uuidNo1, loginNo1, passwordNo2);
 
         adminNo1 = new Admin(uuidNo1, loginNo1, passwordNo1);
         adminNo2 = new Admin(uuidNo2, loginNo2, passwordNo2);
-        adminNo3 = new Admin(adminNo1.getClientID(),
-                adminNo1.getClientLogin(),
-                adminNo1.getClientPassword());
+        adminNo3 = new Admin(adminNo1.getUserID(),
+                adminNo1.getUserLogin(),
+                adminNo1.getUserPassword());
 
         adminNo4 = new Admin(uuidNo1, loginNo2, passwordNo2);
         adminNo5 = new Admin(uuidNo1, loginNo1, passwordNo2);
 
         staffNo1 = new Staff(uuidNo1, loginNo1, passwordNo1);
         staffNo2 = new Staff(uuidNo2, loginNo2, passwordNo2);
-        staffNo3 = new Staff(staffNo1.getClientID(),
-                staffNo1.getClientLogin(),
-                staffNo1.getClientPassword());
+        staffNo3 = new Staff(staffNo1.getUserID(),
+                staffNo1.getUserLogin(),
+                staffNo1.getUserPassword());
 
         staffNo4 = new Staff(uuidNo1, loginNo2, passwordNo2);
         staffNo5 = new Staff(uuidNo1, loginNo1, passwordNo2);
     }
 
     @Test
-    public void clientNoArgsConstructorTestPositive() {
-        Client testClient = new Client();
-        assertNotNull(testClient);
-    }
-
-    @Test
     public void clientConstructorAndGettersTest() {
         Client testClient = new Client(uuidNo1, loginNo1, passwordNo1);
         assertNotNull(testClient);
-        assertEquals(uuidNo1, testClient.getClientID());
-        assertEquals(loginNo1, testClient.getClientLogin());
-        assertEquals(passwordNo1, testClient.getClientPassword());
+        assertEquals(uuidNo1, testClient.getUserID());
+        assertEquals(loginNo1, testClient.getUserLogin());
+        assertEquals(passwordNo1, testClient.getUserPassword());
     }
 
     @Test
     public void staffConstructorAndGettersTest() {
         Staff testStaff = new Staff(uuidNo1, loginNo1, passwordNo1);
         assertNotNull(testStaff);
-        assertEquals(uuidNo1, testStaff.getClientID());
-        assertEquals(loginNo1, testStaff.getClientLogin());
-        assertEquals(passwordNo1, testStaff.getClientPassword());
+        assertEquals(uuidNo1, testStaff.getUserID());
+        assertEquals(loginNo1, testStaff.getUserLogin());
+        assertEquals(passwordNo1, testStaff.getUserPassword());
     }
 
     @Test
     public void adminConstructorAndGettersTest() {
         Admin testAdmin = new Admin(uuidNo1, loginNo1, passwordNo1);
         assertNotNull(testAdmin);
-        assertEquals(uuidNo1, testAdmin.getClientID());
-        assertEquals(loginNo1, testAdmin.getClientLogin());
-        assertEquals(passwordNo1, testAdmin.getClientPassword());
+        assertEquals(uuidNo1, testAdmin.getUserID());
+        assertEquals(loginNo1, testAdmin.getUserLogin());
+        assertEquals(passwordNo1, testAdmin.getUserPassword());
     }
 
     @Test
     public void clientSetLoginTestPositive() {
-        String loginBefore = clientNo1.getClientLogin();
+        String loginBefore = clientNo1.getUserLogin();
         String newClientLogin = "newClientLogin";
-        clientNo1.setClientLogin(newClientLogin);
-        String loginAfter = clientNo1.getClientLogin();
+        clientNo1.setUserLogin(newClientLogin);
+        String loginAfter = clientNo1.getUserLogin();
         assertEquals(newClientLogin, loginAfter);
         assertNotEquals(loginBefore, loginAfter);
     }
 
     @Test
     public void clientSetPasswordTestPositive() {
-        String passwordBefore = clientNo1.getClientPassword();
+        String passwordBefore = clientNo1.getUserPassword();
         String newClientPassword = "newClientPassword";
-        clientNo1.setClientPassword(newClientPassword);
-        String passwordAfter = clientNo1.getClientPassword();
+        clientNo1.setUserPassword(newClientPassword);
+        String passwordAfter = clientNo1.getUserPassword();
         assertEquals(newClientPassword, passwordAfter);
         assertNotEquals(passwordBefore, passwordAfter);
     }
 
     @Test
     public void staffSetLoginTestPositive() {
-        String loginBefore = staffNo1.getClientLogin();
+        String loginBefore = staffNo1.getUserLogin();
         String newStaffLogin = "newStaffLogin";
-        staffNo1.setClientLogin(newStaffLogin);
-        String loginAfter = staffNo1.getClientLogin();
+        staffNo1.setUserLogin(newStaffLogin);
+        String loginAfter = staffNo1.getUserLogin();
         assertEquals(newStaffLogin, loginAfter);
         assertNotEquals(loginBefore, loginAfter);
     }
 
     @Test
     public void staffSetPasswordTestPositive() {
-        String passwordBefore = staffNo1.getClientPassword();
+        String passwordBefore = staffNo1.getUserPassword();
         String newStaffPassword = "newStaffPassword";
-        staffNo1.setClientPassword(newStaffPassword);
-        String passwordAfter = staffNo1.getClientPassword();
+        staffNo1.setUserPassword(newStaffPassword);
+        String passwordAfter = staffNo1.getUserPassword();
         assertEquals(newStaffPassword, passwordAfter);
         assertNotEquals(passwordBefore, passwordAfter);
     }
 
     @Test
     public void adminSetLoginTestPositive() {
-        String loginBefore = adminNo1.getClientLogin();
+        String loginBefore = adminNo1.getUserLogin();
         String newAdminLogin = "newAdminLogin";
-        adminNo1.setClientLogin(newAdminLogin);
-        String loginAfter = adminNo1.getClientLogin();
+        adminNo1.setUserLogin(newAdminLogin);
+        String loginAfter = adminNo1.getUserLogin();
         assertEquals(newAdminLogin, loginAfter);
         assertNotEquals(loginBefore, loginAfter);
     }
@@ -162,10 +156,10 @@ public class ClientTest {
 
     @Test
     public void adminSetPasswordTestPositive() {
-        String passwordBefore = adminNo1.getClientPassword();
+        String passwordBefore = adminNo1.getUserPassword();
         String newAdminPassword = "newAdminPassword";
-        adminNo1.setClientPassword(newAdminPassword);
-        String passwordAfter = adminNo1.getClientPassword();
+        adminNo1.setUserPassword(newAdminPassword);
+        String passwordAfter = adminNo1.getUserPassword();
         assertEquals(newAdminPassword, passwordAfter);
         assertNotEquals(passwordBefore, passwordAfter);
     }

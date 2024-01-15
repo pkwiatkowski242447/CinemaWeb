@@ -23,4 +23,6 @@ public class MongoRepositoryMessages {
 
     public static final String ALLOCATION_NOT_POSSIBLE_SINCE_CLIENT_INACTIVE = "Client object is inactive, and therefore could not create ticket allocation.";
     public static final String TICKET_DOC_FOR_TICKET_OBJ_NOT_FOUND = "Ticket document for given ticket object could not be found in the database.";
+
+    public static final String USER_TYPE_NOT_FOUND = "User with given user type could not be found.";
 }

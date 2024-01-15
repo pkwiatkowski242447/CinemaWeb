@@ -26,19 +26,14 @@ public class TicketInputDTO {
     @JsonbProperty("movie-id")
     private UUID movieID;
 
-    @JsonProperty("ticket-type")
-    @JsonbProperty("ticket-type")
-    private String ticketType;
 
     @JsonCreator
     @JsonbCreator
     public TicketInputDTO(@JsonProperty("movie-time") @JsonbProperty("movie-time") String movieTime,
                           @JsonProperty("client-id") @JsonbProperty("client-id") UUID clientID,
-                          @JsonProperty("movie-id") @JsonbProperty("movie-id") UUID movieID,
-                          @JsonProperty("ticket-type") @JsonbProperty("ticket-type") String ticketType) {
+                          @JsonProperty("movie-id") @JsonbProperty("movie-id") UUID movieID) {
         this.movieTime = movieTime;
         this.clientID = clientID;
         this.movieID = movieID;
-        this.ticketType = ticketType;
     }
 }

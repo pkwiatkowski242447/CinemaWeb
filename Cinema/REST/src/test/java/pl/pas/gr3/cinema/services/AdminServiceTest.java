@@ -6,7 +6,7 @@ import org.slf4j.LoggerFactory;
 import pl.pas.gr3.cinema.exceptions.services.GeneralAdminServiceException;
 import pl.pas.gr3.cinema.exceptions.services.crud.admin.*;
 import pl.pas.gr3.cinema.model.users.Admin;
-import pl.pas.gr3.cinema.repositories.implementations.ClientRepository;
+import pl.pas.gr3.cinema.repositories.implementations.UserRepository;
 import pl.pas.gr3.cinema.services.implementations.AdminService;
 
 import java.util.List;
@@ -19,7 +19,7 @@ public class AdminServiceTest {
     private final static Logger logger = LoggerFactory.getLogger(AdminServiceTest.class);
 
     private final static String databaseName = "test";
-    private static ClientRepository clientRepository;
+    private static UserRepository userRepository;
     private static AdminService adminService;
 
     private Admin adminNo1;
@@ -27,8 +27,8 @@ public class AdminServiceTest {
 
     @BeforeAll
     public static void initialize() {
-        clientRepository = new ClientRepository(databaseName);
-        adminService = new AdminService(clientRepository);
+        userRepository = new UserRepository(databaseName);
+        adminService = new AdminService(userRepository);
     }
 
     @BeforeEach
@@ -51,7 +51,7 @@ public class AdminServiceTest {
         try {
             List<Admin> listOfAdmins = adminService.findAll();
             for (Admin admin : listOfAdmins) {
-                adminService.delete(admin.getClientID());
+                adminService.delete(admin.getUserID());
             }
         } catch (AdminServiceReadException | AdminServiceDeleteException exception) {
             logger.error(exception.getMessage());
@@ -60,133 +60,147 @@ public class AdminServiceTest {
 
     @AfterAll
     public static void destroy() {
-        clientRepository.close();
+        userRepository.close();
+    }
+
+    // Constructor tests
+
+    @Test
+    public void adminServiceNoArgsConstructorTestPositive() {
+        AdminService testAdminService = new AdminService();
+        assertNotNull(testAdminService);
+    }
+
+    @Test
+    public void adminServiceAllArgsConstructorTestPositive() {
+        AdminService testAdminService = new AdminService(userRepository);
+        assertNotNull(testAdminService);
     }
 
     // Create tests
 
     @Test
-    public void adminManagerCreateAdminTestPositive() throws AdminServiceCreateException {
+    public void adminServiceCreateAdminTestPositive() throws AdminServiceCreateException {
         String adminLogin = "SomeOtherLoginNo1";
         String adminPassword = "SomeOtherPasswordNo1";
         Admin admin = adminService.create(adminLogin, adminPassword);
         assertNotNull(admin);
-        assertEquals(adminLogin, admin.getClientLogin());
-        assertEquals(adminPassword, admin.getClientPassword());
+        assertEquals(adminLogin, admin.getUserLogin());
+        assertEquals(adminPassword, admin.getUserPassword());
     }
 
     @Test
-    public void adminManagerCreateAdminWithNullLoginThatTestNegative() {
+    public void adminServiceCreateAdminWithNullLoginThatTestNegative() {
         String adminLogin = null;
         String adminPassword = "SomeOtherPasswordNo1";
         assertThrows(AdminServiceCreateException.class, () -> adminService.create(adminLogin, adminPassword));
     }
 
     @Test
-    public void adminManagerCreateAdminWithEmptyLoginThatTestNegative() {
+    public void adminServiceCreateAdminWithEmptyLoginThatTestNegative() {
         String adminLogin = "";
         String adminPassword = "SomeOtherPasswordNo1";
         assertThrows(AdminServiceCreateException.class, () -> adminService.create(adminLogin, adminPassword));
     }
 
     @Test
-    public void adminManagerCreateAdminWithLoginTooShortThatTestNegative() {
+    public void adminServiceCreateAdminWithLoginTooShortThatTestNegative() {
         String adminLogin = "ddddfdd";
         String adminPassword = "SomeOtherPasswordNo1";
         assertThrows(AdminServiceCreateException.class, () -> adminService.create(adminLogin, adminPassword));
     }
 
     @Test
-    public void adminManagerCreateAdminWithLoginTooLongThatTestNegative() {
+    public void adminServiceCreateAdminWithLoginTooLongThatTestNegative() {
         String adminLogin = "ddddfddddfddddfddddfd";
         String adminPassword = "SomeOtherPasswordNo1";
         assertThrows(AdminServiceCreateException.class, () -> adminService.create(adminLogin, adminPassword));
     }
 
     @Test
-    public void adminManagerCreateAdminWithLoginLengthEqualTo8ThatTestPositive() throws AdminServiceCreateException {
+    public void adminServiceCreateAdminWithLoginLengthEqualTo8ThatTestPositive() throws AdminServiceCreateException {
         String adminLogin = "ddddfddd";
         String adminPassword = "SomeOtherPasswordNo1";
         Admin admin = adminService.create(adminLogin, adminPassword);
         assertNotNull(admin);
-        assertEquals(adminLogin, admin.getClientLogin());
-        assertEquals(adminPassword, admin.getClientPassword());
+        assertEquals(adminLogin, admin.getUserLogin());
+        assertEquals(adminPassword, admin.getUserPassword());
     }
 
     @Test
-    public void adminManagerCreateAdminWithLoginLengthEqualTo20ThatTestNegative() throws AdminServiceCreateException {
+    public void adminServiceCreateAdminWithLoginLengthEqualTo20ThatTestNegative() throws AdminServiceCreateException {
         String adminLogin = "ddddfddddfddddfddddf";
         String adminPassword = "SomeOtherPasswordNo1";
         Admin admin = adminService.create(adminLogin, adminPassword);
         assertNotNull(admin);
-        assertEquals(adminLogin, admin.getClientLogin());
-        assertEquals(adminPassword, admin.getClientPassword());
+        assertEquals(adminLogin, admin.getUserLogin());
+        assertEquals(adminPassword, admin.getUserPassword());
     }
 
     @Test
-    public void adminManagerCreateAdminWithLoginThatDoesNotMeetRegExTestNegative() {
+    public void adminServiceCreateAdminWithLoginThatDoesNotMeetRegExTestNegative() {
         String adminLogin = "Some Invalid Login";
         String adminPassword = "SomeOtherPasswordNo1";
         assertThrows(AdminServiceCreateException.class, () -> adminService.create(adminLogin, adminPassword));
     }
 
     @Test
-    public void adminManagerCreateAdminWithLoginThatIsAlreadyInTheDatabaseTestNegative() {
-        String adminLogin = adminNo1.getClientLogin();
+    public void adminServiceCreateAdminWithLoginThatIsAlreadyInTheDatabaseTestNegative() {
+        String adminLogin = adminNo1.getUserLogin();
         String adminPassword = "SomeOtherPasswordNo1";
         assertThrows(AdminServiceCreateAdminDuplicateLoginException.class, () -> adminService.create(adminLogin, adminPassword));
     }
 
     @Test
-    public void adminManagerCreateAdminWithNullPasswordThatTestNegative() {
+    public void adminServiceCreateAdminWithNullPasswordThatTestNegative() {
         String adminLogin = "SomeOtherLoginNo1";
         String adminPassword = null;
         assertThrows(AdminServiceCreateException.class, () -> adminService.create(adminLogin, adminPassword));
     }
 
     @Test
-    public void adminManagerCreateAdminWithEmptyPasswordThatTestNegative() {
+    public void adminServiceCreateAdminWithEmptyPasswordThatTestNegative() {
         String adminLogin = "SomeOtherLoginNo1";
         String adminPassword = "";
         assertThrows(AdminServiceCreateException.class, () -> adminService.create(adminLogin, adminPassword));
     }
 
     @Test
-    public void adminManagerCreateAdminWithPasswordTooShortThatTestNegative() {
+    public void adminServiceCreateAdminWithPasswordTooShortThatTestNegative() {
         String adminLogin = "SomeOtherLoginNo1";
         String adminPassword = "ddddfdd";
         assertThrows(AdminServiceCreateException.class, () -> adminService.create(adminLogin, adminPassword));
     }
 
     @Test
-    public void adminManagerCreateAdminWithPasswordTooLongThatTestNegative() {
+    public void adminServiceCreateAdminWithPasswordTooLongThatTestNegative() {
         String adminLogin = "SomeOtherLoginNo1";
         String adminPassword = "ddddfddddfddddfddddfddddfddddfddddfddddfd";
         assertThrows(AdminServiceCreateException.class, () -> adminService.create(adminLogin, adminPassword));
     }
 
     @Test
-    public void adminManagerCreateAdminWithPasswordLengthEqualTo8ThatTestNegative() throws AdminServiceCreateException {
+    public void adminServiceCreateAdminWithPasswordLengthEqualTo8ThatTestNegative() throws AdminServiceCreateException {
         String adminLogin = "SomeOtherLoginNo1";
         String adminPassword = "ddddfddd";
         Admin admin = adminService.create(adminLogin, adminPassword);
         assertNotNull(admin);
-        assertEquals(adminLogin, admin.getClientLogin());
-        assertEquals(adminPassword, admin.getClientPassword());
+        assertEquals(adminLogin, admin.getUserLogin());
+        assertEquals(adminPassword, admin.getUserPassword());
     }
 
     @Test
-    public void adminManagerCreateAdminWithPasswordLengthEqualTo40ThatTestNegative() throws AdminServiceCreateException {
+    public void adminServiceCreateAdminWithPasswordLengthEqualTo40ThatTestNegative() throws AdminServiceCreateException {
         String adminLogin = "SomeOtherLoginNo1";
         String adminPassword = "ddddfddddfddddfddddfddddfddddfddddfddddf";
         Admin admin = adminService.create(adminLogin, adminPassword);
         assertNotNull(admin);
-        assertEquals(adminLogin, admin.getClientLogin());
-        assertEquals(adminPassword, admin.getClientPassword());
+        assertEquals(adminLogin, admin.getUserLogin());
+        assertEquals(adminPassword, admin.getUserPassword());
     }
 
     @Test
-    public void adminManagerCreateAdminWithPasswordThatDoesNotMeetRegExTestNegative() {
+    public void adminServiceCreateAdminWithPasswordThatDoesNotMeetRegExTestNegative() {
         String adminLogin = "SomeOtherLoginNo1";
         String adminPassword = "Some Invalid Password";
         assertThrows(AdminServiceCreateException.class, () -> adminService.create(adminLogin, adminPassword));
@@ -195,35 +209,35 @@ public class AdminServiceTest {
     // Read tests
 
     @Test
-    public void adminManagerFindAdminByIDTestPositive() throws AdminServiceReadException {
-        Admin foundAdmin = adminService.findByUUID(adminNo1.getClientID());
+    public void adminServiceFindAdminByIDTestPositive() throws AdminServiceReadException {
+        Admin foundAdmin = adminService.findByUUID(adminNo1.getUserID());
         assertNotNull(foundAdmin);
         assertEquals(adminNo1, foundAdmin);
     }
 
     @Test
-    public void adminManagerFindAdminByIDThatIsNotInTheDatabaseTestNegative() {
+    public void adminServiceFindAdminByIDThatIsNotInTheDatabaseTestNegative() {
         Admin admin = new Admin(UUID.randomUUID(), "SomeOtherLoginNo1", "SomeOtherPasswordNo1");
         assertNotNull(admin);
-        assertThrows(AdminServiceAdminNotFoundException.class, () -> adminService.findByUUID(admin.getClientID()));
+        assertThrows(AdminServiceAdminNotFoundException.class, () -> adminService.findByUUID(admin.getUserID()));
     }
 
     @Test
-    public void adminManagerFindAdminByLoginTestPositive() throws AdminServiceReadException {
-        Admin foundAdmin = adminService.findByLogin(adminNo1.getClientLogin());
+    public void adminServiceFindAdminByLoginTestPositive() throws AdminServiceReadException {
+        Admin foundAdmin = adminService.findByLogin(adminNo1.getUserLogin());
         assertNotNull(foundAdmin);
         assertEquals(adminNo1, foundAdmin);
     }
 
     @Test
-    public void adminManagerFindAdminByLoginThatIsNotInTheDatabaseTestNegative() {
+    public void adminServiceFindAdminByLoginThatIsNotInTheDatabaseTestNegative() {
         Admin admin = new Admin(UUID.randomUUID(), "SomeOtherLoginNo1", "SomeOtherPasswordNo1");
         assertNotNull(admin);
-        assertThrows(AdminServiceAdminNotFoundException.class, () -> adminService.findByLogin(admin.getClientLogin()));
+        assertThrows(AdminServiceAdminNotFoundException.class, () -> adminService.findByLogin(admin.getUserLogin()));
     }
 
     @Test
-    public void adminManagerFindAllAdminsMatchingLoginTestPositive() throws AdminServiceCreateException, AdminServiceReadException {
+    public void adminServiceFindAllAdminsMatchingLoginTestPositive() throws AdminServiceCreateException, AdminServiceReadException {
         adminService.create("NewAdminLogin", "NewAdminPassword");
         List<Admin> listOfAdmins = adminService.findAllMatchingLogin("New");
         assertNotNull(listOfAdmins);
@@ -232,7 +246,7 @@ public class AdminServiceTest {
     }
 
     @Test
-    public void adminManagerFindAllAdminTestPositive() throws AdminServiceReadException {
+    public void adminServiceFindAllAdminTestPositive() throws AdminServiceReadException {
         List<Admin> listOfAdmins = adminService.findAll();
         assertNotNull(listOfAdmins);
         assertFalse(listOfAdmins.isEmpty());
@@ -242,17 +256,17 @@ public class AdminServiceTest {
     // Update tests
 
     @Test
-    public void adminManagerUpdateAdminTestPositive() throws AdminServiceUpdateException, AdminServiceReadException {
-        String adminLoginBefore = adminNo1.getClientLogin();
-        String adminPasswordBefore = adminNo1.getClientPassword();
+    public void adminServiceUpdateAdminTestPositive() throws AdminServiceUpdateException, AdminServiceReadException {
+        String adminLoginBefore = adminNo1.getUserLogin();
+        String adminPasswordBefore = adminNo1.getUserPassword();
         String newAdminLogin = "OtherNewLoginNo1";
         String newAdminPassword = "OtherNewPasswordNo1";
-        adminNo1.setClientLogin(newAdminLogin);
-        adminNo1.setClientPassword(newAdminPassword);
+        adminNo1.setUserLogin(newAdminLogin);
+        adminNo1.setUserPassword(newAdminPassword);
         adminService.update(adminNo1);
-        Admin foundAdmin = adminService.findByUUID(adminNo1.getClientID());
-        String adminLoginAfter =  foundAdmin.getClientLogin();
-        String adminPasswordAfter = foundAdmin.getClientPassword();
+        Admin foundAdmin = adminService.findByUUID(adminNo1.getUserID());
+        String adminLoginAfter =  foundAdmin.getUserLogin();
+        String adminPasswordAfter = foundAdmin.getUserPassword();
         assertNotNull(adminLoginAfter);
         assertNotNull(adminPasswordAfter);
         assertEquals(newAdminLogin, adminLoginAfter);
@@ -262,148 +276,148 @@ public class AdminServiceTest {
     }
 
     @Test
-    public void adminManagerUpdateAdminWithNullLoginTestNegative() {
+    public void adminServiceUpdateAdminWithNullLoginTestNegative() {
         String adminLogin = null;
         String adminPassword = "SomeOtherPasswordNo2";
-        adminNo1.setClientLogin(adminLogin);
-        adminNo1.setClientPassword(adminPassword);
+        adminNo1.setUserLogin(adminLogin);
+        adminNo1.setUserPassword(adminPassword);
         assertThrows(AdminServiceUpdateException.class, () -> adminService.update(adminNo1));
     }
 
     @Test
-    public void adminManagerUpdateAdminWithEmptyLoginTestNegative() {
+    public void adminServiceUpdateAdminWithEmptyLoginTestNegative() {
         String adminLogin = "";
         String adminPassword = "SomeOtherPasswordNo2";
-        adminNo1.setClientLogin(adminLogin);
-        adminNo1.setClientPassword(adminPassword);
+        adminNo1.setUserLogin(adminLogin);
+        adminNo1.setUserPassword(adminPassword);
         assertThrows(AdminServiceUpdateException.class, () -> adminService.update(adminNo1));
     }
 
     @Test
-    public void adminManagerUpdateAdminWithLoginTooShortTestNegative() {
+    public void adminServiceUpdateAdminWithLoginTooShortTestNegative() {
         String adminLogin = "ddddfdd";
         String adminPassword = "SomeOtherPasswordNo2";
-        adminNo1.setClientLogin(adminLogin);
-        adminNo1.setClientPassword(adminPassword);
+        adminNo1.setUserLogin(adminLogin);
+        adminNo1.setUserPassword(adminPassword);
         assertThrows(AdminServiceUpdateException.class, () -> adminService.update(adminNo1));
     }
 
     @Test
-    public void adminManagerUpdateAdminWithLoginTooLongTestNegative() {
+    public void adminServiceUpdateAdminWithLoginTooLongTestNegative() {
         String adminLogin = "ddddfddddfddddfddddfd";
         String adminPassword = "SomeOtherPasswordNo2";
-        adminNo1.setClientLogin(adminLogin);
-        adminNo1.setClientPassword(adminPassword);
+        adminNo1.setUserLogin(adminLogin);
+        adminNo1.setUserPassword(adminPassword);
         assertThrows(AdminServiceUpdateException.class, () -> adminService.update(adminNo1));
     }
 
     @Test
-    public void adminManagerUpdateAdminWithLoginLengthEqualTo8TestNegative() throws AdminServiceReadException {
+    public void adminServiceUpdateAdminWithLoginLengthEqualTo8TestNegative() throws AdminServiceReadException {
         String adminLogin = "ddddfddd";
         String adminPassword = "SomeOtherPasswordNo2";
-        adminNo1.setClientLogin(adminLogin);
-        adminNo1.setClientPassword(adminPassword);
+        adminNo1.setUserLogin(adminLogin);
+        adminNo1.setUserPassword(adminPassword);
         assertDoesNotThrow(() -> adminService.update(adminNo1));
-        Admin foundAdmin = adminService.findByUUID(adminNo1.getClientID());
-        assertEquals(adminLogin, foundAdmin.getClientLogin());
-        assertEquals(adminPassword, foundAdmin.getClientPassword());
+        Admin foundAdmin = adminService.findByUUID(adminNo1.getUserID());
+        assertEquals(adminLogin, foundAdmin.getUserLogin());
+        assertEquals(adminPassword, foundAdmin.getUserPassword());
     }
 
     @Test
-    public void adminManagerUpdateAdminWithLoginLengthEqualTo20TestNegative() throws AdminServiceReadException {
+    public void adminServiceUpdateAdminWithLoginLengthEqualTo20TestNegative() throws AdminServiceReadException {
         String adminLogin = "ddddfddddfddddfddddf";
         String adminPassword = "SomeOtherPasswordNo2";
-        adminNo1.setClientLogin(adminLogin);
-        adminNo1.setClientPassword(adminPassword);
+        adminNo1.setUserLogin(adminLogin);
+        adminNo1.setUserPassword(adminPassword);
         assertDoesNotThrow(() -> adminService.update(adminNo1));
-        Admin foundAdmin = adminService.findByUUID(adminNo1.getClientID());
-        assertEquals(adminLogin, foundAdmin.getClientLogin());
-        assertEquals(adminPassword, foundAdmin.getClientPassword());
+        Admin foundAdmin = adminService.findByUUID(adminNo1.getUserID());
+        assertEquals(adminLogin, foundAdmin.getUserLogin());
+        assertEquals(adminPassword, foundAdmin.getUserPassword());
     }
 
     @Test
-    public void adminManagerUpdateAdminWithLoginThatViolatesRegExTestNegative() {
+    public void adminServiceUpdateAdminWithLoginThatViolatesRegExTestNegative() {
         String adminLogin = "Some Invalid Login";
         String adminPassword = "SomeOtherPasswordNo2";
-        adminNo1.setClientLogin(adminLogin);
-        adminNo1.setClientPassword(adminPassword);
+        adminNo1.setUserLogin(adminLogin);
+        adminNo1.setUserPassword(adminPassword);
         assertThrows(AdminServiceUpdateException.class, () -> adminService.update(adminNo1));
     }
 
     @Test
-    public void adminManagerUpdateAdminWithNullPasswordTestNegative() {
+    public void adminServiceUpdateAdminWithNullPasswordTestNegative() {
         String adminLogin = "SomeOtherLoginNo2";
         String adminPassword = null;
-        adminNo1.setClientLogin(adminLogin);
-        adminNo1.setClientPassword(adminPassword);
+        adminNo1.setUserLogin(adminLogin);
+        adminNo1.setUserPassword(adminPassword);
         assertThrows(AdminServiceUpdateException.class, () -> adminService.update(adminNo1));
     }
 
     @Test
-    public void adminManagerUpdateAdminWithEmptyPasswordTestNegative() {
+    public void adminServiceUpdateAdminWithEmptyPasswordTestNegative() {
         String adminLogin = "SomeOtherLoginNo2";
         String adminPassword = "";
-        adminNo1.setClientLogin(adminLogin);
-        adminNo1.setClientPassword(adminPassword);
+        adminNo1.setUserLogin(adminLogin);
+        adminNo1.setUserPassword(adminPassword);
         assertThrows(AdminServiceUpdateException.class, () -> adminService.update(adminNo1));
     }
 
     @Test
-    public void adminManagerUpdateAdminWithPasswordTooShortTestNegative() {
+    public void adminServiceUpdateAdminWithPasswordTooShortTestNegative() {
         String adminLogin = "SomeOtherLoginNo2";
         String adminPassword = "ddddfdd";
-        adminNo1.setClientLogin(adminLogin);
-        adminNo1.setClientPassword(adminPassword);
+        adminNo1.setUserLogin(adminLogin);
+        adminNo1.setUserPassword(adminPassword);
         assertThrows(AdminServiceUpdateException.class, () -> adminService.update(adminNo1));
     }
 
     @Test
-    public void adminManagerUpdateAdminWithPasswordTooLongTestNegative() {
+    public void adminServiceUpdateAdminWithPasswordTooLongTestNegative() {
         String adminLogin = "SomeOtherLoginNo2";
         String adminPassword = "ddddfddddfddddfddddfddddfddddfddddfddddfd";
-        adminNo1.setClientLogin(adminLogin);
-        adminNo1.setClientPassword(adminPassword);
+        adminNo1.setUserLogin(adminLogin);
+        adminNo1.setUserPassword(adminPassword);
         assertThrows(AdminServiceUpdateException.class, () -> adminService.update(adminNo1));
     }
 
     @Test
-    public void adminManagerUpdateAdminWithPasswordLengthEqualTo8TestNegative() throws AdminServiceReadException {
+    public void adminServiceUpdateAdminWithPasswordLengthEqualTo8TestNegative() throws AdminServiceReadException {
         String adminLogin = "SomeOtherLoginNo2";
         String adminPassword = "ddddfddd";
-        adminNo1.setClientLogin(adminLogin);
-        adminNo1.setClientPassword(adminPassword);
+        adminNo1.setUserLogin(adminLogin);
+        adminNo1.setUserPassword(adminPassword);
         assertDoesNotThrow(() -> adminService.update(adminNo1));
-        Admin foundAdmin = adminService.findByUUID(adminNo1.getClientID());
-        assertEquals(adminLogin, foundAdmin.getClientLogin());
-        assertEquals(adminPassword, foundAdmin.getClientPassword());
+        Admin foundAdmin = adminService.findByUUID(adminNo1.getUserID());
+        assertEquals(adminLogin, foundAdmin.getUserLogin());
+        assertEquals(adminPassword, foundAdmin.getUserPassword());
     }
 
     @Test
-    public void adminManagerUpdateAdminWithPasswordLengthEqualTo40TestNegative() throws AdminServiceReadException {
+    public void adminServiceUpdateAdminWithPasswordLengthEqualTo40TestNegative() throws AdminServiceReadException {
         String adminLogin = "SomeOtherLoginNo2";
         String adminPassword = "ddddfddddfddddfddddfddddfddddfddddfddddf";
-        adminNo1.setClientLogin(adminLogin);
-        adminNo1.setClientPassword(adminPassword);
+        adminNo1.setUserLogin(adminLogin);
+        adminNo1.setUserPassword(adminPassword);
         assertDoesNotThrow(() -> adminService.update(adminNo1));
-        Admin foundAdmin = adminService.findByUUID(adminNo1.getClientID());
-        assertEquals(adminLogin, foundAdmin.getClientLogin());
-        assertEquals(adminPassword, foundAdmin.getClientPassword());
+        Admin foundAdmin = adminService.findByUUID(adminNo1.getUserID());
+        assertEquals(adminLogin, foundAdmin.getUserLogin());
+        assertEquals(adminPassword, foundAdmin.getUserPassword());
     }
 
     @Test
-    public void adminManagerUpdateAdminWithPasswordThatViolatesRegExTestNegative() {
+    public void adminServiceUpdateAdminWithPasswordThatViolatesRegExTestNegative() {
         String adminLogin = "SomeOtherLoginNo2";
         String adminPassword = "Some Invalid Password";
-        adminNo1.setClientLogin(adminLogin);
-        adminNo1.setClientPassword(adminPassword);
+        adminNo1.setUserLogin(adminLogin);
+        adminNo1.setUserPassword(adminPassword);
         assertThrows(AdminServiceUpdateException.class, () -> adminService.update(adminNo1));
     }
 
     // Delete tests
 
     @Test
-    public void adminManagerDeleteAdminTestPositive() throws AdminServiceReadException, AdminServiceDeleteException {
-        UUID removedAdminUUID = adminNo1.getClientID();
+    public void adminServiceDeleteAdminTestPositive() throws AdminServiceReadException, AdminServiceDeleteException {
+        UUID removedAdminUUID = adminNo1.getUserID();
         Admin foundAdmin = adminService.findByUUID(removedAdminUUID);
         assertNotNull(foundAdmin);
         assertEquals(adminNo1, foundAdmin);
@@ -412,52 +426,52 @@ public class AdminServiceTest {
     }
 
     @Test
-    public void adminManagerDeleteAdminThatIsNotInTheDatabaseTestNegative() {
+    public void adminServiceDeleteAdminThatIsNotInTheDatabaseTestNegative() {
         Admin admin = new Admin(UUID.randomUUID(), "SomeOtherAdminLoginNo3", "SomeOtherAdminPasswordNo3");
         assertNotNull(admin);
-        assertThrows(AdminServiceDeleteException.class, () -> adminService.delete(admin.getClientID()));
+        assertThrows(AdminServiceDeleteException.class, () -> adminService.delete(admin.getUserID()));
     }
 
     // Activate tests
 
     @Test
-    public void adminManagerActivateAdminTestPositive() throws GeneralAdminServiceException {
-        adminService.deactivate(adminNo1.getClientID());
+    public void adminServiceActivateAdminTestPositive() throws GeneralAdminServiceException {
+        adminService.deactivate(adminNo1.getUserID());
 
-        Admin foundAdmin = adminService.findByUUID(adminNo1.getClientID());
+        Admin foundAdmin = adminService.findByUUID(adminNo1.getUserID());
         assertNotNull(foundAdmin);
-        assertFalse(foundAdmin.isClientStatusActive());
-        adminService.activate(adminNo1.getClientID());
-        foundAdmin = adminService.findByUUID(adminNo1.getClientID());
+        assertFalse(foundAdmin.isUserStatusActive());
+        adminService.activate(adminNo1.getUserID());
+        foundAdmin = adminService.findByUUID(adminNo1.getUserID());
         assertNotNull(foundAdmin);
-        assertTrue(foundAdmin.isClientStatusActive());
+        assertTrue(foundAdmin.isUserStatusActive());
     }
 
     @Test
-    public void adminManagerDeactivateAdminThatIsNotInTheDatabaseTestNegative() {
+    public void adminServiceDeactivateAdminThatIsNotInTheDatabaseTestNegative() {
         Admin admin = new Admin(UUID.randomUUID(), "SomeOtherAdminLoginNo3", "SomeOtherAdminPasswordNo3");
         assertNotNull(admin);
-        assertThrows(AdminServiceActivationException.class, () -> adminService.activate(admin.getClientID()));
+        assertThrows(AdminServiceActivationException.class, () -> adminService.activate(admin.getUserID()));
     }
 
     // Deactivate tests
 
     @Test
-    public void adminManagerDeactivateAdminTestPositive() throws GeneralAdminServiceException {
-        Admin foundAdmin = adminService.findByUUID(adminNo1.getClientID());
+    public void adminServiceDeactivateAdminTestPositive() throws GeneralAdminServiceException {
+        Admin foundAdmin = adminService.findByUUID(adminNo1.getUserID());
         assertNotNull(foundAdmin);
         assertEquals(adminNo1, foundAdmin);
-        assertTrue(foundAdmin.isClientStatusActive());
-        adminService.deactivate(adminNo1.getClientID());
-        foundAdmin = adminService.findByUUID(adminNo1.getClientID());
+        assertTrue(foundAdmin.isUserStatusActive());
+        adminService.deactivate(adminNo1.getUserID());
+        foundAdmin = adminService.findByUUID(adminNo1.getUserID());
         assertNotNull(foundAdmin);
-        assertFalse(foundAdmin.isClientStatusActive());
+        assertFalse(foundAdmin.isUserStatusActive());
     }
 
     @Test
-    public void adminManagerActivateAdminThatIsNotInTheDatabaseTestNegative() {
+    public void adminServiceActivateAdminThatIsNotInTheDatabaseTestNegative() {
         Admin admin = new Admin(UUID.randomUUID(), "SomeOtherAdminLoginNo3", "SomeOtherAdminPasswordNo3");
         assertNotNull(admin);
-        assertThrows(AdminServiceDeactivationException.class, () -> adminService.deactivate(admin.getClientID()));
+        assertThrows(AdminServiceDeactivationException.class, () -> adminService.deactivate(admin.getUserID()));
     }
 }

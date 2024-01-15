@@ -11,31 +11,28 @@ import org.bson.conversions.Bson;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Repository;
-import pl.pas.gr3.cinema.consts.repositories.MongoRepositoryConstants;
-import pl.pas.gr3.cinema.exceptions.mapping.*;
-import pl.pas.gr3.cinema.exceptions.model.TicketCreateException;
+import pl.pas.gr3.cinema.consts.model.MovieConstants;
+import pl.pas.gr3.cinema.consts.model.TicketConstants;
+import pl.pas.gr3.cinema.consts.model.UserConstants;
 import pl.pas.gr3.cinema.exceptions.repositories.*;
+import pl.pas.gr3.cinema.exceptions.repositories.crud.other.MovieNullReferenceException;
+import pl.pas.gr3.cinema.exceptions.repositories.crud.other.ObjectNullReferenceException;
+import pl.pas.gr3.cinema.exceptions.repositories.crud.other.TicketNullReferenceException;
+import pl.pas.gr3.cinema.exceptions.repositories.crud.other.UserNullReferenceException;
 import pl.pas.gr3.cinema.exceptions.repositories.crud.ticket.*;
 import pl.pas.gr3.cinema.exceptions.repositories.other.client.ClientNotActiveException;
-import pl.pas.gr3.cinema.mapping.docs.MovieDoc;
-import pl.pas.gr3.cinema.mapping.docs.TicketDoc;
-import pl.pas.gr3.cinema.mapping.docs.users.ClientDoc;
-import pl.pas.gr3.cinema.mapping.mappers.MovieMapper;
-import pl.pas.gr3.cinema.mapping.mappers.TicketMapper;
-import pl.pas.gr3.cinema.mapping.mappers.users.AdminMapper;
-import pl.pas.gr3.cinema.mapping.mappers.users.ClientMapper;
-import pl.pas.gr3.cinema.mapping.mappers.users.StaffMapper;
 import pl.pas.gr3.cinema.messages.repositories.MongoRepositoryMessages;
 import pl.pas.gr3.cinema.model.Movie;
 import pl.pas.gr3.cinema.model.Ticket;
-import pl.pas.gr3.cinema.model.TicketType;
 import pl.pas.gr3.cinema.model.users.Admin;
 import pl.pas.gr3.cinema.model.users.Client;
 import pl.pas.gr3.cinema.model.users.Staff;
+import pl.pas.gr3.cinema.model.users.User;
 import pl.pas.gr3.cinema.repositories.interfaces.TicketRepositoryInterface;
 
 import jakarta.annotation.PostConstruct;
 import jakarta.annotation.PreDestroy;
+
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
@@ -52,7 +49,7 @@ public class TicketRepository extends MongoRepository implements TicketRepositor
                             {
                                 $jsonSchema: {
                                     "bsonType": "object",
-                                    "required": ["_id", "movie_time", "movie_final_price", "client_id", "movie_id"],
+                                    "required": ["_id", "movie_time", "movie_final_price", "user_id", "movie_id"],
                                     "properties": {
                                         "_id": {
                                             "description": "Id of the ticket object representation in the database.",
@@ -63,12 +60,12 @@ public class TicketRepository extends MongoRepository implements TicketRepositor
                                             "description": "Variable holding value of the date, when movie will air.",
                                             "bsonType": "date"
                                         }
-                                        "movie_final_price": {
+                                        "ticket_final_price": {
                                             "description": "Double value holding final price of the ticket, that is after applying all discounts.",
                                             "bsonType": "double"
                                         }
-                                        "client_id": {
-                                            "description": "Id of the client object representation in the database.",
+                                        "user_id": {
+                                            "description": "Id of the user object representation in the database.",
                                             "bsonType": "binData",
                                             "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}"
                                         }
@@ -109,23 +106,36 @@ public class TicketRepository extends MongoRepository implements TicketRepositor
         UUID clientIDNo1 = UUID.fromString("26c4727c-c791-4170-ab9d-faf7392e80b2");
         UUID clientIDNo2 = UUID.fromString("0b08f526-b018-4d23-8baa-93f0fb884edf");
         UUID clientIDNo3 = UUID.fromString("30392328-2cae-4e76-abb8-b1aa8f58a9e4");
-        UUID adminID = UUID.fromString("17dad3c7-7605-4808-bec5-d6f46abd23b8");
-        UUID staffID = UUID.fromString("3d8ef63c-f99d-445c-85d0-4b14e68fc5a1");
-        Client clientNo1 = new Client(clientIDNo1, "NewFirstClientLogin", "ClientPasswordNo1");
-        Client clientNo2 = new Client(clientIDNo2, "NewSecondClientLogin", "ClientPasswordNo2");
-        Client clientNo3 = new Client(clientIDNo3, "NewThirdClientLogin", "ClientPasswordNo3");
-        Admin admin = new Admin(adminID, "NewSecretAdminLogin", "AdminPassword");
-        Staff staff = new Staff(staffID, "NewSecretStaffLogin", "StaffPassword");
 
-        List<Client> listOfClients = List.of(clientNo1, clientNo2, clientNo3, admin, staff);
-        for (Client client : listOfClients) {
-            Bson filter = Filters.eq(MongoRepositoryConstants.GENERAL_IDENTIFIER, client.getClientID());
-            if (this.getClientCollection().find(filter).first() == null && client.getClass().equals(Client.class)) {
-                this.getClientCollection().insertOne(ClientMapper.toClientDoc(client));
-            } else if (this.getClientCollection().find(filter).first() == null && client.getClass().equals(Admin.class)) {
-                this.getClientCollection().insertOne(AdminMapper.toAdminDoc(client));
-            } else if (this.getClientCollection().find(filter).first() == null && client.getClass().equals(Staff.class)) {
-                this.getClientCollection().insertOne(StaffMapper.toStaffDoc(client));
+        UUID adminIDNo1 = UUID.fromString("17dad3c7-7605-4808-bec5-d6f46abd23b8");
+        UUID adminIDNo2 = UUID.fromString("ca857499-cdd5-4de3-a8d2-1ba7afcec2ef");
+        UUID adminIDNo3 = UUID.fromString("07f97385-a2a3-474e-af61-f53d14a64198");
+
+        UUID staffIDNo1 = UUID.fromString("67a85b0f-d063-4c9b-b223-fcc606c00f2f");
+        UUID staffIDNo2 = UUID.fromString("3d8ef63c-f99d-445c-85d0-4b14e68fc5a1");
+        UUID staffIDNo3 = UUID.fromString("86e394dd-e192-4390-b4e4-76029c879857");
+
+        Client clientNo1 = new Client(clientIDNo1, "NewClientLogin1", "password");
+        Client clientNo2 = new Client(clientIDNo2, "NewClientLogin2", "password");
+        Client clientNo3 = new Client(clientIDNo3, "NewClientLogin3", "password");
+
+        Admin adminNo1 = new Admin(adminIDNo1, "NewAdminLogin1", "password");
+        Admin adminNo2 = new Admin(adminIDNo2, "NewAdminLogin2", "password");
+        Admin adminNo3 = new Admin(adminIDNo3, "NewAdminLogin3", "password");
+
+        Staff staffNo1 = new Staff(staffIDNo1, "NewStaffLogin1", "password");
+        Staff staffNo2 = new Staff(staffIDNo2, "NewStaffLogin2", "password");
+        Staff staffNo3 = new Staff(staffIDNo3, "NewStaffLogin3", "password");
+
+        List<User> listOfClients = List.of(clientNo1, clientNo2, clientNo3, adminNo1, adminNo2, adminNo3, staffNo1, staffNo2, staffNo3);
+        for (User user : listOfClients) {
+            Bson filter = Filters.eq(UserConstants.GENERAL_IDENTIFIER, user.getUserID());
+            if (this.getClientCollection().find(filter).first() == null && user.getClass().equals(Client.class)) {
+                this.getClientCollection().insertOne(user);
+            } else if (this.getClientCollection().find(filter).first() == null && user.getClass().equals(Admin.class)) {
+                this.getClientCollection().insertOne(user);
+            } else if (this.getClientCollection().find(filter).first() == null && user.getClass().equals(Staff.class)) {
+                this.getClientCollection().insertOne(user);
             }
         }
 
@@ -134,15 +144,16 @@ public class TicketRepository extends MongoRepository implements TicketRepositor
         UUID movieNo1ID = UUID.fromString("f3e66584-f793-4f5e-9dec-904ca00e2dd6");
         UUID movieNo2ID = UUID.fromString("9b9e1de2-099b-415d-96b4-f7cfc8897318");
         UUID movieNo3ID = UUID.fromString("b69b4714-e307-4ebf-b491-e3720f963f53");
+
         Movie movieNo1 = new Movie(movieNo1ID, "Pulp Fiction", 45.75, 1, 100);
         Movie movieNo2 = new Movie(movieNo2ID, "Cars", 30.50, 2, 50);
         Movie movieNo3 = new Movie(movieNo3ID, "Joker", 50.00, 3, 75);
 
         List<Movie> listOfMovies = List.of(movieNo1, movieNo2, movieNo3);
         for (Movie movie : listOfMovies) {
-            Bson filter = Filters.eq(MongoRepositoryConstants.GENERAL_IDENTIFIER, movie.getMovieID());
+            Bson filter = Filters.eq(MovieConstants.GENERAL_IDENTIFIER, movie.getMovieID());
             if (this.getMovieCollection().find(filter).first() == null) {
-                this.getMovieCollection().insertOne(MovieMapper.toMovieDoc(movie));
+                this.getMovieCollection().insertOne(movie);
             }
         }
 
@@ -153,22 +164,19 @@ public class TicketRepository extends MongoRepository implements TicketRepositor
         LocalDateTime movieTimeNo1 = LocalDateTime.now().plusDays(2).plusHours(4).truncatedTo(ChronoUnit.SECONDS);
         LocalDateTime movieTimeNo2 = LocalDateTime.now().plusDays(4).plusHours(2).plusMinutes(30).truncatedTo(ChronoUnit.SECONDS);
 
-        try {
-            Ticket ticketNo1 = new Ticket(ticketIDNo1, movieTimeNo1, clientNo1, movieNo1, TicketType.NORMAL);
-            Ticket ticketNo2 = new Ticket(ticketIDNo2, movieTimeNo2, clientNo2, movieNo2, TicketType.REDUCED);
-            this.getTicketCollection().insertOne(TicketMapper.toTicketDoc(ticketNo1));
-            this.getTicketCollection().insertOne(TicketMapper.toTicketDoc(ticketNo2));
-        } catch (TicketCreateException exception) {
-            logger.debug(exception.getMessage());
-        }
+        Ticket ticketNo1 = new Ticket(ticketIDNo1, movieTimeNo1, movieNo1.getMovieBasePrice(), clientNo1.getUserID(), movieNo1.getMovieID());
+        Ticket ticketNo2 = new Ticket(ticketIDNo2, movieTimeNo2, movieNo2.getMovieBasePrice(), clientNo2.getUserID(), movieNo2.getMovieID());
+
+        this.getTicketCollection().insertOne(ticketNo1);
+        this.getTicketCollection().insertOne(ticketNo2);
     }
 
     @PreDestroy
     private void restoreDatabaseState() {
         try {
-            List<UUID> listOfAllUUIDs = this.findAllUUIDs();
-            for (UUID ticketID : listOfAllUUIDs) {
-                this.delete(ticketID);
+            List<Ticket> listOfTickets = this.findAll();
+            for (Ticket ticket : listOfTickets) {
+                this.delete(ticket.getTicketID());
             }
         } catch (TicketRepositoryException exception) {
             logger.debug(exception.getMessage());
@@ -179,46 +187,39 @@ public class TicketRepository extends MongoRepository implements TicketRepositor
     public TicketRepository(String databaseName) {
         this.databaseName = databaseName;
         super.initDBConnection(this.databaseName);
-        this.getTicketCollection().drop();
+        mongoDatabase.getCollection(ticketCollectionName).drop();
         CreateCollectionOptions createCollectionOptions = new CreateCollectionOptions().validationOptions(validationOptions);
         mongoDatabase.createCollection(ticketCollectionName, createCollectionOptions);
     }
 
     @Override
-    public Ticket create(LocalDateTime movieTime, UUID clientID, UUID movieID, TicketType ticketType) throws TicketRepositoryException {
+    public Ticket create(LocalDateTime movieTime, UUID clientID, UUID movieID) throws TicketRepositoryException {
         Ticket ticket;
         try (ClientSession clientSession = mongoClient.startSession()) {
             clientSession.startTransaction();
-            Bson clientFilter = Filters.eq(MongoRepositoryConstants.GENERAL_IDENTIFIER, clientID);
-            ClientDoc foundClientDoc = getClientCollection().find(clientFilter).first();
-            Client client;
-            if (foundClientDoc == null) {
-                throw new ClientDocNullReferenceException(MongoRepositoryMessages.CLIENT_DOC_OBJECT_NOT_FOUND);
-            } else if (!foundClientDoc.isClientStatusActive()) {
+            Bson clientFilter = Filters.eq(UserConstants.GENERAL_IDENTIFIER, clientID);
+            User foundClientUser = getClientCollection().find(clientFilter).first();
+            if (foundClientUser == null) {
+                throw new UserNullReferenceException(MongoRepositoryMessages.CLIENT_DOC_OBJECT_NOT_FOUND);
+            } else if (!foundClientUser.isUserStatusActive()) {
                 throw new ClientNotActiveException(MongoRepositoryMessages.ALLOCATION_NOT_POSSIBLE_SINCE_CLIENT_INACTIVE);
-            } else {
-                client = super.findClient(clientID);
             }
 
-            Bson movieFilter = Filters.eq("_id", movieID);
-            MovieDoc foundMovieDoc = getMovieCollection().find(movieFilter).first();
-            Movie movie;
-            if (foundMovieDoc != null) {
-                movie = MovieMapper.toMovie(foundMovieDoc);
-            } else {
-                throw new MovieDocNullReferenceException(MongoRepositoryMessages.MOVIE_DOC_OBJECT_NOT_FOUND);
+            Bson movieFilter = Filters.eq(MovieConstants.GENERAL_IDENTIFIER, movieID);
+            Movie foundMovie = getMovieCollection().find(movieFilter).first();
+            if (foundMovie == null) {
+                throw new MovieNullReferenceException(MongoRepositoryMessages.MOVIE_DOC_OBJECT_NOT_FOUND);
             }
 
-            ticket = new Ticket(UUID.randomUUID(), movieTime, client, movie, ticketType);
-            TicketDoc ticketDoc = TicketMapper.toTicketDoc(ticket);
-            getTicketCollection().insertOne(ticketDoc);
+            ticket = new Ticket(UUID.randomUUID(), movieTime, foundMovie.getMovieBasePrice(), clientID, movieID);
+            getTicketCollection().insertOne(ticket);
 
-            MovieDoc movieDoc = MovieMapper.toMovieDoc(movie);
-            getMovieCollection().findOneAndReplace(movieFilter, movieDoc);
+            Bson update = Updates.inc(MovieConstants.NUMBER_OF_AVAILABLE_SEATS, -1);
+            getMovieCollection().updateOne(movieFilter, update);
+
             clientSession.commitTransaction();
         } catch (MongoException |
-                 TicketCreateException |
-                 DocNullReferenceException |
+                 ObjectNullReferenceException |
                  ClientNotActiveException exception) {
             throw new TicketRepositoryCreateException(exception.getMessage(), exception);
         }
@@ -227,32 +228,13 @@ public class TicketRepository extends MongoRepository implements TicketRepositor
 
     @Override
     public Ticket findByUUID(UUID ticketID) throws TicketRepositoryException {
-        Ticket ticket;
         try {
-            TicketDoc foundTicketDoc = findTicketDoc(ticketID);
-            ticket = this.getTicketFromTicketDoc(foundTicketDoc);
-        } catch (TicketDocNullReferenceException exception) {
+            return findTicket(ticketID);
+        } catch (TicketNullReferenceException exception) {
             throw new TicketRepositoryTicketNotFoundException(exception.getMessage(), exception);
         } catch (MongoException exception) {
             throw new TicketRepositoryReadException(exception.getMessage(), exception);
         }
-        return ticket;
-    }
-
-    @Override
-    public List<UUID> findAllUUIDs() throws TicketRepositoryException {
-        List<UUID> listOfAllUUIDs = new ArrayList<>();
-        try (ClientSession clientSession = mongoClient.startSession()) {
-            clientSession.startTransaction();
-            Bson ticketFilterBson = Filters.empty();
-            for (TicketDoc ticketDoc : getTicketCollection().find(ticketFilterBson)) {
-                listOfAllUUIDs.add(ticketDoc.getTicketID());
-            }
-            clientSession.commitTransaction();
-        } catch (MongoException exception) {
-            throw new TicketRepositoryReadException(exception.getMessage(), exception);
-        }
-        return listOfAllUUIDs;
     }
 
     @Override
@@ -263,7 +245,7 @@ public class TicketRepository extends MongoRepository implements TicketRepositor
             Bson ticketFilter = Filters.empty();
             listOfAllTickets = findTickets(ticketFilter);
             clientSession.commitTransaction();
-        } catch (MongoException | DocNullReferenceException exception) {
+        } catch (MongoException exception) {
             throw new TicketRepositoryReadException(exception.getMessage(), exception);
         }
         return listOfAllTickets;
@@ -272,13 +254,12 @@ public class TicketRepository extends MongoRepository implements TicketRepositor
     @Override
     public void update(Ticket ticket) throws TicketRepositoryException {
         try {
-            TicketDoc ticketDoc = TicketMapper.toTicketDoc(ticket);
             Bson ticketFilter = Filters.eq("_id", ticket.getTicketID());
-            TicketDoc updatedTicketDoc = getTicketCollection().findOneAndReplace(ticketFilter, ticketDoc);
-            if (updatedTicketDoc == null) {
-                throw new TicketDocNullReferenceException(MongoRepositoryMessages.TICKET_DOC_FOR_TICKET_OBJ_NOT_FOUND);
+            Ticket updatedTicket = getTicketCollection().findOneAndReplace(ticketFilter, ticket);
+            if (updatedTicket == null) {
+                throw new TicketNullReferenceException(MongoRepositoryMessages.TICKET_DOC_FOR_TICKET_OBJ_NOT_FOUND);
             }
-        } catch (MongoException | DocNullReferenceException exception) {
+        } catch (MongoException | TicketNullReferenceException exception) {
             throw new TicketRepositoryUpdateException(exception.getMessage(), exception);
         }
     }
@@ -287,31 +268,29 @@ public class TicketRepository extends MongoRepository implements TicketRepositor
     public void delete(UUID ticketID) throws TicketRepositoryException {
         try (ClientSession clientSession = mongoClient.startSession()) {
             clientSession.startTransaction();
-            Bson ticketFilter = Filters.eq(MongoRepositoryConstants.GENERAL_IDENTIFIER, ticketID);
-            TicketDoc removedTicketDoc = getTicketCollection().findOneAndDelete(ticketFilter);
-            if (removedTicketDoc != null) {
-                Bson movieFilter = Filters.eq(MongoRepositoryConstants.GENERAL_IDENTIFIER, removedTicketDoc.getMovieID());
-                Bson updates = Updates.inc(MongoRepositoryConstants.NUMBER_OF_AVAILABLE_SEATS, 1);
-                MovieDoc updatedMovieDoc = getMovieCollection().findOneAndUpdate(movieFilter, updates);
-                if (updatedMovieDoc == null) {
-                    throw new MovieDocNullReferenceException(MongoRepositoryMessages.MOVIE_DOC_OBJECT_NOT_FOUND);
-                }
+            Bson ticketFilter = Filters.eq(TicketConstants.GENERAL_IDENTIFIER, ticketID);
+            Ticket removedTicket = getTicketCollection().findOneAndDelete(ticketFilter);
+            if (removedTicket != null) {
+                Bson movieFilter = Filters.eq(MovieConstants.GENERAL_IDENTIFIER, removedTicket.getMovieID());
+                Bson update = Updates.inc(MovieConstants.NUMBER_OF_AVAILABLE_SEATS, 1);
+                getMovieCollection().updateOne(movieFilter, update);
             } else {
-                throw new TicketDocNullReferenceException(MongoRepositoryMessages.TICKET_DOC_OBJECT_NOT_FOUND);
+                throw new TicketNullReferenceException(MongoRepositoryMessages.TICKET_DOC_OBJECT_NOT_FOUND);
             }
             clientSession.commitTransaction();
-        } catch (MongoException | NullPointerException | DocNullReferenceException exception) {
+        } catch (MongoException | NullPointerException | ObjectNullReferenceException exception) {
             throw new TicketRepositoryDeleteException(exception.getMessage(), exception);
         }
     }
 
-    private List<Ticket> findTickets(Bson ticketFilter) {
-        List<Ticket> listOfFoundTickets = new ArrayList<>();
-        for (TicketDoc ticketDoc : getTicketCollection().find(ticketFilter)) {
-            ClientDoc foundClientDoc = findClientDoc(ticketDoc.getClientID());
-            listOfFoundTickets.add(TicketMapper.toTicket(ticketDoc,
-                    foundClientDoc,
-                    findMovieDoc(ticketDoc.getMovieID())));
+    private List<Ticket> findTickets(Bson ticketFilter) throws TicketRepositoryReadException {
+        List<Ticket> listOfFoundTickets;
+        try(ClientSession clientSession = mongoClient.startSession()) {
+            clientSession.startTransaction();
+            listOfFoundTickets = getTicketCollection().find(ticketFilter).into(new ArrayList<>());
+            clientSession.commitTransaction();
+        } catch (MongoException exception) {
+            throw new TicketRepositoryReadException(exception.getMessage(), exception);
         }
         return listOfFoundTickets;
     }

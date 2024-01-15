@@ -38,7 +38,7 @@ public class TicketController implements TicketServiceInterface {
     @Override
     public ResponseEntity<?> create(@RequestBody TicketInputDTO ticketInputDTO) {
         try {
-            Ticket ticket = this.ticketService.create(ticketInputDTO.getMovieTime(), ticketInputDTO.getClientID(), ticketInputDTO.getMovieID(), ticketInputDTO.getTicketType());
+            Ticket ticket = this.ticketService.create(ticketInputDTO.getMovieTime(), ticketInputDTO.getClientID(), ticketInputDTO.getMovieID());
 
             Set<ConstraintViolation<Ticket>> violationSet = validator.validate(ticket);
             List<String> messages = violationSet.stream().map(ConstraintViolation::getMessage).toList();
@@ -46,7 +46,7 @@ public class TicketController implements TicketServiceInterface {
                 return ResponseEntity.badRequest().contentType(MediaType.APPLICATION_JSON).body(messages);
             }
 
-            TicketDTO ticketDTO = new TicketDTO(ticket.getTicketID(), ticket.getMovieTime(), ticket.getTicketFinalPrice(), ticket.getClient().getClientID(), ticket.getMovie().getMovieID());
+            TicketDTO ticketDTO = new TicketDTO(ticket.getTicketID(), ticket.getMovieTime(), ticket.getTicketPrice(), ticket.getUserID(), ticket.getMovieID());
             return ResponseEntity.created(URI.create("http://localhost:8000/api/v1/tickets/" + ticketDTO.getTicketID().toString())).contentType(MediaType.APPLICATION_JSON).body(ticketDTO);
         } catch (GeneralServiceException exception) {
             return ResponseEntity.badRequest().contentType(MediaType.APPLICATION_JSON).body(exception.getMessage());
@@ -58,7 +58,7 @@ public class TicketController implements TicketServiceInterface {
     public ResponseEntity<?> findByUUID(@PathVariable("id") UUID ticketID) {
         try {
             Ticket ticket = this.ticketService.findByUUID(ticketID);
-            TicketDTO ticketDTO = new TicketDTO(ticket.getTicketID(), ticket.getMovieTime(), ticket.getTicketFinalPrice(), ticket.getClient().getClientID(), ticket.getMovie().getMovieID());
+            TicketDTO ticketDTO = new TicketDTO(ticket.getTicketID(), ticket.getMovieTime(), ticket.getTicketPrice(), ticket.getUserID(), ticket.getMovieID());
             return ResponseEntity.ok().contentType(MediaType.APPLICATION_JSON).body(ticketDTO);
         } catch (TicketServiceTicketNotFoundException exception) {
             return ResponseEntity.notFound().build();
@@ -74,7 +74,7 @@ public class TicketController implements TicketServiceInterface {
             List<Ticket> listOfFoundTickets = this.ticketService.findAll();
             List<TicketDTO> listOfDTOs = new ArrayList<>();
             for (Ticket ticket : listOfFoundTickets) {
-                listOfDTOs.add(new TicketDTO(ticket.getTicketID(), ticket.getMovieTime(), ticket.getTicketFinalPrice(), ticket.getClient().getClientID(), ticket.getMovie().getMovieID()));
+                listOfDTOs.add(new TicketDTO(ticket.getTicketID(), ticket.getMovieTime(), ticket.getTicketPrice(), ticket.getUserID(), ticket.getMovieID()));
             }
 
             if (listOfDTOs.isEmpty()) {

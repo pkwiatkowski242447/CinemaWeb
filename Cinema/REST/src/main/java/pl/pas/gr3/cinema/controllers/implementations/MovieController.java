@@ -95,7 +95,7 @@ public class MovieController implements MovieServiceInterface {
         List<Ticket> listOfTickets = this.movieService.getListOfTicketsForCertainMovie(movieID);
         List<TicketDTO> listOfDTOs = new ArrayList<>();
         for (Ticket ticket : listOfTickets) {
-            listOfDTOs.add(new TicketDTO(ticket.getTicketID(), ticket.getMovieTime(), ticket.getTicketFinalPrice(), ticket.getClient().getClientID(), ticket.getMovie().getMovieID()));
+            listOfDTOs.add(new TicketDTO(ticket.getTicketID(), ticket.getMovieTime(), ticket.getTicketPrice(), ticket.getUserID(), ticket.getMovieID()));
         }
 
         if (listOfDTOs.isEmpty()) {

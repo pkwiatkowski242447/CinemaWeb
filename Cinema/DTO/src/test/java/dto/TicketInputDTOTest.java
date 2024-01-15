@@ -30,7 +30,7 @@ public class TicketInputDTOTest {
 
     @BeforeEach
     public void initializeTicketInputDTO() {
-        ticketInputDTO = new TicketInputDTO(movieTime, clientID, movieID, ticketType);
+        ticketInputDTO = new TicketInputDTO(movieTime, clientID, movieID);
     }
 
     @Test
@@ -41,7 +41,7 @@ public class TicketInputDTOTest {
 
     @Test
     public void ticketInputDTOAllArgsConstructorAndGettersTestPositive() {
-        TicketInputDTO testTicketInputDTO = new TicketInputDTO(movieTime, clientID, movieID, ticketType);
+        TicketInputDTO testTicketInputDTO = new TicketInputDTO(movieTime, clientID, movieID);
         assertNotNull(testTicketInputDTO);
     }
 
@@ -85,19 +85,5 @@ public class TicketInputDTOTest {
 
         assertEquals(newMovieID, movieIDAfter);
         assertNotEquals(movieIDBefore, movieIDAfter);
-    }
-
-    @Test
-    public void ticketInputDTOTicketTypeSetterTestPositive() {
-        String ticketTypeBefore = ticketInputDTO.getTicketType();
-        assertNotNull(ticketTypeBefore);
-        String newTicketType = "reduced";
-        assertNotNull(newTicketType);
-        ticketInputDTO.setTicketType(newTicketType);
-        String ticketTypeAfter = ticketInputDTO.getTicketType();
-        assertNotNull(ticketTypeAfter);
-
-        assertEquals(newTicketType, ticketTypeAfter);
-        assertNotEquals(ticketTypeBefore, ticketTypeAfter);
     }
 }

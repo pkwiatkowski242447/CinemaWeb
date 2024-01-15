@@ -224,14 +224,6 @@ public class MovieRepositoryTest {
     }
 
     @Test
-    public void movieRepositoryFindAllMovieUUIDsTestPositive() throws MovieRepositoryException {
-        List<UUID> listOfAllUUIDs = movieRepositoryForTests.findAllUUIDs();
-        assertNotNull(listOfAllUUIDs);
-        assertFalse(listOfAllUUIDs.isEmpty());
-        assertEquals(3, listOfAllUUIDs.size());
-    }
-
-    @Test
     public void movieRepositoryFindAllMoviesTestPositive() throws MovieRepositoryException {
         List<Movie> listOfAllMovies = movieRepositoryForTests.findAll();
         assertNotNull(listOfAllMovies);

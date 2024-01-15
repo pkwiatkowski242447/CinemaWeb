@@ -2,39 +2,39 @@ package pl.pas.gr3.cinema.services.implementations;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-import pl.pas.gr3.cinema.consts.repositories.MongoRepositoryConstants;
-import pl.pas.gr3.cinema.exceptions.repositories.crud.client.ClientRepositoryAdminNotFoundException;
+import pl.pas.gr3.cinema.consts.model.UserConstants;
+import pl.pas.gr3.cinema.exceptions.repositories.UserRepositoryException;
+import pl.pas.gr3.cinema.exceptions.repositories.crud.user.UserRepositoryCreateUserDuplicateLoginException;
+import pl.pas.gr3.cinema.exceptions.repositories.crud.user.UserRepositoryAdminNotFoundException;
 import pl.pas.gr3.cinema.exceptions.services.crud.admin.*;
-import pl.pas.gr3.cinema.exceptions.repositories.ClientRepositoryException;
-import pl.pas.gr3.cinema.exceptions.repositories.crud.client.ClientRepositoryCreateClientDuplicateLoginException;
-import pl.pas.gr3.cinema.services.interfaces.UserManagerInterface;
+import pl.pas.gr3.cinema.services.interfaces.UserServiceInterface;
 import pl.pas.gr3.cinema.model.Ticket;
 import pl.pas.gr3.cinema.model.users.Admin;
-import pl.pas.gr3.cinema.repositories.implementations.ClientRepository;
+import pl.pas.gr3.cinema.repositories.implementations.UserRepository;
 
 import java.util.List;
 import java.util.UUID;
 
 @Service
-public class AdminService implements UserManagerInterface<Admin> {
+public class AdminService implements UserServiceInterface<Admin> {
 
-    private ClientRepository clientRepository;
+    private UserRepository userRepository;
 
     public AdminService() {
     }
 
     @Autowired
-    public AdminService(ClientRepository clientRepository) {
-        this.clientRepository = clientRepository;
+    public AdminService(UserRepository userRepository) {
+        this.userRepository = userRepository;
     }
 
     @Override
     public Admin create(String login, String password) throws AdminServiceCreateException {
         try {
-            return this.clientRepository.createAdmin(login, password);
-        } catch (ClientRepositoryCreateClientDuplicateLoginException exception) {
+            return this.userRepository.createAdmin(login, password);
+        } catch (UserRepositoryCreateUserDuplicateLoginException exception) {
             throw new AdminServiceCreateAdminDuplicateLoginException(exception.getMessage(), exception);
-        } catch (ClientRepositoryException exception) {
+        } catch (UserRepositoryException exception) {
             throw new AdminServiceCreateException(exception.getMessage(), exception);
         }
     }
@@ -42,10 +42,10 @@ public class AdminService implements UserManagerInterface<Admin> {
     @Override
     public Admin findByUUID(UUID adminID) throws AdminServiceReadException {
         try {
-            return this.clientRepository.findAdminByUUID(adminID);
-        } catch (ClientRepositoryAdminNotFoundException exception) {
+            return this.userRepository.findAdminByUUID(adminID);
+        } catch (UserRepositoryAdminNotFoundException exception) {
             throw new AdminServiceAdminNotFoundException(exception.getMessage(), exception);
-        } catch (ClientRepositoryException exception) {
+        } catch (UserRepositoryException exception) {
             throw new AdminServiceReadException(exception.getMessage(), exception);
         }
     }
@@ -53,10 +53,10 @@ public class AdminService implements UserManagerInterface<Admin> {
     @Override
     public Admin findByLogin(String login) throws AdminServiceReadException {
         try {
-            return this.clientRepository.findAdminByLogin(login);
-        } catch (ClientRepositoryAdminNotFoundException exception) {
+            return this.userRepository.findAdminByLogin(login);
+        } catch (UserRepositoryAdminNotFoundException exception) {
             throw new AdminServiceAdminNotFoundException(exception.getMessage(), exception);
-        } catch (ClientRepositoryException exception) {
+        } catch (UserRepositoryException exception) {
             throw new AdminServiceReadException(exception.getMessage(), exception);
         }
     }
@@ -64,8 +64,8 @@ public class AdminService implements UserManagerInterface<Admin> {
     @Override
     public List<Admin> findAllMatchingLogin(String loginToBeMatched) throws AdminServiceReadException {
         try {
-            return this.clientRepository.findAllAdminsMatchingLogin(loginToBeMatched);
-        } catch (ClientRepositoryException exception) {
+            return this.userRepository.findAllAdminsMatchingLogin(loginToBeMatched);
+        } catch (UserRepositoryException exception) {
             throw new AdminServiceReadException(exception.getMessage(), exception);
         }
     }
@@ -73,8 +73,8 @@ public class AdminService implements UserManagerInterface<Admin> {
     @Override
     public List<Admin> findAll() throws AdminServiceReadException {
         try {
-            return this.clientRepository.findAllAdmins();
-        } catch (ClientRepositoryException exception) {
+            return this.userRepository.findAllAdmins();
+        } catch (UserRepositoryException exception) {
             throw new AdminServiceReadException(exception.getMessage(), exception);
         }
     }
@@ -82,8 +82,8 @@ public class AdminService implements UserManagerInterface<Admin> {
     @Override
     public void update(Admin admin) throws AdminServiceUpdateException {
         try {
-            this.clientRepository.updateAdmin(admin);
-        } catch (ClientRepositoryException exception) {
+            this.userRepository.updateAdmin(admin);
+        } catch (UserRepositoryException exception) {
             throw new AdminServiceUpdateException(exception.getMessage(), exception);
         }
     }
@@ -91,8 +91,8 @@ public class AdminService implements UserManagerInterface<Admin> {
     @Override
     public void activate(UUID adminID) throws AdminServiceActivationException {
         try {
-            this.clientRepository.activate(this.clientRepository.findAdminByUUID(adminID), MongoRepositoryConstants.ADMIN_SUBCLASS);
-        } catch (ClientRepositoryException exception) {
+            this.userRepository.activate(this.userRepository.findAdminByUUID(adminID), UserConstants.ADMIN_DISCRIMINATOR);
+        } catch (UserRepositoryException exception) {
             throw new AdminServiceActivationException(exception.getMessage(), exception);
         }
     }
@@ -100,8 +100,8 @@ public class AdminService implements UserManagerInterface<Admin> {
     @Override
     public void deactivate(UUID adminID) throws AdminServiceDeactivationException {
         try {
-            this.clientRepository.deactivate(this.clientRepository.findAdminByUUID(adminID), MongoRepositoryConstants.ADMIN_SUBCLASS);
-        } catch (ClientRepositoryException exception) {
+            this.userRepository.deactivate(this.userRepository.findAdminByUUID(adminID), UserConstants.ADMIN_DISCRIMINATOR);
+        } catch (UserRepositoryException exception) {
             throw new AdminServiceDeactivationException(exception.getMessage(), exception);
         }
     }
@@ -109,8 +109,8 @@ public class AdminService implements UserManagerInterface<Admin> {
     @Override
     public List<Ticket> getTicketsForClient(UUID adminID) throws AdminServiceReadException {
         try {
-            return this.clientRepository.getListOfTicketsForClient(adminID, MongoRepositoryConstants.ADMIN_SUBCLASS);
-        } catch (ClientRepositoryException exception) {
+            return this.userRepository.getListOfTicketsForClient(adminID, UserConstants.ADMIN_DISCRIMINATOR);
+        } catch (UserRepositoryException exception) {
             throw new AdminServiceReadException(exception.getMessage(), exception);
         }
     }
@@ -118,8 +118,8 @@ public class AdminService implements UserManagerInterface<Admin> {
     @Override
     public void delete(UUID userID) throws AdminServiceDeleteException {
         try {
-            this.clientRepository.delete(userID, MongoRepositoryConstants.ADMIN_SUBCLASS);
-        } catch (ClientRepositoryException exception) {
+            this.userRepository.delete(userID, UserConstants.ADMIN_DISCRIMINATOR);
+        } catch (UserRepositoryException exception) {
             throw new AdminServiceDeleteException(exception.getMessage(), exception);
         }
     }

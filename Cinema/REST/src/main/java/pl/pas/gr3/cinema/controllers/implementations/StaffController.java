@@ -17,7 +17,6 @@ import pl.pas.gr3.dto.users.StaffPasswordDTO;
 import pl.pas.gr3.cinema.exceptions.services.GeneralServiceException;
 import pl.pas.gr3.cinema.services.implementations.StaffService;
 import pl.pas.gr3.cinema.model.Ticket;
-import pl.pas.gr3.cinema.model.users.Client;
 import pl.pas.gr3.cinema.model.users.Staff;
 import pl.pas.gr3.cinema.controllers.interfaces.UserServiceInterface;
 
@@ -51,7 +50,7 @@ public class StaffController implements UserServiceInterface<Staff> {
                 return ResponseEntity.badRequest().contentType(MediaType.APPLICATION_JSON).body(messages);
             }
 
-            StaffDTO staffDTO = new StaffDTO(staff.getClientID(), staff.getClientLogin(), staff.isClientStatusActive());
+            StaffDTO staffDTO = new StaffDTO(staff.getUserID(), staff.getUserLogin(), staff.isUserStatusActive());
             return ResponseEntity.created(URI.create("http://localhost:8000/api/v1/staffs/" + staffDTO.getStaffID().toString())).contentType(MediaType.APPLICATION_JSON).body(staffDTO);
         } catch (StaffServiceCreateStaffDuplicateLoginException exception) {
             return ResponseEntity.status(HttpStatus.CONFLICT).contentType(MediaType.APPLICATION_JSON).body(exception.getMessage());
@@ -64,8 +63,8 @@ public class StaffController implements UserServiceInterface<Staff> {
     @Override
     public ResponseEntity<?> findByUUID(@PathVariable("id") UUID staffID) {
         try {
-            Client staff = this.staffService.findByUUID(staffID);
-            StaffDTO staffDTO = new StaffDTO(staff.getClientID(), staff.getClientLogin(), staff.isClientStatusActive());
+            Staff staff = this.staffService.findByUUID(staffID);
+            StaffDTO staffDTO = new StaffDTO(staff.getUserID(), staff.getUserLogin(), staff.isUserStatusActive());
             return this.generateResponseForDTO(staffDTO);
         } catch (StaffServiceStaffNotFoundException exception) {
             return ResponseEntity.notFound().build();
@@ -79,7 +78,7 @@ public class StaffController implements UserServiceInterface<Staff> {
     public ResponseEntity<?> findByLogin(@PathVariable("login") String staffLogin) {
         try {
             Staff staff = this.staffService.findByLogin(staffLogin);
-            StaffDTO staffDTO = new StaffDTO(staff.getClientID(), staff.getClientLogin(), staff.isClientStatusActive());
+            StaffDTO staffDTO = new StaffDTO(staff.getUserID(), staff.getUserLogin(), staff.isUserStatusActive());
             return this.generateResponseForDTO(staffDTO);
         } catch (StaffServiceStaffNotFoundException exception) {
             return ResponseEntity.notFound().build();
@@ -106,7 +105,7 @@ public class StaffController implements UserServiceInterface<Staff> {
             List<Ticket> listOfTicketForAStaff = this.staffService.getTicketsForClient(staffID);
             List<TicketDTO> listOfDTOs = new ArrayList<>();
             for (Ticket ticket : listOfTicketForAStaff) {
-                listOfDTOs.add(new TicketDTO(ticket.getTicketID(), ticket.getMovieTime(), ticket.getTicketFinalPrice(), ticket.getClient().getClientID(), ticket.getMovie().getMovieID()));
+                listOfDTOs.add(new TicketDTO(ticket.getTicketID(), ticket.getMovieTime(), ticket.getTicketPrice(), ticket.getUserID(), ticket.getMovieID()));
             }
             if (listOfTicketForAStaff.isEmpty()) {
                 return ResponseEntity.noContent().build();
@@ -171,8 +170,8 @@ public class StaffController implements UserServiceInterface<Staff> {
 
     private List<StaffDTO> getListOfStaffDTOs(List<Staff> listOfClients) {
         List<StaffDTO> listOfDTOs = new ArrayList<>();
-        for (Client staff : listOfClients) {
-            listOfDTOs.add(new StaffDTO(staff.getClientID(), staff.getClientLogin(), staff.isClientStatusActive()));
+        for (Staff staff : listOfClients) {
+            listOfDTOs.add(new StaffDTO(staff.getUserID(), staff.getUserLogin(), staff.isUserStatusActive()));
         }
         return listOfDTOs;
     }
