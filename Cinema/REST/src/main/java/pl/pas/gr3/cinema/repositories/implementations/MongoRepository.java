@@ -39,8 +39,8 @@ public abstract class MongoRepository implements Closeable {
     private final static MongoCredential mongoCredentials = MongoCredential.createCredential("admin", "admin", "adminpassword".toCharArray());
 
     protected final static String userCollectionName = MongoRepositoryConstants.USERS_COLLECTION_NAME;
-    protected final static String movieCollectionName = MongoRepositoryConstants.TICKETS_COLLECTION_NAME;
-    protected final static String ticketCollectionName = MongoRepositoryConstants.MOVIES_COLLECTION_NAME;
+    protected final static String movieCollectionName = MongoRepositoryConstants.MOVIES_COLLECTION_NAME;
+    protected final static String ticketCollectionName = MongoRepositoryConstants.TICKETS_COLLECTION_NAME;
 
     protected final static Class<User> clientCollectionType = User.class;
     protected final static Class<Movie> movieCollectionType = Movie.class;

@@ -5,7 +5,7 @@
 
 <ui:composition xmlns:ui="http://xmlns.jcp.org/jsf/facelets"
                 xmlns:h="http://xmlns.jcp.org/jsf/html"
-                xmlns:c="http://xmlns.jcp.org/jsf/core"
+                xmlns:f="http://xmlns.jcp.org/jsf/core"
                 template="templates/template.xhtml">
 
     <ui:define name="top">
@@ -23,17 +23,19 @@
 
         <h:form>
             <h:outputLabel for="loginInput">Podaj login</h:outputLabel>
-            <h:inputText id="loginInput" value="#{clientBean.client.clientLogin}" required="true" maxlength="20" />
+            <h:inputText id="loginInput" value="#{clientBean.user.clientLogin}" required="true" maxlength="20" />
             <br />
 
             <h:outputLabel for="passworFirstInput">Podaj password</h:outputLabel>
-            <h:inputSecret id="passworFirstInput" value="#{clientBean.client.clientPassword}" required="true" maxlength="40" />
+            <h:inputSecret id="passworFirstInput" value="#{clientBean.user.clientPassword}" required="true" maxlength="40" />
             <br />
 
-            <h:commandButton value="Załóż konto" action="#{clientBean.createClient()}"/>
+            <h:commandButton value="Załóż konto">
+                <f:ajax execute="@form" render="outputMessage" listener="#{clientBean.createClient()}"/>
+            </h:commandButton>
         </h:form>
 
-        <p><h:outputText id="outputMessage" value="#{clientBean.message}"/></p>
+        <h:outputText id="outputMessage" value="#{clientBean.message != null ? clientBean.message : ''}" />
     </ui:define>
 
 </ui:composition>

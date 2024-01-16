@@ -17,7 +17,17 @@
     </ui:define>
 
     <ui:define name="content">
-        <h:outputText value="Create ticket" />
+        <h:outputText value="Pozostałe informacje:"/>
+
+        <h:form>
+            <h:outputLabel value="Wybierz datę i godzinę seansu:" />
+            <br />
+            <h:inputText value="#{ticketBean.ticket.movieTime}" />
+
+            <br />
+            <br />
+            <h:commandButton value="Utwórz bilet" action="#{ticketBean.createTicket()}" />
+        </h:form>
     </ui:define>
 
 </ui:composition>

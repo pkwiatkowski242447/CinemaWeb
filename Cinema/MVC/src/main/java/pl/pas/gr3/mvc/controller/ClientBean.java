@@ -18,12 +18,13 @@ import lombok.Setter;
 import pl.pas.gr3.dto.TicketDTO;
 import pl.pas.gr3.dto.users.ClientDTO;
 import pl.pas.gr3.dto.users.ClientInputDTO;
-import pl.pas.gr3.mvc.model.Client;
+import pl.pas.gr3.mvc.model.User;
 
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
+import java.util.UUID;
 
 @Getter @Setter
 @NoArgsConstructor
@@ -33,8 +34,11 @@ public class ClientBean implements Serializable {
 
     private final Validator validator = Validation.buildDefaultValidatorFactory().getValidator();
 
-    private final String clientsBaseURL = "http://localhost:8000/api/v1/clients";
-    private Client client = new Client();
+    private final String restBaseURL = "http://localhost:8000/api/v1";
+
+    private String clientsBaseURL;
+
+    private User user = new User();
     private List<ClientDTO> listOfClientDTOs = new ArrayList<>();
     private List<TicketDTO> listOfTicketDTOs = new ArrayList<>();
     private int operationStatusCode = 0;
@@ -43,6 +47,8 @@ public class ClientBean implements Serializable {
 
     @PostConstruct
     private void initializeData() {
+        clientsBaseURL = restBaseURL + "/clients";
+
         RestAssured.baseURI = clientsBaseURL;
         String path = clientsBaseURL + "/all";
 
@@ -51,11 +57,13 @@ public class ClientBean implements Serializable {
         Response response = requestSpecification.get(path);
     }
 
-    public String createClient() {
-        Set<ConstraintViolation<Client>> violations = validator.validate(client);
+    // Create methods
+
+    public void createClient() {
+        Set<ConstraintViolation<User>> violations = validator.validate(user);
         List<String> messages = violations.stream().map(ConstraintViolation::getMessage).toList();
         if (messages.isEmpty()) {
-            ClientInputDTO clientInputDTO = new ClientInputDTO(client.getClientLogin(), client.getClientPassword());
+            ClientInputDTO clientInputDTO = new ClientInputDTO(user.getClientLogin(), user.getClientPassword());
             String path = clientsBaseURL;
 
             ObjectMapper objectMapper = new ObjectMapper();
@@ -77,14 +85,9 @@ public class ClientBean implements Serializable {
                     message = "Wprowadzono nieprawidłowe dane";
                 } else {
                     message = "Utworzono użytkownika";
-                    return "success";
                 }
-
-                return "error";
-
             } catch (JsonProcessingException exception) {
                 message = "JsonProcessingException";
-                return "error";
             }
         } else {
             StringBuilder stringBuilder = new StringBuilder();
@@ -92,11 +95,12 @@ public class ClientBean implements Serializable {
                 stringBuilder.append(errorMessage).append(";");
             }
             message = stringBuilder.toString();
-            return "error";
         }
     }
 
-    public void findAllClients() {
+    // Read methods
+
+    public List<ClientDTO> findAllClients() {
         String path = clientsBaseURL + "/all";
 
         RequestSpecification requestSpecification = RestAssured.given();
@@ -109,6 +113,7 @@ public class ClientBean implements Serializable {
         message = response.body().toString();
 
         listOfClientDTOs = new ArrayList<>(response.jsonPath().getList(".", ClientDTO.class));
+        return listOfClientDTOs;
     }
 
     public void findAllClientsMatchingLogin() {
@@ -124,5 +129,29 @@ public class ClientBean implements Serializable {
         message = response.body().toString();
 
         listOfClientDTOs = new ArrayList<>(response.jsonPath().getList(".", ClientDTO.class));
+    }
+
+    // Update methods
+
+    public void activateClient(ClientDTO clientDTO) {
+        String path = clientsBaseURL + "/" + clientDTO.getClientID() + "/activate";
+
+        RequestSpecification requestSpecification = RestAssured.given();
+        requestSpecification.body(ContentType.JSON);
+
+        Response response = requestSpecification.post(path);
+
+        this.findAllClients();
+    }
+
+    public void deactivateClient(ClientDTO clientDTO) {
+        String path = clientsBaseURL + "/" + clientDTO.getClientID() + "/deactivate";
+
+        RequestSpecification requestSpecification = RestAssured.given();
+        requestSpecification.body(ContentType.JSON);
+
+        Response response = requestSpecification.post(path);
+
+        this.findAllClients();
     }
 }

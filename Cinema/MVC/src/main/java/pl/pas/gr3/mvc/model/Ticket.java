@@ -1,36 +1,37 @@
 package pl.pas.gr3.mvc.model;
 
-import jakarta.validation.Valid;
-import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
+import jakarta.validation.constraints.PositiveOrZero;
+import lombok.AccessLevel;
+import lombok.Data;
 import lombok.Setter;
+import pl.pas.gr3.mvc.messages.TicketValidationMessages;
 
+import java.time.LocalDateTime;
 import java.util.UUID;
 
-@Getter @Setter
-@NoArgsConstructor
+@Data
 public class Ticket {
 
-    @NotNull
-    @NotEmpty
-    private String movieTime;
+    private LocalDateTime movieTime;
 
-    @NotNull
-    private UUID clientID;
+    @NotNull(message = TicketValidationMessages.NULL_CLIENT_REFERENCE)
+    private UUID userID;
 
-    @NotNull
+    @NotNull(message = TicketValidationMessages.NULL_MOVIE_REFERENCE)
     private UUID movieID;
 
-    @NotNull
-    @NotEmpty
-    private String ticketType;
+    // Constructors
 
-    public Ticket(@NotNull String movieTime, @NotNull UUID clientID, @NotNull UUID movieID, @NotNull String ticketType) {
+    public Ticket() {
+
+    }
+
+    public Ticket(LocalDateTime movieTime,
+                  UUID userID,
+                  UUID movieID) {
         this.movieTime = movieTime;
-        this.clientID = clientID;
+        this.userID = userID;
         this.movieID = movieID;
-        this.ticketType = ticketType;
     }
 }

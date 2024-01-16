@@ -1,14 +1,15 @@
 package pl.pas.gr3.mvc.model;
 
 import jakarta.validation.constraints.*;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
+import lombok.AccessLevel;
+import lombok.Data;
 import lombok.Setter;
 import pl.pas.gr3.mvc.constants.MovieConstants;
 import pl.pas.gr3.mvc.messages.MovieValidationMessages;
 
-@Getter @Setter
-@NoArgsConstructor
+import java.util.UUID;
+
+@Data
 public class Movie {
 
     @NotNull(message = MovieValidationMessages.NULL_MOVIE_TITLE)
@@ -29,6 +30,10 @@ public class Movie {
     private int numberOfAvailableSeats;
 
     // Constructors
+
+    public Movie() {
+
+    }
 
     public Movie(@NotNull(message = MovieValidationMessages.NULL_MOVIE_TITLE)
                  @Size(min = MovieConstants.MOVIE_TITLE_MIN_LENGTH, message = MovieValidationMessages.MOVIE_TITLE_TOO_SHORT)

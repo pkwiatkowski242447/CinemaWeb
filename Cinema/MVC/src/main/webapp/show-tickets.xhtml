@@ -19,28 +19,47 @@
 
     <ui:define name="content">
         <h:outputText value="Lista wszystkich biletów:" />
-        <h:dataTable value="#{ticketBean.listOfTicketDTOs}" var="ticket">
-            <h:column>
-                <f:facet name="header">ID Biletu</f:facet>
-                <h:outputText value="#{ticket.ticketID}" />
-            </h:column>
-            <h:column>
-                <f:facet name="header">Czas emsji filmu</f:facet>
-                <h:outputText value="#{ticket.movieTime}" />
-            </h:column>
-            <h:column>
-                <f:facet name="header">Cena biletu</f:facet>
-                <h:outputText value="#{ticket.ticketFinalPrice}" />
-            </h:column>
-            <h:column>
-                <f:facet name="header">ID Klienta</f:facet>
-                <h:outputText value="#{ticket.clientID}" />
-            </h:column>
-            <h:column>
-                <f:facet name="header">ID Filmu</f:facet>
-                <h:outputText value="#{ticket.movieID}" />
-            </h:column>
-        </h:dataTable>
+        <h:form>
+            <h:dataTable value="#{ticketBean.findAllTickets()}" var="record">
+                <h:column>
+                    <f:facet name="header">ID Biletu</f:facet>
+                    <h:outputText value="#{record.ticket.ticketID}" />
+                </h:column>
+                <h:column>
+                    <f:facet name="header">Czas emsji filmu</f:facet>
+                    <h:outputText value="#{record.ticket.movieTime}" />
+                </h:column>
+                <h:column>
+                    <f:facet name="header">Cena biletu</f:facet>
+                    <h:outputText value="#{record.ticket.ticketFinalPrice}" />
+                </h:column>
+                <h:column>
+                    <f:facet name="header">Login klienta</f:facet>
+                    <h:outputText value="#{record.client.clientLogin}" />
+                </h:column>
+                <h:column>
+                    <f:facet name="header">Status klienta</f:facet>
+                    <h:outputText value="Aktywny" rendered="#{record.client.clientStatusActive eq true}" />
+                    <h:outputText value="Nieaktywny" rendered="#{record.client.clientStatusActive eq false}" />
+                </h:column>
+                <h:column>
+                    <f:facet name="header">Tytuł filmu</f:facet>
+                    <h:outputText value="#{record.movie.movieTitle}" />
+                </h:column>
+                <h:column>
+                    <f:facet name="header">Numer sali</f:facet>
+                    <h:outputText value="#{record.movie.scrRoomNumber}" />
+                </h:column>
+                <h:column>
+                    <f:facet name="header">Liczba wolnych miejsc</f:facet>
+                    <h:outputText value="#{record.movie.numberOfAvailableSeats}" />
+                </h:column>
+                <h:column>
+                    <f:facet name="header">Akcja</f:facet>
+                    <h:commandButton value="Usuń" action="#{ticketBean.deleteTicket(record)}" />
+                </h:column>
+            </h:dataTable>
+        </h:form>
     </ui:define>
 
 </ui:composition>

@@ -2,6 +2,8 @@ package pl.pas.gr3.mvc.constants;
 
 public class MovieConstants {
 
+    // Data
+
     public static final int MOVIE_TITLE_MIN_LENGTH = 1;
     public static final int MOVIE_TITLE_MAX_LENGTH = 150;
 
@@ -13,4 +15,12 @@ public class MovieConstants {
 
     public static final int NUMBER_OF_AVAILABLE_SEATS_MIN_VALUE = 0;
     public static final int NUMBER_OF_AVAILABLE_SEATS_MAX_VALUE = 120;
+
+    // Bson ids
+
+    public static final String GENERAL_IDENTIFIER = "_id";
+    public static final String MOVIE_TITLE = "movie_title";
+    public static final String MOVIE_BASE_PRICE = "movie_base_price";
+    public static final String SCREENING_ROOM_NUMBER = "scr_room_number";
+    public static final String NUMBER_OF_AVAILABLE_SEATS = "number_of_available_seats";
 }

@@ -1,6 +1,7 @@
 package pl.pas.gr3.mvc.messages;
 
 public class MovieValidationMessages {
+    public final static String NULL_IDENTIFIER = "No movie can have an identifier that is null.";
 
     public final static String NULL_MOVIE_TITLE = "Movie title cannot be null.";
     public final static String MOVIE_TITLE_TOO_SHORT = "No movie title can be shorter than one character.";

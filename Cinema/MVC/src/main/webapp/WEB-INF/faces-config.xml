@@ -21,4 +21,30 @@
         </message-bundle>
     </application>
 
+    <navigation-rule>
+        <from-view-id>/select-user.xhtml</from-view-id>
+        <navigation-case>
+            <from-outcome>goToMovieSelection</from-outcome>
+            <to-view-id>/select-movie.xhtml</to-view-id>
+        </navigation-case>
+    </navigation-rule>
+    <navigation-rule>
+        <from-view-id>/select-movie.xhtml</from-view-id>
+        <navigation-case>
+            <from-outcome>goToTicketCreation</from-outcome>
+            <to-view-id>/create-ticket.xhtml</to-view-id>
+        </navigation-case>
+    </navigation-rule>
+    <navigation-rule>
+        <from-view-id>/create-ticket.xhtml</from-view-id>
+        <navigation-case>
+            <from-outcome>ticketWasCreatedSuccessfully</from-outcome>
+            <to-view-id>/show-tickets.xhtml</to-view-id>
+        </navigation-case>
+        <navigation-case>
+            <from-outcome>ticketCouldNotBeCreated</from-outcome>
+            <to-view-id>/create-ticket-error.xhtml</to-view-id>
+        </navigation-case>
+    </navigation-rule>
+
 </faces-config>
