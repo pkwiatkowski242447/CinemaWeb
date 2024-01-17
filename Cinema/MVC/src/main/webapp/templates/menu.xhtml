@@ -7,13 +7,39 @@
       xmlns:h="http://xmlns.jcp.org/jsf/html">
 
     <h2>Menu</h2>
-
     <ul>
-        <li><h:outputLink value="create-account.xhtml">Tworzenie konta</h:outputLink></li>
-        <li><h:outputLink value="show-clients.xhtml">Wyświetlanie klientów</h:outputLink></li>
-        <li><h:outputLink value="select-user.xhtml">Rezerwacja biletu</h:outputLink></li>
-        <li><h:outputLink value="delete-ticket.xhtml">Usunięcie biletu</h:outputLink></li>
-        <li><h:outputLink value="show-tickets.xhtml">Wyświetlenie biletów</h:outputLink></li>
+        <li>
+            <h:outputLink styleClass="nav-item" value="#">Klienci</h:outputLink>
+            <ul>
+                <li>
+                    <h:outputLink styleClass="nav-item" value="show-clients.xhtml">Wyświetlanie klientów</h:outputLink>
+                </li>
+                <li>
+                    <h:outputLink styleClass="nav-item" value="create-account.xhtml">Tworzenie nowego konta</h:outputLink>
+                </li>
+            </ul>
+        </li>
+        <li>
+            <h:outputLink styleClass="nav-item" value="#">Filmy</h:outputLink>
+            <ul>
+                <li>
+                    <h:outputLink styleClass="nav-item" value="show-movies.xhtml">Wyświetlanie filmów</h:outputLink>
+                </li>
+                <li>
+                    <h:outputLink styleClass="nav-item" value="create-movie.xhtml">Tworzenie nowego filmu</h:outputLink>
+                </li>
+            </ul>
+        </li>
+        <li>
+            <h:outputLink styleClass="nav-item" value="#" >Bilety</h:outputLink>
+            <ul>
+                <li>
+                    <h:outputLink styleClass="nav-item" value="show-tickets.xhtml">Wyświetlenie biletów</h:outputLink>
+                </li>
+                <li>
+                    <h:outputLink styleClass="nav-item" value="create-ticket.xhtml">Rezerwacja biletu</h:outputLink>
+                </li>
+            </ul>
+        </li>
     </ul>
-
 </html>

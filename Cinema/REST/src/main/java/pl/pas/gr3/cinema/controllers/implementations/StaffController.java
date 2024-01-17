@@ -10,6 +10,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import pl.pas.gr3.cinema.exceptions.services.crud.staff.StaffServiceCreateStaffDuplicateLoginException;
 import pl.pas.gr3.cinema.exceptions.services.crud.staff.StaffServiceStaffNotFoundException;
+import pl.pas.gr3.cinema.model.users.User;
 import pl.pas.gr3.dto.TicketDTO;
 import pl.pas.gr3.dto.users.StaffDTO;
 import pl.pas.gr3.dto.users.StaffInputDTO;
@@ -44,7 +45,7 @@ public class StaffController implements UserServiceInterface<Staff> {
         try {
             Staff staff = this.staffService.create(staffInputDTO.getStaffLogin(), staffInputDTO.getStaffPassword());
 
-            Set<ConstraintViolation<Staff>> violationSet = validator.validate(staff);
+            Set<ConstraintViolation<User>> violationSet = validator.validate(staff);
             List<String> messages = violationSet.stream().map(ConstraintViolation::getMessage).toList();
             if (!violationSet.isEmpty()) {
                 return ResponseEntity.badRequest().contentType(MediaType.APPLICATION_JSON).body(messages);

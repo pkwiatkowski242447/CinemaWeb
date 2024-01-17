@@ -1,7 +1,6 @@
 package pl.pas.gr3.mvc.controller;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import io.restassured.RestAssured;
@@ -20,15 +19,13 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import pl.pas.gr3.dto.MovieDTO;
 import pl.pas.gr3.dto.TicketDTO;
-import pl.pas.gr3.dto.TicketInputDTO;
 import pl.pas.gr3.dto.users.ClientDTO;
+import pl.pas.gr3.mvc.constants.GeneralConstants;
 import pl.pas.gr3.mvc.dto.TicketWithUserAndMovie;
-import pl.pas.gr3.mvc.model.Ticket;
 
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.UUID;
 
 @Getter @Setter
 @NoArgsConstructor
@@ -39,154 +36,87 @@ public class TicketBean implements Serializable {
     private final Validator validator = Validation.buildDefaultValidatorFactory().getValidator();
     private final Logger logger = LoggerFactory.getLogger(TicketBean.class);
 
-    private final String restApiBaseURL = "http://localhost:8000/api/v1";
-
-    private String ticketBaseURL;
-    private String movieBaseURL;
-    private String clientBaseURL;
-
-    private final Ticket ticket = new Ticket();
-    private final TicketInputDTO ticketInputDTO = new TicketInputDTO();
-
-    private List<ClientDTO> listOfClientDTOs = new ArrayList<>();
-    private List<MovieDTO> listOfMovieDTOs = new ArrayList<>();
     private List<TicketDTO> listOfTicketDTOs = new ArrayList<>();
 
-    private ClientDTO clientDTO;
-    private MovieDTO movieDTO;
+    private List<TicketWithUserAndMovie> listOfTickets = new ArrayList<>();
 
-    private int operationStatusCode = 0;
+    private int operationStatusCode;
     private String message;
 
     @PostConstruct
     public void initializeData() {
-        ticketBaseURL = restApiBaseURL + "/tickets";
-        movieBaseURL = restApiBaseURL + "/movies";
-        clientBaseURL = restApiBaseURL + "/clients";
-    }
-
-    // Create methods
-
-    public String selectClient(ClientDTO clientDTO) {
-        this.clientDTO = clientDTO;
-        return "goToMovieSelection";
-    }
-
-    public String selectMovie(MovieDTO movieDTO) {
-        this.movieDTO = movieDTO;
-        return "goToTicketCreation";
-    }
-
-    public String createTicket() {
-        ticket.setUserID(clientDTO.getClientID());
-        ticket.setMovieID(movieDTO.getMovieID());
-
-        ObjectMapper objectMapper = new ObjectMapper();
-
-        try {
-            String jsonPayload = objectMapper.writeValueAsString(ticket);
-            String path = ticketBaseURL;
-
-            RequestSpecification requestSpecification = RestAssured.given();
-            requestSpecification.contentType(ContentType.JSON);
-            requestSpecification.body(jsonPayload);
-
-            Response response = requestSpecification.post(path);
-
-            operationStatusCode = response.statusCode();
-
-            if (operationStatusCode == 201) {
-                return "ticketWasCreatedSuccessfully";
-            } else {
-                return "ticketCouldNotBeCreated";
-            }
-        } catch (JsonProcessingException exception) {
-            return "ticketCouldNotBeCreated";
-        }
+        this.findAllTickets();
     }
 
     // Read methods
 
-    public List<ClientDTO> findAllClients() {
-        String path = clientBaseURL + "/all";
-
-        RequestSpecification requestSpecification = RestAssured.given();
-        requestSpecification.accept(ContentType.JSON);
-
-        Response response = requestSpecification.get(path);
-
-        ObjectMapper objectMapper = new ObjectMapper();
-        return new ArrayList<>(response.jsonPath().getList(".", ClientDTO.class));
-    }
-
-    public List<MovieDTO> findAllMovies() {
-        String path = movieBaseURL + "/all";
-
-        RequestSpecification requestSpecification = RestAssured.given();
-        requestSpecification.accept(ContentType.JSON);
-
-        Response response = requestSpecification.get(path);
-
-        ObjectMapper objectMapper = new ObjectMapper();
-        return new ArrayList<>(response.jsonPath().getList(".", MovieDTO.class));
-    }
-
-    public List<TicketWithUserAndMovie> findAllTickets() {
-        List<TicketWithUserAndMovie> listOfTickets = new ArrayList<>();
-
+    public void findAllTickets() {
         ObjectMapper objectMapper = new ObjectMapper();
         objectMapper.registerModule(new JavaTimeModule());
 
         // Get all tickets
-        String path = ticketBaseURL + "/all";
+        String path = GeneralConstants.TICKETS_BASE_URL + "/all";
 
         RequestSpecification requestSpecification = RestAssured.given();
         requestSpecification.accept(ContentType.JSON);
 
         Response response = requestSpecification.get(path);
 
-        listOfTicketDTOs = new ArrayList<>(response.jsonPath().getList(".", TicketDTO.class));
+        operationStatusCode = response.statusCode();
 
-        try {
-            for (TicketDTO ticketDTO : listOfTicketDTOs) {
+        if (response.statusCode() == 200) {
+            listOfTicketDTOs = new ArrayList<>(response.jsonPath().getList(".", TicketDTO.class));
 
-                path = clientBaseURL + "/" + ticketDTO.getClientID();
+            try {
+                for (TicketDTO ticketDTO : listOfTicketDTOs) {
 
-                requestSpecification = RestAssured.given();
-                requestSpecification.accept(ContentType.JSON);
+                    path = GeneralConstants.CLIENTS_BASE_URL + "/" + ticketDTO.getClientID();
 
-                response = requestSpecification.get(path);
+                    requestSpecification = RestAssured.given();
+                    requestSpecification.accept(ContentType.JSON);
 
-                ClientDTO clientDTO = objectMapper.readValue(response.getBody().asString(), ClientDTO.class);
+                    response = requestSpecification.get(path);
 
-                path = movieBaseURL + "/" + ticketDTO.getMovieID();
+                    ClientDTO clientDTO = objectMapper.readValue(response.getBody().asString(), ClientDTO.class);
 
-                requestSpecification = RestAssured.given();
-                requestSpecification.accept(ContentType.JSON);
+                    path = GeneralConstants.MOVIES_BASE_URL + "/" + ticketDTO.getMovieID();
 
-                response = requestSpecification.get(path);
+                    requestSpecification = RestAssured.given();
+                    requestSpecification.accept(ContentType.JSON);
 
-                MovieDTO movieDTO = objectMapper.readValue(response.getBody().asString(), MovieDTO.class);
+                    response = requestSpecification.get(path);
 
-                listOfTickets.add(new TicketWithUserAndMovie(ticketDTO, clientDTO, movieDTO));
+                    MovieDTO movieDTO = objectMapper.readValue(response.getBody().asString(), MovieDTO.class);
+
+                    listOfTickets.add(new TicketWithUserAndMovie(ticketDTO, clientDTO, movieDTO));
+                }
+            } catch (JsonProcessingException exception) {
+                operationStatusCode = -1;
+                message = exception.getMessage();
             }
-        } catch (JsonProcessingException exception) {
-            operationStatusCode = -1;
-            message = exception.getMessage();
+        } else {
+            message = "Nie znaleziono żadnych biletów";
         }
-
-        return listOfTickets;
     }
 
     // Delete methods
 
-    public void deleteTicket(TicketWithUserAndMovie ticket) {
-        String path = clientBaseURL + "/" + ticket.getTicket().getTicketID();
+    public String deleteTicket(TicketWithUserAndMovie ticket) {
+        String path = GeneralConstants.TICKETS_BASE_URL + "/" + ticket.getTicket().getTicketID();
+
+        logger.error(path);
 
         RequestSpecification requestSpecification = RestAssured.given();
-
         Response response = requestSpecification.delete(path);
 
-        this.findAllTickets();
+        operationStatusCode = response.statusCode();
+
+        if (response.statusCode() == 204) {
+            message = "Bilet został usunięty";
+            return null;
+        } else {
+            message = response.getBody().asString();
+            return "ticketCouldNotBeDeleted";
+        }
     }
 }

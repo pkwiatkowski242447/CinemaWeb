@@ -9,8 +9,10 @@
                 template="templates/template.xhtml">
 
     <ui:define name="top">
-        <h:outputLink value="index.xhtml">Strona główna</h:outputLink>
-        > Pokaż bilety
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><h:outputLink value="index.xhtml">Strona główna</h:outputLink></li>
+            <li class="breadcrumb-item active">Pokaż bilety</li>
+        </ol>
     </ui:define>
 
     <ui:define name="menu">
@@ -18,16 +20,20 @@
     </ui:define>
 
     <ui:define name="content">
-        <h:outputText value="Lista wszystkich biletów:" />
+        <h2>Lista wszystkich biletów</h2>
+
         <h:form>
-            <h:dataTable value="#{ticketBean.findAllTickets()}" var="record">
+            <h:dataTable value="#{ticketBean.listOfTickets}"
+                         rendered="#{not empty ticketBean.listOfTickets}"
+                         var="record"
+                         styleClass="table table-hover table-striped">
                 <h:column>
                     <f:facet name="header">ID Biletu</f:facet>
                     <h:outputText value="#{record.ticket.ticketID}" />
                 </h:column>
                 <h:column>
                     <f:facet name="header">Czas emsji filmu</f:facet>
-                    <h:outputText value="#{record.ticket.movieTime}" />
+                    <h:outputText value="#{record.ticket.movieTime}"/>
                 </h:column>
                 <h:column>
                     <f:facet name="header">Cena biletu</f:facet>
@@ -55,10 +61,14 @@
                     <h:outputText value="#{record.movie.numberOfAvailableSeats}" />
                 </h:column>
                 <h:column>
-                    <f:facet name="header">Akcja</f:facet>
-                    <h:commandButton value="Usuń" action="#{ticketBean.deleteTicket(record)}" />
+                    <f:facet name="header">Usuń</f:facet>
+                    <h:commandButton styleClass="btn btn-primary" value="  X  " action="#{ticketBean.deleteTicket(record)}" />
                 </h:column>
             </h:dataTable>
+
+            <h:panelGroup rendered="#{ticketBean.operationStatusCode != 200}">
+                <h5><h:outputText value="#{ticketBean.message}"/></h5>
+            </h:panelGroup>
         </h:form>
     </ui:define>
 

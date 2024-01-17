@@ -9,8 +9,10 @@
                 template="templates/template.xhtml">
 
     <ui:define name="top">
-        <h:outputLink value="index.xhtml">Strona główna</h:outputLink>
-        > Pokaż klientów
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><h:outputLink value="index.xhtml">Strona główna</h:outputLink></li>
+            <li class="breadcrumb-item active">Pokaż klientów</li>
+        </ol>
     </ui:define>
 
     <ui:define name="menu">
@@ -18,10 +20,13 @@
     </ui:define>
 
     <ui:define name="content">
-        <h:outputText value="Lista wszystkich dostępnych klientów:" />
+        <h2>Lista wszystkich dostępnych klientów</h2>
 
         <h:form>
-            <h:dataTable value="#{clientBean.findAllClients()}" var="client">
+            <h:dataTable value="#{clientBean.listOfClientDTOs}"
+                         var="client"
+                         styleClass="table table-hover table-striped"
+                         rendered="#{not empty clientBean.listOfClientDTOs}">
                 <h:column>
                     <f:facet name="header">ID</f:facet>
                     <h:outputText value="#{client.clientID}" />
@@ -37,10 +42,14 @@
                 </h:column>
                 <h:column>
                     <f:facet name="header">Akcja</f:facet>
-                    <h:commandButton value="Aktywuj" rendered="#{client.clientStatusActive eq false}" action="#{clientBean.activateClient(client)}" />
-                    <h:commandButton value="Dezaktywuj" rendered="#{client.clientStatusActive eq true}" action="#{clientBean.deactivateClient(client)}" />
+                    <h:commandButton styleClass="btn btn-primary" value="Aktywuj" rendered="#{client.clientStatusActive eq false}" action="#{clientBean.activateClient(client)}" />
+                    <h:commandButton styleClass="btn btn-primary" value="Dezaktywuj" rendered="#{client.clientStatusActive eq true}" action="#{clientBean.deactivateClient(client)}" />
                 </h:column>
             </h:dataTable>
+
+            <h:panelGroup rendered="#{clientBean.operationStatusCode != 200}">
+                <h5><h:outputText value="#{clientBean.message}"/></h5>
+            </h:panelGroup>
         </h:form>
     </ui:define>
 

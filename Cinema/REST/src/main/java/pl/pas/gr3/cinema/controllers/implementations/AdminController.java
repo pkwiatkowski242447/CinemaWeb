@@ -10,6 +10,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import pl.pas.gr3.cinema.exceptions.services.crud.admin.AdminServiceAdminNotFoundException;
 import pl.pas.gr3.cinema.exceptions.services.crud.admin.AdminServiceCreateAdminDuplicateLoginException;
+import pl.pas.gr3.cinema.model.users.User;
 import pl.pas.gr3.dto.TicketDTO;
 import pl.pas.gr3.dto.users.AdminDTO;
 import pl.pas.gr3.dto.users.AdminInputDTO;
@@ -42,7 +43,7 @@ public class AdminController implements UserServiceInterface<Admin> {
         try {
             Admin admin = this.adminService.create(adminInputDTO.getAdminLogin(), adminInputDTO.getAdminPassword());
 
-            Set<ConstraintViolation<Admin>> violationSet = validator.validate(admin);
+            Set<ConstraintViolation<User>> violationSet = validator.validate(admin);
             List<String> messages = violationSet.stream().map(ConstraintViolation::getMessage).toList();
             if (!violationSet.isEmpty()) {
                 return ResponseEntity.status(HttpStatus.BAD_REQUEST).contentType(MediaType.APPLICATION_JSON).body(messages);

@@ -21,29 +21,54 @@
         </message-bundle>
     </application>
 
+    <!-- Movie navigation rules -->
+
     <navigation-rule>
-        <from-view-id>/select-user.xhtml</from-view-id>
+        <from-view-id>/create-movie.xhtml</from-view-id>
         <navigation-case>
-            <from-outcome>goToMovieSelection</from-outcome>
-            <to-view-id>/select-movie.xhtml</to-view-id>
+            <from-outcome>movieCreatedSuccessfully</from-outcome>
+            <to-view-id>/create-movie-success.xhtml</to-view-id>
+            <redirect />
         </navigation-case>
     </navigation-rule>
+
     <navigation-rule>
-        <from-view-id>/select-movie.xhtml</from-view-id>
+        <from-view-id>/show-movies.xhtml</from-view-id>
         <navigation-case>
-            <from-outcome>goToTicketCreation</from-outcome>
-            <to-view-id>/create-ticket.xhtml</to-view-id>
+            <from-outcome>movieCouldNotBeDeleted</from-outcome>
+            <to-view-id>/delete-movie-error.xhtml</to-view-id>
+            <redirect />
         </navigation-case>
     </navigation-rule>
+
+    <!-- Client navigation rules -->
+
+    <navigation-rule>
+        <from-view-id>/create-account.xhtml</from-view-id>
+        <navigation-case>
+            <from-outcome>clientCreatedSuccessfully</from-outcome>
+            <to-view-id>/create-account-success.xhtml</to-view-id>
+            <redirect />
+        </navigation-case>
+    </navigation-rule>
+
+    <!-- Ticket navigation rules -->
+
     <navigation-rule>
         <from-view-id>/create-ticket.xhtml</from-view-id>
         <navigation-case>
             <from-outcome>ticketWasCreatedSuccessfully</from-outcome>
-            <to-view-id>/show-tickets.xhtml</to-view-id>
+            <to-view-id>/create-ticket-success.xhtml</to-view-id>
+            <redirect />
         </navigation-case>
+    </navigation-rule>
+
+    <navigation-rule>
+        <from-view-id>/show-tickets.xhtml</from-view-id>
         <navigation-case>
-            <from-outcome>ticketCouldNotBeCreated</from-outcome>
-            <to-view-id>/create-ticket-error.xhtml</to-view-id>
+            <from-outcome>ticketCouldNotBeDeleted</from-outcome>
+            <to-view-id>/delete-ticket-error.xhtml</to-view-id>
+            <redirect />
         </navigation-case>
     </navigation-rule>
 

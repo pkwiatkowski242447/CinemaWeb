@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE composition
+        PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+        "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<ui:composition xmlns:ui="http://xmlns.jcp.org/jsf/facelets"
+                xmlns:h="http://xmlns.jcp.org/jsf/html"
+                xmlns:f="http://xmlns.jcp.org/jsf/core"
+                template="templates/template.xhtml">
+
+    <ui:define name="top">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><h:outputLink value="index.xhtml">Strona główna</h:outputLink></li>
+            <li class="breadcrumb-item active">Szczegóły filmu</li>
+        </ol>
+    </ui:define>
+
+    <ui:define name="menu">
+        <ui:include src="templates/menu.xhtml"/>
+    </ui:define>
+
+    <ui:define name="content">
+        <h3>Film został utworzony</h3>
+        <h5>Szczegóły</h5>
+
+        <h:dataTable value="#{createMovieBean.createdMovie}" var="movie" styleClass="table table-hover table-striped">
+            <h:column>
+                <f:facet name="header">ID filmu</f:facet>
+                <h:outputText value="#{movie.movieID}"/>
+            </h:column>
+            <h:column>
+                <f:facet name="header">Tytuł filmu</f:facet>
+                <h:outputText value="#{movie.movieTitle}"/>
+            </h:column>
+            <h:column>
+                <f:facet name="header">Cena biletu</f:facet>
+                <h:outputText value="#{movie.movieBasePrice}"/>
+            </h:column>
+            <h:column>
+                <f:facet name="header">Numer sali kinowej</f:facet>
+                <h:outputText value="#{movie.scrRoomNumber}"/>
+            </h:column>
+            <h:column>
+                <f:facet name="header">Liczba wolnych miejsc</f:facet>
+                <h:outputText value="#{movie.numberOfAvailableSeats}"/>
+            </h:column>
+        </h:dataTable>
+
+        <h:outputLink value="show-movies.xhtml">Wyświetlenie wszystkich filmów</h:outputLink>
+    </ui:define>
+
+</ui:composition>

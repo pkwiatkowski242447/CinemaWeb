@@ -10,6 +10,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import pl.pas.gr3.cinema.exceptions.services.crud.client.ClientServiceClientNotFoundException;
 import pl.pas.gr3.cinema.exceptions.services.crud.client.ClientServiceCreateClientDuplicateLoginException;
+import pl.pas.gr3.cinema.model.users.User;
 import pl.pas.gr3.dto.TicketDTO;
 import pl.pas.gr3.dto.users.ClientDTO;
 import pl.pas.gr3.dto.users.ClientInputDTO;
@@ -44,7 +45,7 @@ public class ClientController implements UserServiceInterface<Client> {
         try {
             Client client = this.clientService.create(clientInputDTO.getClientLogin(), clientInputDTO.getClientPassword());
 
-            Set<ConstraintViolation<Client>> violationSet = validator.validate(client);
+            Set<ConstraintViolation<User>> violationSet = validator.validate(client);
             List<String> messages = violationSet.stream().map(ConstraintViolation::getMessage).toList();
             if (!violationSet.isEmpty()) {
                 return ResponseEntity.badRequest().contentType(MediaType.APPLICATION_JSON).body(messages);
