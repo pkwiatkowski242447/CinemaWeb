@@ -60,6 +60,7 @@ public class ReadAllMoviesBean implements Serializable {
             return "deleteMovieAction";
         } catch (MovieReadException exception) {
             message = exception.getMessage();
+            this.findAllMovies();
             return null;
         }
     }

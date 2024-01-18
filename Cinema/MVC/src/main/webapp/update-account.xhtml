@@ -51,7 +51,7 @@
             <br />
 
             <h:commandButton value="Zaktualizuj" styleClass="btn btn-primary" action="#{updateClientBean.updateClient()}"/>
-            <h:commandButton value="Anuluj" styleClass="btn btn-primary" action="listOfAllClients" immediate="true"/>
+            <h:commandButton value="Anuluj" styleClass="btn btn-danger" action="listOfAllClients" immediate="true"/>
         </h:form>
 
         <h:outputText id="outputMessage" value="#{updateClientBean.message != null ? updateClientBean.message : ''}" />

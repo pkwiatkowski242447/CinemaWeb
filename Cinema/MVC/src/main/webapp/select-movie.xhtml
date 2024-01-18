@@ -23,7 +23,7 @@
 
     <ui:define name="content">
         <h3>Tworzenie biletu</h3>
-        <h6>Wybierz film</h6>
+        <h5>Wybierz film</h5>
 
         <h:form>
             <h:dataTable value="#{createTicketBean.listOfMovieDTOs}"
@@ -49,10 +49,17 @@
                 <h:column>
                     <f:facet name="header">Akcja</f:facet>
                     <h:commandButton styleClass="btn btn-primary" value="Wybierz" rendered="#{movie.numberOfAvailableSeats != 0}" action="#{createTicketBean.selectMovie(movie)}"/>
-                    <h:commandButton styleClass="btn btn-primary" value="Wybierz" rendered="#{movie.numberOfAvailableSeats == 0}" action="#"/>
+                    <h:commandButton styleClass="btn btn-primary" value="Wybierz" rendered="#{movie.numberOfAvailableSeats == 0}" />
                 </h:column>
             </h:dataTable>
         </h:form>
+
+        <h:panelGroup rendered="#{empty createTicketBean.listOfMovieDTOs}">
+            <h5><h:outputText value="#{createTicketBean.message}"/></h5>
+            <h:form>
+                <h:commandButton styleClass="btn btn-danger" value="Anuluj" action="listOfAllTickets" immediate="true"/>
+            </h:form>
+        </h:panelGroup>
     </ui:define>
 
 </ui:composition>

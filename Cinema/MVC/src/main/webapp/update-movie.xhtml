@@ -57,7 +57,7 @@
             <br />
 
             <h:commandButton value="Zaktualizuj" styleClass="btn btn-primary" action="#{updateMovieBean.updateMovie()}"/>
-            <h:commandButton value="Anuluj" styleClass="btn btn-primary" action="listOfAllMovies" immediate="true"/>
+            <h:commandButton value="Anuluj" styleClass="btn btn-danger" action="listOfAllMovies" immediate="true"/>
         </h:form>
 
         <h:outputText id="outputMessage" value="#{updateMovieBean.message != null ? updateMovieBean.message : ''}"/>

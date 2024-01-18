@@ -19,7 +19,7 @@ public class ISOLocalDateTimeConverter implements Converter<LocalDateTime> {
         try {
             return LocalDateTime.parse(s, DateTimeFormatter.ISO_LOCAL_DATE_TIME);
         } catch (DateTimeParseException exception) {
-            throw new ConverterException(exception.getMessage());
+            throw new ConverterException("Wpisany łańuch znaków %s nie jest prawidłowym obiektem LocalDateTime".formatted(s));
         }
     }
 

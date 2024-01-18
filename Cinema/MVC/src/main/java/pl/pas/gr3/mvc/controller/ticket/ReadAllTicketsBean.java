@@ -1,6 +1,7 @@
 package pl.pas.gr3.mvc.controller.ticket;
 
 import jakarta.annotation.PostConstruct;
+import jakarta.enterprise.context.RequestScoped;
 import jakarta.faces.view.ViewScoped;
 import jakarta.inject.Inject;
 import jakarta.inject.Named;
@@ -62,6 +63,7 @@ public class ReadAllTicketsBean implements Serializable {
             return "deleteTicketAction";
         } catch (TicketReadException exception) {
             message = exception.getMessage();
+            this.findAllTickets();
             return null;
         }
     }

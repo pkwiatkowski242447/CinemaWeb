@@ -1,10 +1,5 @@
 package pl.pas.gr3.mvc.controller.ticket;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import io.restassured.RestAssured;
-import io.restassured.http.ContentType;
-import io.restassured.response.Response;
-import io.restassured.specification.RequestSpecification;
 import jakarta.annotation.PostConstruct;
 import jakarta.enterprise.context.ConversationScoped;
 import jakarta.inject.Inject;
@@ -15,13 +10,17 @@ import lombok.Setter;
 import pl.pas.gr3.dto.MovieDTO;
 import pl.pas.gr3.dto.TicketInputDTO;
 import pl.pas.gr3.dto.users.ClientDTO;
-import pl.pas.gr3.mvc.constants.GeneralConstants;
+import pl.pas.gr3.mvc.dao.implementations.ClientDao;
+import pl.pas.gr3.mvc.dao.implementations.MovieDao;
+import pl.pas.gr3.mvc.dao.interfaces.IClientDao;
+import pl.pas.gr3.mvc.dao.interfaces.IMovieDao;
 import pl.pas.gr3.mvc.exceptions.beans.tickets.TicketCreateException;
+import pl.pas.gr3.mvc.exceptions.daos.client.ClientDaoReadException;
+import pl.pas.gr3.mvc.exceptions.daos.movie.MovieDaoReadException;
 
 import java.io.Serializable;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
-import java.util.ArrayList;
 import java.util.List;
 
 @Getter @Setter
@@ -39,13 +38,18 @@ public class CreateTicketBean implements Serializable {
     private List<ClientDTO> listOfClientDTOs;
     private List<MovieDTO> listOfMovieDTOs;
 
+    private IClientDao clientDao;
+    private IMovieDao movieDao;
+
     @Inject
     private TicketControllerBean ticketControllerBean;
 
     @PostConstruct
     public void beanInit() {
-        listOfClientDTOs = this.findAllClients();
-        listOfMovieDTOs = this.findAllMovies();
+        clientDao = new ClientDao();
+        movieDao = new MovieDao();
+        this.findAllClients();
+        this.findAllMovies();
         clientDTO = ticketControllerBean.getSelectedClientDTO();
         movieDTO = ticketControllerBean.getSelectedMovieDTO();
     }
@@ -60,46 +64,20 @@ public class CreateTicketBean implements Serializable {
         }
     }
 
-    public List<ClientDTO> findAllClients() {
-        List<ClientDTO> listOfClientDTOs = new ArrayList<>();
-        String path = GeneralConstants.CLIENTS_BASE_URL + "/all";
-
-        RequestSpecification requestSpecification = RestAssured.given();
-        requestSpecification.accept(ContentType.JSON);
-
-        Response response = requestSpecification.get(path);
-
-        ObjectMapper objectMapper = new ObjectMapper();
-
-        if (response.statusCode() == 200) {
-            listOfClientDTOs = new ArrayList<>(response.jsonPath().getList(".", ClientDTO.class));
-        } else if (response.statusCode() == 404) {
-            message = "Nie znaleziono żadnych klientów";
-        } else {
-            message = "Doszło do błędu podczas odczytu listy klientów";
+    public void findAllClients() {
+        try {
+            listOfClientDTOs = clientDao.findAll();
+        } catch (ClientDaoReadException exception) {
+            message = exception.getMessage();
         }
-        return listOfClientDTOs;
     }
 
-    public List<MovieDTO> findAllMovies() {
-        List<MovieDTO> listOfMoviesDTOs = new ArrayList<>();
-        String path = GeneralConstants.MOVIES_BASE_URL + "/all";
-
-        RequestSpecification requestSpecification = RestAssured.given();
-        requestSpecification.accept(ContentType.JSON);
-
-        Response response = requestSpecification.get(path);
-
-        ObjectMapper objectMapper = new ObjectMapper();
-
-        if (response.statusCode() == 200) {
-            listOfMoviesDTOs = new ArrayList<>(response.jsonPath().getList(".", MovieDTO.class));
-        } else if (response.statusCode() == 404) {
-            message = "Nie znaleziono żadnych filmów";
-        } else {
-            message = "Doszło do błędu podczas odczytu listy filmów";
+    public void findAllMovies() {
+        try {
+            listOfMovieDTOs = movieDao.findAll();
+        } catch (MovieDaoReadException exception) {
+            message = exception.getMessage();
         }
-        return listOfMoviesDTOs;
     }
 
     public String selectClient(ClientDTO clientDTO) {

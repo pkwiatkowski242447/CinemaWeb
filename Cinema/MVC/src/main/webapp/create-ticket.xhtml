@@ -24,7 +24,7 @@
 
     <ui:define name="content">
         <h3>Tworzenie biletu</h3>
-        <h6>Wprowadzenie szczegółów biletu</h6>
+        <h5>Wprowadzenie szczegółów biletu</h5>
 
         <h:form>
             <div class="form-group">
@@ -32,6 +32,7 @@
                 <h:inputText styleClass="form-control" id="movieDateTimeInput" value="#{createTicketBean.movieDateTime}" required="true">
                     <f:converter converterId="isoLocalDateTimeConverter"/>
                 </h:inputText>
+                <small id="movieDateTimeHelp" class="form-text text-muted"><h:message for="movieDateTimeInput"/></small>
             </div>
 
             <h:commandButton styleClass="btn btn-primary" value="Utwórz bilet" action="#{createTicketBean.createTicket()}"/>
