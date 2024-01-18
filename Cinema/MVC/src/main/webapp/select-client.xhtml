@@ -11,7 +11,8 @@
     <ui:define name="top">
         <ol class="breadcrumb">
             <li class="breadcrumb-item"><h:outputLink value="index.xhtml">Strona główna</h:outputLink></li>
-            <li class="breadcrumb-item active">Klienci</li>
+            <li class="breadcrumb-item active">Rezerwacja biletu</li>
+            <li class="breadcrumb-item active">Wybór klienta</li>
         </ol>
     </ui:define>
 
@@ -20,13 +21,14 @@
     </ui:define>
 
     <ui:define name="content">
-        <h2>Lista wszystkich dostępnych klientów</h2>
+        <h3>Tworzenie biletu</h3>
+        <h5>Wybierz klienta</h5>
 
         <h:form>
-            <h:dataTable value="#{readAllClientsBean.listOfClients}"
+            <h:dataTable value="#{createTicketBean.listOfClientDTOs}"
+                         rendered="#{not empty createTicketBean.listOfClientDTOs}"
                          var="client"
-                         styleClass="table table-hover table-striped"
-                         rendered="#{not empty readAllClientsBean.listOfClients}">
+                         styleClass="table table-striped table-hover">
                 <h:column>
                     <f:facet name="header">ID</f:facet>
                     <h:outputText value="#{client.clientID}" />
@@ -42,14 +44,10 @@
                 </h:column>
                 <h:column>
                     <f:facet name="header">Akcja</f:facet>
-                    <h:commandButton styleClass="btn btn-primary" value="Aktywuj" rendered="#{client.clientStatusActive eq false}" action="#{readAllClientsBean.activateClient(client)}" />
-                    <h:commandButton styleClass="btn btn-primary" value="Dezaktywuj" rendered="#{client.clientStatusActive eq true}" action="#{readAllClientsBean.deactivateClient(client)}" />
+                    <h:commandButton styleClass="btn btn-primary" value="Wybierz" rendered="#{client.clientStatusActive eq true}" action="#{createTicketBean.selectClient(client)}" />
+                    <h:commandButton styleClass="btn btn-primary disabled" value="Wybierz" rendered="#{client.clientStatusActive eq false}" action="#" />
                 </h:column>
             </h:dataTable>
-
-            <h:panelGroup rendered="#{readAllClientsBean.operationStatusCode != 200}">
-                <h5><h:outputText value="#{readAllClientsBean.message}"/></h5>
-            </h:panelGroup>
         </h:form>
     </ui:define>
 

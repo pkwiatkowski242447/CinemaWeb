@@ -11,7 +11,8 @@
     <ui:define name="top">
         <ol class="breadcrumb">
             <li class="breadcrumb-item"><h:outputLink value="index.xhtml">Strona główna</h:outputLink></li>
-            <li class="breadcrumb-item active">Filmy</li>
+            <li class="breadcrumb-item"><h:outputLink value="show-movies.xhtml">Filmy</h:outputLink></li>
+            <li class="breadcrumb-item active">Usuwanie</li>
         </ol>
     </ui:define>
 
@@ -20,13 +21,13 @@
     </ui:define>
 
     <ui:define name="content">
-        <h2>Lista wszystkich filmów</h2>
-
         <h:form>
-            <h:dataTable value="#{createTicketBean.listOfMovieDTOs}"
+            <h3>Czy na pewno chcesz usunąć wybrany film?</h3>
+
+            <h5>Szczegóły filmu</h5>
+            <h:dataTable value="#{deleteMovieBean.movieControllerBean.selectedMovie}"
                          var="movie"
-                         styleClass="table table-hover table-striped"
-                         rendered="#{not empty createTicketBean.listOfMovieDTOs}">
+                         styleClass="table table-hover table-striped">
                 <h:column>
                     <f:facet name="header">ID filmu</f:facet>
                     <h:outputText value="#{movie.movieID}"/>
@@ -47,16 +48,13 @@
                     <f:facet name="header">Liczba wolnych miejsc</f:facet>
                     <h:outputText value="#{movie.numberOfAvailableSeats}"/>
                 </h:column>
-                <h:column>
-                    <f:facet name="header">Usuń</f:facet>
-                    <h:commandButton styleClass="btn btn-primary" value="  X  " action="#{readAllMoviesBean.deleteMovie(movie)}"/>
-                </h:column>
             </h:dataTable>
-        </h:form>
 
-        <h:panelGroup id="outputMessage" rendered="#{readAllMoviesBean.operationStatusCode != 200}">
-            <h5><h:outputText value="#{readAllMoviesBean.message}"/> </h5>
-        </h:panelGroup>
+            <h:commandButton styleClass="btn btn-primary width-10-button" value="Tak"
+                             action="#{deleteMovieBean.deleteMovie()}"/>
+            <h:commandButton styleClass="btn btn-danger width-10-button" value="Nie" action="listOfAllMovies"
+                             immediate="true"/>
+        </h:form>
     </ui:define>
 
 </ui:composition>

@@ -10,6 +10,8 @@
     <ui:define name="top">
         <ol class="breadcrumb">
             <li class="breadcrumb-item"><h:outputLink value="index.xhtml">Strona główna</h:outputLink></li>
+            <li class="breadcrumb-item"><h:outputLink value="show-movies.xhtml">Filmy</h:outputLink></li>
+            <li class="breadcrumb-item">Usuwanie</li>
             <li class="breadcrumb-item active">Błąd</li>
         </ol>
     </ui:define>
@@ -21,7 +23,7 @@
     <ui:define name="content">
         <h3>Film nie mógł zostać usunięty.</h3>
         <h5>Powód</h5>
-        <h:outputText value="#{movieBean.message}"/>
+        <h:outputText value="#{deleteMovieBean.movieControllerBean.message}"/>
     </ui:define>
 
 </ui:composition>

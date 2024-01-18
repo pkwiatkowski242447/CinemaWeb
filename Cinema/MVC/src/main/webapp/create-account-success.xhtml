@@ -11,6 +11,7 @@
     <ui:define name="top">
         <ol class="breadcrumb">
             <li class="breadcrumb-item"><h:outputLink value="index.xhtml">Strona główna</h:outputLink></li>
+            <li class="breadcrumb-item"><h:outputLink value="create-account.xhtml">Tworzenie konta</h:outputLink></li>
             <li class="breadcrumb-item active">Szczegóły konta</li>
         </ol>
     </ui:define>
@@ -23,7 +24,7 @@
         <h3>Konto klienta zostało utworzone</h3>
         <h5>Szczegóły</h5>
 
-        <h:dataTable value="#{createClientBean.createdClient}" var="client" styleClass="table table-hover table-striped">
+        <h:dataTable value="#{createClientBean.clientControllerBean.createdClient}" var="client" styleClass="table table-hover table-striped">
             <h:column>
                 <f:facet name="header">ID klienta</f:facet>
                 <h:outputText value="#{client.clientID}"/>

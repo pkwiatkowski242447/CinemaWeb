@@ -11,7 +11,7 @@
     <ui:define name="top">
         <ol class="breadcrumb">
             <li class="breadcrumb-item"><h:outputLink value="index.xhtml">Strona główna</h:outputLink></li>
-            <li class="breadcrumb-item active">Pokaż bilety</li>
+            <li class="breadcrumb-item active">Bilety</li>
         </ol>
     </ui:define>
 
@@ -23,8 +23,8 @@
         <h2>Lista wszystkich biletów</h2>
 
         <h:form>
-            <h:dataTable value="#{ticketBean.listOfTickets}"
-                         rendered="#{not empty ticketBean.listOfTickets}"
+            <h:dataTable value="#{readAllTicketsBean.listOfExtTickets}"
+                         rendered="#{not empty readAllTicketsBean.listOfExtTickets}"
                          var="record"
                          styleClass="table table-hover table-striped">
                 <h:column>
@@ -33,7 +33,7 @@
                 </h:column>
                 <h:column>
                     <f:facet name="header">Czas emsji filmu</f:facet>
-                    <h:outputText value="#{record.ticket.movieTime}"/>
+                    <h:outputText value="#{record.ticket.movieTime}" converter="localMovieDateTimeConverter"/>
                 </h:column>
                 <h:column>
                     <f:facet name="header">Cena biletu</f:facet>
@@ -62,14 +62,14 @@
                 </h:column>
                 <h:column>
                     <f:facet name="header">Usuń</f:facet>
-                    <h:commandButton styleClass="btn btn-primary" value="  X  " action="#{ticketBean.deleteTicket(record)}" />
+                    <h:commandButton styleClass="btn btn-primary" value="  X  " action="#{readAllTicketsBean.deleteTicket(record.ticket)}" />
                 </h:column>
             </h:dataTable>
-
-            <h:panelGroup rendered="#{ticketBean.operationStatusCode != 200}">
-                <h5><h:outputText value="#{ticketBean.message}"/></h5>
-            </h:panelGroup>
         </h:form>
+
+        <h:panelGroup rendered="#{readAllTicketsBean.operationStatusCode != 200}">
+            <h5><h:outputText value="#{readAllTicketsBean.message}"/></h5>
+        </h:panelGroup>
     </ui:define>
 
 </ui:composition>

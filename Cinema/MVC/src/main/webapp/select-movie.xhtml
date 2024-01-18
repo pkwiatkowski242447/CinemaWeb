@@ -11,7 +11,9 @@
     <ui:define name="top">
         <ol class="breadcrumb">
             <li class="breadcrumb-item"><h:outputLink value="index.xhtml">Strona główna</h:outputLink></li>
-            <li class="breadcrumb-item active">Filmy</li>
+            <li class="breadcrumb-item active">Rezerwacja biletu</li>
+            <li class="breadcrumb-item active">Wybór klienta</li>
+            <li class="breadcrumb-item active">Wybór filmu</li>
         </ol>
     </ui:define>
 
@@ -20,13 +22,14 @@
     </ui:define>
 
     <ui:define name="content">
-        <h2>Lista wszystkich filmów</h2>
+        <h3>Tworzenie biletu</h3>
+        <h6>Wybierz film</h6>
 
         <h:form>
             <h:dataTable value="#{createTicketBean.listOfMovieDTOs}"
+                         rendered="#{not empty createTicketBean.listOfMovieDTOs}"
                          var="movie"
-                         styleClass="table table-hover table-striped"
-                         rendered="#{not empty createTicketBean.listOfMovieDTOs}">
+                         styleClass="table table-hover table-striped">
                 <h:column>
                     <f:facet name="header">ID filmu</f:facet>
                     <h:outputText value="#{movie.movieID}"/>
@@ -48,15 +51,12 @@
                     <h:outputText value="#{movie.numberOfAvailableSeats}"/>
                 </h:column>
                 <h:column>
-                    <f:facet name="header">Usuń</f:facet>
-                    <h:commandButton styleClass="btn btn-primary" value="  X  " action="#{readAllMoviesBean.deleteMovie(movie)}"/>
+                    <f:facet name="header">Akcja</f:facet>
+                    <h:commandButton styleClass="btn btn-primary" value="Wybierz" rendered="#{movie.numberOfAvailableSeats != 0}" action="#{createTicketBean.selectMovie(movie)}"/>
+                    <h:commandButton styleClass="btn btn-primary" value="Wybierz" rendered="#{movie.numberOfAvailableSeats == 0}" action="#"/>
                 </h:column>
             </h:dataTable>
         </h:form>
-
-        <h:panelGroup id="outputMessage" rendered="#{readAllMoviesBean.operationStatusCode != 200}">
-            <h5><h:outputText value="#{readAllMoviesBean.message}"/> </h5>
-        </h:panelGroup>
     </ui:define>
 
 </ui:composition>

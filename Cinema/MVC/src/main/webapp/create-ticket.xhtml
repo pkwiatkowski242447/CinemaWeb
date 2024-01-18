@@ -5,14 +5,15 @@
 
 <ui:composition xmlns:ui="http://xmlns.jcp.org/jsf/facelets"
                 xmlns:h="http://xmlns.jcp.org/jsf/html"
-                xmlns:f="http://xmlns.jcp.org/jsf/core"
-                xmlns:p="http://xmlns.jcp.org/jsf/passthrough"
                 template="templates/template.xhtml">
 
     <ui:define name="top">
         <ol class="breadcrumb">
             <li class="breadcrumb-item"><h:outputLink value="index.xhtml">Strona główna</h:outputLink></li>
+            <li class="breadcrumb-item active">Rezerwacja biletu</li>
             <li class="breadcrumb-item active">Wybór klienta</li>
+            <li class="breadcrumb-item active">Wybór filmu</li>
+            <li class="breadcrumb-item active">Szczegóły biletu</li>
         </ol>
     </ui:define>
 
@@ -21,74 +22,18 @@
     </ui:define>
 
     <ui:define name="content">
-        <h2>Tworzenie biletu</h2>
+        <h3>Tworzenie biletu</h3>
+        <h6>Wprowadzenie szczegółów biletu</h6>
+
         <h:form>
             <div class="form-group">
-                <h:outputLabel for="clientSelect">Wybór klienta</h:outputLabel>
-                <h:selectOneListbox id="clientSelect"
-                                    value="#{createTicketBean.clientDTO}"
-                                    required="true"
-                                    size="1"
-                                    styleClass="form-control">
-                    <f:selectItems value="#{createTicketBean.findAllClients()}"
-                                   var="client"
-                                   itemValue="${client}"
-                                   itemDisabled="#{client.clientStatusActive eq false}"
-                                   itemLabel="#{client.clientLogin}"/>
-                </h:selectOneListbox>
-            </div>
-
-            <br />
-
-            <div class="form-group">
-                <h:outputLabel for="movieSelect">Wybór filmu</h:outputLabel>
-                <h:selectOneListbox id="movieSelect"
-                                    value="#{createTicketBean.movieDTO}"
-                                    required="true"
-                                    size="1"
-                                    styleClass="form-control">
-                    <f:selectItems value="#{createTicketBean.findAllMovies()}"
-                                   var="movie"
-                                   itemValue="${movie}"
-                                   itemLabel="#{movie.movieTitle}"/>
-                </h:selectOneListbox>
-            </div>
-
-            <br />
-
-            <div class="form-group">
                 <h:outputLabel for="movieDateTimeInput">Data i czas seansu</h:outputLabel>
-                <h:inputText styleClass="form-control" p:type="local-datetime" id="movieDateTimeInput" value="#{createTicketBean.movieDateTime}" required="true">
-                    <f:converter converterId="pl.pas.gr3.mvc.converters.LocalDateTimeConverter"/>
-                </h:inputText>
-                <small id="movieDateTimeHelp" class="form-text text-muted"><h:message for="movieDateTimeInput"/></small>
+                <h:inputText styleClass="form-control" id="movieDateTimeInput" value="#{createTicketBean.movieDateTime}" required="true"/>
             </div>
-            <br />
-
-            <!--
-            <div class="form-group">
-                <h:outputLabel for="movieDateInput">Data seansu</h:outputLabel>
-                <h:inputText styleClass="form-control" id="movieDateInput" value="#{createTicketBean.movieDate}" required="true">
-                    <f:convertDateTime type="date" pattern="dd-MM-yyyy"/>
-                </h:inputText>
-                <small id="movieDateHelp" class="form-text text-muted"><h:message for="movieDateInput"/></small>
-            </div>
-            <br />
-
-            <div class="form-group">
-                <h:outputLabel for="movieTimeInput">Czas seansu</h:outputLabel>
-                <h:inputText styleClass="form-control" id="movieTimeInput" value="#{createTicketBean.movieTime}" required="true">
-                    <f:convertDateTime type="time" pattern="HH:mm:ss"/>
-                </h:inputText>
-                <small id="movieTimeHelp" class="form-text text-muted"><h:message for="movieTimeInput"/></small>
-            </div>
-            <br />
-            -->
 
             <h:commandButton styleClass="btn btn-primary" value="Utwórz bilet" action="#{createTicketBean.createTicket()}"/>
+            <h:commandButton styleClass="btn btn-danger" value="Anuluj" action="listOfAllTickets" immediate="true"/>
         </h:form>
-
-        <h:outputText id="outputMessage" value="#{createTicketBean.message}"/>
     </ui:define>
 
 </ui:composition>
