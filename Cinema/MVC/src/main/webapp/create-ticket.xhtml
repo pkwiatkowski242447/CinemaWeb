@@ -5,6 +5,7 @@
 
 <ui:composition xmlns:ui="http://xmlns.jcp.org/jsf/facelets"
                 xmlns:h="http://xmlns.jcp.org/jsf/html"
+                xmlns:f="http://java.sun.com/jsf/core"
                 template="templates/template.xhtml">
 
     <ui:define name="top">
@@ -28,7 +29,9 @@
         <h:form>
             <div class="form-group">
                 <h:outputLabel for="movieDateTimeInput">Data i czas seansu</h:outputLabel>
-                <h:inputText styleClass="form-control" id="movieDateTimeInput" value="#{createTicketBean.movieDateTime}" required="true"/>
+                <h:inputText styleClass="form-control" id="movieDateTimeInput" value="#{createTicketBean.movieDateTime}" required="true">
+                    <f:converter converterId="isoLocalDateTimeConverter"/>
+                </h:inputText>
             </div>
 
             <h:commandButton styleClass="btn btn-primary" value="Utwórz bilet" action="#{createTicketBean.createTicket()}"/>

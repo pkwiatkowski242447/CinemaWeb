@@ -1,4 +1,4 @@
-package pl.pas.gr3.mvc.exceptions.movies;
+package pl.pas.gr3.mvc.exceptions.beans.movies;
 
 public class MovieDeleteException extends MovieOperationException {
     public MovieDeleteException(String message) {

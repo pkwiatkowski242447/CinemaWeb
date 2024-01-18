@@ -7,7 +7,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 import pl.pas.gr3.dto.users.ClientInputDTO;
-import pl.pas.gr3.mvc.exceptions.clients.ClientCreateException;
+import pl.pas.gr3.mvc.exceptions.beans.clients.ClientCreateException;
 
 import java.io.Serializable;
 

@@ -1,4 +1,4 @@
-package pl.pas.gr3.mvc.exceptions.clients;
+package pl.pas.gr3.mvc.exceptions.beans.clients;
 
 public class ClientOperationException extends Exception {
     public ClientOperationException(String message) {

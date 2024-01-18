@@ -1,70 +1,78 @@
 package pl.pas.gr3.mvc.controller.client;
 
-import io.restassured.RestAssured;
-import io.restassured.http.ContentType;
-import io.restassured.response.Response;
-import io.restassured.specification.RequestSpecification;
 import jakarta.annotation.PostConstruct;
-import jakarta.enterprise.context.ConversationScoped;
+import jakarta.faces.view.ViewScoped;
 import jakarta.inject.Inject;
 import jakarta.inject.Named;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 import pl.pas.gr3.dto.users.ClientDTO;
-import pl.pas.gr3.mvc.constants.GeneralConstants;
+import pl.pas.gr3.mvc.dao.implementations.ClientDao;
+import pl.pas.gr3.mvc.dao.interfaces.IClientDao;
+import pl.pas.gr3.mvc.exceptions.beans.clients.ClientActivateException;
+import pl.pas.gr3.mvc.exceptions.beans.clients.ClientDeactivateException;
+import pl.pas.gr3.mvc.exceptions.beans.clients.ClientReadException;
+import pl.pas.gr3.mvc.exceptions.daos.client.ClientDaoReadException;
 
 import java.io.Serializable;
-import java.util.ArrayList;
 import java.util.List;
 
 @Getter @Setter
 @NoArgsConstructor
-@ConversationScoped
+@ViewScoped
 @Named
 public class ReadAllClientsBean implements Serializable {
 
     private List<ClientDTO> listOfClients;
     private String message;
-    private int operationStatusCode;
+
+    private IClientDao clientDao;
 
     @Inject
     private ClientControllerBean clientControllerBean;
 
     @PostConstruct
     public void beanInit() {
-        listOfClients = this.findAllClients();
+        clientDao = new ClientDao();
+        this.findAllClients();
     }
 
-    public List<ClientDTO> findAllClients() {
-        List<ClientDTO> listOfClientDTOs = new ArrayList<>();
-
-        String path = GeneralConstants.CLIENTS_BASE_URL + "/all";
-
-        RequestSpecification requestSpecification = RestAssured.given();
-        requestSpecification.accept(ContentType.JSON);
-
-        Response response = requestSpecification.get(path);
-
-        operationStatusCode = response.statusCode();
-
-        if (response.statusCode() == 200) {
-            listOfClientDTOs = new ArrayList<>(response.jsonPath().getList(".", ClientDTO.class));
-        } else if (response.statusCode() == 404) {
-            message = "Nie znaleziono żadnych klientów";
-        } else {
-            message = "Wystąpił błąd podczas pobierania klientów";
+    public void findAllClients() {
+        try {
+            listOfClients = clientDao.findAll();
+        } catch (ClientDaoReadException exception) {
+            message = exception.getMessage();
         }
-        return listOfClientDTOs;
     }
 
     public String activateClient(ClientDTO clientDTO) {
-        clientControllerBean.activateClient(clientDTO);
-        return "listOfAllClients";
+        try {
+            clientControllerBean.activateClient(clientDTO);
+            return "listOfAllClients";
+        } catch (ClientActivateException exception) {
+            message = exception.getMessage();
+            return null;
+        }
     }
 
     public String deactivateClient(ClientDTO clientDTO) {
-        clientControllerBean.deactivateClient(clientDTO);
-        return "listOfAllClients";
+        try {
+            clientControllerBean.deactivateClient(clientDTO);
+            return "listOfAllClients";
+        } catch (ClientDeactivateException exception) {
+            message = exception.getMessage();
+            return null;
+        }
+    }
+
+    public String updateClient(ClientDTO clientDTO) {
+        try {
+            clientControllerBean.readClientForChange(clientDTO);
+            return "updateClientAction";
+        } catch (ClientReadException exception) {
+            message = exception.getMessage();
+            return null;
+        }
     }
 }

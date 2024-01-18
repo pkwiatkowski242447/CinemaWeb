@@ -8,7 +8,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 import pl.pas.gr3.dto.MovieDTO;
-import pl.pas.gr3.mvc.exceptions.movies.MovieDeleteException;
+import pl.pas.gr3.mvc.exceptions.beans.movies.MovieDeleteException;
 
 import java.io.Serializable;
 

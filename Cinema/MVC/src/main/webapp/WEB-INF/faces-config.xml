@@ -92,6 +92,24 @@
             <to-view-id>/create-ticket-error.xhtml</to-view-id>
             <redirect />
         </navigation-case>
+
+        <navigation-case>
+            <from-outcome>updateClientAction</from-outcome>
+            <to-view-id>/update-account.xhtml</to-view-id>
+            <redirect />
+        </navigation-case>
+
+        <navigation-case>
+            <from-outcome>updateMovieAction</from-outcome>
+            <to-view-id>/update-movie.xhtml</to-view-id>
+            <redirect />
+        </navigation-case>
+
+        <navigation-case>
+            <from-outcome>updateTicketAction</from-outcome>
+            <to-view-id>/update-ticket.xhtml</to-view-id>
+            <redirect />
+        </navigation-case>
     </navigation-rule>
 
 </faces-config>

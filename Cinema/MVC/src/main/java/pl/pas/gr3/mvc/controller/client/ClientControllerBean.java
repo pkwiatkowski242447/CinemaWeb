@@ -6,6 +6,7 @@ import io.restassured.RestAssured;
 import io.restassured.http.ContentType;
 import io.restassured.response.Response;
 import io.restassured.specification.RequestSpecification;
+import jakarta.annotation.PostConstruct;
 import jakarta.enterprise.context.SessionScoped;
 import jakarta.inject.Named;
 import lombok.Getter;
@@ -13,8 +14,12 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 import pl.pas.gr3.dto.users.ClientDTO;
 import pl.pas.gr3.dto.users.ClientInputDTO;
+import pl.pas.gr3.dto.users.ClientPasswordDTO;
 import pl.pas.gr3.mvc.constants.GeneralConstants;
-import pl.pas.gr3.mvc.exceptions.clients.ClientCreateException;
+import pl.pas.gr3.mvc.dao.implementations.ClientDao;
+import pl.pas.gr3.mvc.dao.interfaces.IClientDao;
+import pl.pas.gr3.mvc.exceptions.beans.clients.*;
+import pl.pas.gr3.mvc.exceptions.daos.client.*;
 
 import java.io.Serializable;
 
@@ -25,50 +30,56 @@ import java.io.Serializable;
 public class ClientControllerBean implements Serializable {
 
     private ClientDTO createdClient;
+    private ClientDTO selectedClient;
 
     private String message;
+
+    private IClientDao clientDao;
+
+    @PostConstruct
+    public void beanInit() {
+        clientDao = new ClientDao();
+    }
 
     // Actions
 
     public void createClient(ClientInputDTO clientInputDTO) throws ClientCreateException {
-        String path = GeneralConstants.CLIENTS_BASE_URL;
-        ObjectMapper objectMapper = new ObjectMapper();
         try {
-            String jsonPayload = objectMapper.writeValueAsString(clientInputDTO);
-            RequestSpecification requestSpecification = RestAssured.given();
-            requestSpecification.contentType(ContentType.JSON);
-            requestSpecification.body(jsonPayload);
-
-            Response response = requestSpecification.post(path);
-
-            if (response.statusCode() == 201) {
-                createdClient = objectMapper.readValue(response.getBody().asString(), ClientDTO.class);
-            } else if (response.statusCode() == 409) {
-                throw new ClientCreateException("Użytkownik o podanym loginie już istnieje.");
-            } else {
-                throw new ClientCreateException("Podano nieprawidłowe dane.");
-            }
-
-        } catch (JsonProcessingException exception) {
-            throw new ClientCreateException("W trakcie tworzenia klienta doszło do błędu.");
+            createdClient = clientDao.create(clientInputDTO);
+        } catch (ClientDaoCreateException exception) {
+            throw new ClientCreateException(exception.getMessage());
         }
     }
 
-    public void activateClient(ClientDTO clientDTO) {
-        String path = GeneralConstants.CLIENTS_BASE_URL + "/" + clientDTO.getClientID() + "/activate";
-
-        RequestSpecification requestSpecification = RestAssured.given();
-        requestSpecification.body(ContentType.JSON);
-
-        Response response = requestSpecification.post(path);
+    public void readClientForChange(ClientDTO clientDTO) throws ClientReadException {
+        try {
+            selectedClient = clientDao.readClientForChange(clientDTO);
+        } catch (ClientDaoReadException exception) {
+            throw new ClientReadException(exception.getMessage());
+        }
     }
 
-    public void deactivateClient(ClientDTO clientDTO) {
-        String path = GeneralConstants.CLIENTS_BASE_URL + "/" + clientDTO.getClientID() + "/deactivate";
+    public void updateClient(ClientPasswordDTO clientPasswordDTO) throws ClientUpdateException {
+        try {
+            clientDao.updateClient(clientPasswordDTO);
+        } catch (ClientDaoUpdateException exception) {
+            throw new ClientUpdateException(exception.getMessage());
+        }
+    }
 
-        RequestSpecification requestSpecification = RestAssured.given();
-        requestSpecification.body(ContentType.JSON);
+    public void activateClient(ClientDTO clientDTO) throws ClientActivateException {
+        try {
+            clientDao.activateClient(clientDTO);
+        } catch (ClientDaoActivateException exception) {
+            throw new ClientActivateException(exception.getMessage());
+        }
+    }
 
-        Response response = requestSpecification.post(path);
+    public void deactivateClient(ClientDTO clientDTO) throws ClientDeactivateException {
+        try {
+            clientDao.deactivateClient(clientDTO);
+        } catch (ClientDaoDeactivateException exception) {
+            throw new ClientDeactivateException(exception.getMessage());
+        }
     }
 }

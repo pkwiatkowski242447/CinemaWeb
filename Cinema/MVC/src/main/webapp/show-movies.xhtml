@@ -25,12 +25,8 @@
         <h:form>
             <h:dataTable value="#{createTicketBean.listOfMovieDTOs}"
                          var="movie"
-                         styleClass="table table-hover table-striped"
+                         styleClass="table table-hover table-striped table-bordered text-center"
                          rendered="#{not empty createTicketBean.listOfMovieDTOs}">
-                <h:column>
-                    <f:facet name="header">ID filmu</f:facet>
-                    <h:outputText value="#{movie.movieID}"/>
-                </h:column>
                 <h:column>
                     <f:facet name="header">Tytuł filmu</f:facet>
                     <h:outputText value="#{movie.movieTitle}"/>
@@ -48,13 +44,14 @@
                     <h:outputText value="#{movie.numberOfAvailableSeats}"/>
                 </h:column>
                 <h:column>
-                    <f:facet name="header">Usuń</f:facet>
-                    <h:commandButton styleClass="btn btn-primary" value="  X  " action="#{readAllMoviesBean.deleteMovie(movie)}"/>
+                    <f:facet name="header">Akcja</f:facet>
+                    <h:commandButton styleClass="btn btn-primary" value="Usuń" action="#{readAllMoviesBean.deleteMovie(movie)}"/>
+                    <h:commandButton styleClass="btn btn-primary" value="Edycja" action="#{readAllMoviesBean.updateMovie(movie)}"/>
                 </h:column>
             </h:dataTable>
         </h:form>
 
-        <h:panelGroup id="outputMessage" rendered="#{readAllMoviesBean.operationStatusCode != 200}">
+        <h:panelGroup id="outputMessage" rendered="#{not empty readAllMoviesBean.message}">
             <h5><h:outputText value="#{readAllMoviesBean.message}"/> </h5>
         </h:panelGroup>
     </ui:define>

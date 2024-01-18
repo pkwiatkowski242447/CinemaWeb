@@ -1,4 +1,4 @@
-package pl.pas.gr3.mvc.exceptions.tickets;
+package pl.pas.gr3.mvc.exceptions.beans.tickets;
 
 public class TicketUpdateException extends TicketOperationException {
     public TicketUpdateException(String message) {

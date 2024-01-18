@@ -1,63 +1,57 @@
 package pl.pas.gr3.mvc.controller.movie;
 
-import io.restassured.RestAssured;
-import io.restassured.http.ContentType;
-import io.restassured.response.Response;
-import io.restassured.specification.RequestSpecification;
 import jakarta.annotation.PostConstruct;
-import jakarta.enterprise.context.ConversationScoped;
-import jakarta.enterprise.context.RequestScoped;
+import jakarta.faces.view.ViewScoped;
 import jakarta.inject.Inject;
 import jakarta.inject.Named;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 import pl.pas.gr3.dto.MovieDTO;
-import pl.pas.gr3.mvc.constants.GeneralConstants;
-import pl.pas.gr3.mvc.exceptions.movies.MovieReadException;
+import pl.pas.gr3.mvc.dao.implementations.MovieDao;
+import pl.pas.gr3.mvc.dao.interfaces.IMovieDao;
+import pl.pas.gr3.mvc.exceptions.beans.movies.MovieReadException;
+import pl.pas.gr3.mvc.exceptions.daos.movie.MovieDaoReadException;
 
 import java.io.Serializable;
-import java.util.ArrayList;
 import java.util.List;
 
 @Getter @Setter
 @NoArgsConstructor
-@ConversationScoped
+@ViewScoped
 @Named
 public class ReadAllMoviesBean implements Serializable {
 
     private List<MovieDTO> listOfMovieDTOs;
     private String message;
-    private int operationStatusCode;
+
+    private IMovieDao movieDao;
 
     @Inject
     private MovieControllerBean movieControllerBean;
 
     @PostConstruct
     public void beanInit() {
-        listOfMovieDTOs = this.findAllMovies();
+        movieDao = new MovieDao();
+        this.findAllMovies();
     }
 
-    public List<MovieDTO> findAllMovies() {
-        List<MovieDTO> listOfMoviesDTOs = new ArrayList<>();
-
-        String path = GeneralConstants.MOVIES_BASE_URL + "/all";
-
-        RequestSpecification requestSpecification = RestAssured.given();
-        requestSpecification.accept(ContentType.JSON);
-
-        Response response = requestSpecification.get(path);
-
-        operationStatusCode = response.statusCode();
-
-        if (response.statusCode() == 200) {
-            listOfMoviesDTOs = new ArrayList<>(response.jsonPath().getList(".", MovieDTO.class));
-        } else if (response.statusCode() == 404) {
-            message = "Nie znaleziono żadnych filmów";
-        } else {
-            message = "Wystąpił błąd podczas pobierania filmów";
+    public void findAllMovies() {
+        try {
+            listOfMovieDTOs = movieDao.findAll();
+        } catch (MovieDaoReadException exception) {
+            message = exception.getMessage();
         }
-        return listOfMoviesDTOs;
+    }
+
+    public String updateMovie(MovieDTO movieDTO) {
+        try {
+            movieControllerBean.readMovieForChange(movieDTO);
+            return "updateMovieAction";
+        } catch (MovieReadException exception) {
+            message = exception.getMessage();
+            return null;
+        }
     }
 
     public String deleteMovie(MovieDTO movieDTO) {

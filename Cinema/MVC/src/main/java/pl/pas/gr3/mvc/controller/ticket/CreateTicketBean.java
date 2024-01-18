@@ -16,13 +16,13 @@ import pl.pas.gr3.dto.MovieDTO;
 import pl.pas.gr3.dto.TicketInputDTO;
 import pl.pas.gr3.dto.users.ClientDTO;
 import pl.pas.gr3.mvc.constants.GeneralConstants;
-import pl.pas.gr3.mvc.exceptions.tickets.TicketCreateException;
+import pl.pas.gr3.mvc.exceptions.beans.tickets.TicketCreateException;
 
 import java.io.Serializable;
 import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.UUID;
 
 @Getter @Setter
 @NoArgsConstructor
@@ -32,7 +32,7 @@ public class CreateTicketBean implements Serializable {
 
     private ClientDTO clientDTO;
     private MovieDTO movieDTO;
-    private String movieDateTime;
+    private LocalDateTime movieDateTime;
 
     private String message;
 
@@ -52,7 +52,7 @@ public class CreateTicketBean implements Serializable {
 
     public String createTicket() {
         try {
-            ticketControllerBean.createTicket(new TicketInputDTO(movieDateTime, clientDTO.getClientID(), movieDTO.getMovieID()));
+            ticketControllerBean.createTicket(new TicketInputDTO(movieDateTime.format(DateTimeFormatter.ISO_LOCAL_DATE_TIME), clientDTO.getClientID(), movieDTO.getMovieID()));
             return "ticketCreatedSuccessfully";
         } catch (TicketCreateException exception) {
             message = exception.getMessage();
