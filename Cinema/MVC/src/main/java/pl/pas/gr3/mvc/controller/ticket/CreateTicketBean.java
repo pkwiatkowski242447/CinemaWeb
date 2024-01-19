@@ -1,7 +1,7 @@
 package pl.pas.gr3.mvc.controller.ticket;
 
 import jakarta.annotation.PostConstruct;
-import jakarta.enterprise.context.ConversationScoped;
+import jakarta.faces.view.ViewScoped;
 import jakarta.inject.Inject;
 import jakarta.inject.Named;
 import lombok.Getter;
@@ -25,7 +25,7 @@ import java.util.List;
 
 @Getter @Setter
 @NoArgsConstructor
-@ConversationScoped
+@ViewScoped
 @Named
 public class CreateTicketBean implements Serializable {
 

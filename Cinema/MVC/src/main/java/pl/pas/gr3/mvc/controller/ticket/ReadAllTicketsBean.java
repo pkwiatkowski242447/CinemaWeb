@@ -16,6 +16,7 @@ import pl.pas.gr3.mvc.exceptions.beans.tickets.TicketReadException;
 import pl.pas.gr3.mvc.exceptions.daos.ticket.TicketDaoReadException;
 
 import java.io.Serializable;
+import java.util.ArrayList;
 import java.util.List;
 
 @Getter @Setter
@@ -24,8 +25,7 @@ import java.util.List;
 @Named
 public class ReadAllTicketsBean implements Serializable {
 
-    private List<TicketWithUserAndMovie> listOfExtTickets;
-
+    private List<TicketWithUserAndMovie> listOfExtTickets = new ArrayList<>();
     private String message;
 
     private ITicketDao ticketDao;
@@ -41,7 +41,12 @@ public class ReadAllTicketsBean implements Serializable {
 
     public void findAllTickets() {
         try {
-            listOfExtTickets = ticketDao.findAll();
+            List<TicketWithUserAndMovie> listOfTickets = ticketDao.findAll();
+            if (listOfTickets.isEmpty()) {
+                message = "Nie znaleziono żadnego biletu";
+            }
+            listOfExtTickets.clear();
+            listOfExtTickets = listOfTickets;
         } catch (TicketDaoReadException exception) {
             message = exception.getMessage();
         }

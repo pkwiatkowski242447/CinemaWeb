@@ -2,6 +2,7 @@ package pl.pas.gr3.mvc.controller.ticket;
 
 import jakarta.annotation.PostConstruct;
 import jakarta.enterprise.context.SessionScoped;
+import jakarta.faces.view.ViewScoped;
 import jakarta.inject.Named;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -24,8 +25,7 @@ import pl.pas.gr3.mvc.exceptions.daos.ticket.TicketDaoUpdateException;
 
 import java.io.Serializable;
 
-@Getter
-@Setter
+@Getter @Setter
 @NoArgsConstructor
 @SessionScoped
 @Named

@@ -1,6 +1,7 @@
 package pl.pas.gr3.mvc.controller.movie;
 
 import jakarta.annotation.PostConstruct;
+import jakarta.enterprise.context.RequestScoped;
 import jakarta.faces.view.ViewScoped;
 import jakarta.inject.Inject;
 import jakarta.inject.Named;
@@ -14,6 +15,7 @@ import pl.pas.gr3.mvc.exceptions.beans.movies.MovieReadException;
 import pl.pas.gr3.mvc.exceptions.daos.movie.MovieDaoReadException;
 
 import java.io.Serializable;
+import java.util.ArrayList;
 import java.util.List;
 
 @Getter @Setter
@@ -22,7 +24,7 @@ import java.util.List;
 @Named
 public class ReadAllMoviesBean implements Serializable {
 
-    private List<MovieDTO> listOfMovieDTOs;
+    private List<MovieDTO> listOfMovieDTOs = new ArrayList<>();
     private String message;
 
     private IMovieDao movieDao;
@@ -38,7 +40,12 @@ public class ReadAllMoviesBean implements Serializable {
 
     public void findAllMovies() {
         try {
-            listOfMovieDTOs = movieDao.findAll();
+            List<MovieDTO> listOfMovies = movieDao.findAll();
+            if (listOfMovies.isEmpty()) {
+                message = "Nie znaleziono żadnych filmów";
+            }
+            listOfMovieDTOs.clear();
+            listOfMovieDTOs = listOfMovies;
         } catch (MovieDaoReadException exception) {
             message = exception.getMessage();
         }

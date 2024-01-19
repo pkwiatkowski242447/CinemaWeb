@@ -2,6 +2,7 @@ package pl.pas.gr3.mvc.controller.movie;
 
 import jakarta.annotation.PostConstruct;
 import jakarta.enterprise.context.SessionScoped;
+import jakarta.faces.view.ViewScoped;
 import jakarta.inject.Named;
 import lombok.Getter;
 import lombok.NoArgsConstructor;

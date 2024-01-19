@@ -1,7 +1,7 @@
 package pl.pas.gr3.mvc.controller.ticket;
 
 import jakarta.annotation.PostConstruct;
-import jakarta.enterprise.context.ConversationScoped;
+import jakarta.enterprise.context.RequestScoped;
 import jakarta.inject.Inject;
 import jakarta.inject.Named;
 import lombok.Getter;
@@ -14,7 +14,7 @@ import java.io.Serializable;
 
 @Getter @Setter
 @NoArgsConstructor
-@ConversationScoped
+@RequestScoped
 @Named
 public class UpdateTicketBean implements Serializable {
 

@@ -1,11 +1,5 @@
 package pl.pas.gr3.mvc.controller.client;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import io.restassured.RestAssured;
-import io.restassured.http.ContentType;
-import io.restassured.response.Response;
-import io.restassured.specification.RequestSpecification;
 import jakarta.annotation.PostConstruct;
 import jakarta.enterprise.context.SessionScoped;
 import jakarta.inject.Named;
@@ -15,7 +9,6 @@ import lombok.Setter;
 import pl.pas.gr3.dto.users.ClientDTO;
 import pl.pas.gr3.dto.users.ClientInputDTO;
 import pl.pas.gr3.dto.users.ClientPasswordDTO;
-import pl.pas.gr3.mvc.constants.GeneralConstants;
 import pl.pas.gr3.mvc.dao.implementations.ClientDao;
 import pl.pas.gr3.mvc.dao.interfaces.IClientDao;
 import pl.pas.gr3.mvc.exceptions.beans.clients.*;

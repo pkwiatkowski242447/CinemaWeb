@@ -69,7 +69,7 @@ public class MovieDao implements IMovieDao {
 
     @Override
     public List<MovieDTO> findAll() throws MovieDaoReadException {
-        List<MovieDTO> listOfMoviesDTOs;
+        List<MovieDTO> listOfMoviesDTOs = new ArrayList<>();
 
         String path = GeneralConstants.MOVIES_BASE_URL + "/all";
 
@@ -81,7 +81,7 @@ public class MovieDao implements IMovieDao {
         if (response.statusCode() == 200) {
             listOfMoviesDTOs = new ArrayList<>(response.jsonPath().getList(".", MovieDTO.class));
         } else if (response.statusCode() == 404) {
-            throw new MovieDaoReadException("Nie znaleziono żadnych filmów");
+            return listOfMoviesDTOs;
         } else {
             throw new MovieDaoReadException("Wystąpił błąd podczas pobierania filmów");
         }

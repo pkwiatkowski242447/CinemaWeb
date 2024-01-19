@@ -137,8 +137,6 @@ public class TicketDao implements ITicketDao {
             } catch (JsonProcessingException exception) {
                 throw new TicketDaoReadException(exception.getMessage());
             }
-        } else {
-            throw new TicketDaoReadException("Nie znaleziono żadnych biletów");
         }
         return listOfFoundTickets;
     }
