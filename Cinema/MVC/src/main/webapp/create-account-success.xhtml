@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE composition
+        PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+        "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<ui:composition xmlns:ui="http://xmlns.jcp.org/jsf/facelets"
+                xmlns:h="http://xmlns.jcp.org/jsf/html"
+                xmlns:f="http://xmlns.jcp.org/jsf/core"
+                template="templates/template.xhtml">
+
+    <ui:define name="top">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><h:outputLink value="index.xhtml">Strona główna</h:outputLink></li>
+            <li class="breadcrumb-item"><h:outputLink value="create-account.xhtml">Tworzenie konta</h:outputLink></li>
+            <li class="breadcrumb-item active">Szczegóły konta</li>
+        </ol>
+    </ui:define>
+
+    <ui:define name="menu">
+        <ui:include src="templates/menu.xhtml"/>
+    </ui:define>
+
+    <ui:define name="content">
+        <h3>Konto klienta zostało utworzone</h3>
+        <h5>Szczegóły</h5>
+
+        <h:dataTable value="#{createClientBean.clientControllerBean.createdClient}"
+                     var="client"
+                     styleClass="table table-hover table-striped table-bordered text-center">
+            <h:column>
+                <f:facet name="header">Login klienta</f:facet>
+                <h:outputText value="#{client.clientLogin}"/>
+            </h:column>
+            <h:column>
+                <f:facet name="header">Status</f:facet>
+                <h:outputText rendered="#{client.clientStatusActive eq true}" value="Aktywny"/>
+                <h:outputText rendered="#{client.clientStatusActive eq false}" value="Nieaktywny"/>
+            </h:column>
+        </h:dataTable>
+
+        <h:outputLink value="show-clients.xhtml">Wyświetlenie wszystkich klientów</h:outputLink>
+    </ui:define>
+
+</ui:composition>

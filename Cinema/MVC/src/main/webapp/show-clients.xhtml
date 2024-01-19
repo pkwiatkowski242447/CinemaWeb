@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE composition
+        PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+        "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<ui:composition xmlns:ui="http://xmlns.jcp.org/jsf/facelets"
+                xmlns:h="http://xmlns.jcp.org/jsf/html"
+                xmlns:f="http://xmlns.jcp.org/jsf/core"
+                template="templates/template.xhtml">
+
+    <ui:define name="top">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><h:outputLink value="index.xhtml">Strona główna</h:outputLink></li>
+            <li class="breadcrumb-item active">Klienci</li>
+        </ol>
+    </ui:define>
+
+    <ui:define name="menu">
+        <ui:include src="templates/menu.xhtml"/>
+    </ui:define>
+
+    <ui:define name="content">
+        <h2>Lista wszystkich dostępnych klientów</h2>
+
+        <h:form>
+            <h:dataTable value="#{readAllClientsBean.listOfClients}"
+                         var="client"
+                         styleClass="table table-hover table-striped table-bordered text-center"
+                         rendered="#{not empty readAllClientsBean.listOfClients}">
+                <h:column>
+                    <f:facet name="header">Login</f:facet>
+                    <h:outputText value="#{client.clientLogin}" />
+                </h:column>
+                <h:column>
+                    <f:facet name="header">Status</f:facet>
+                    <h:outputText value="Aktywny" rendered="#{client.clientStatusActive eq true}" />
+                    <h:outputText value="Nieaktywny" rendered="#{client.clientStatusActive eq false}" />
+                </h:column>
+                <h:column>
+                    <f:facet name="header">Akcja</f:facet>
+                    <h:commandButton styleClass="btn btn-success mod-button" value="Aktywuj" rendered="#{client.clientStatusActive eq false}" action="#{readAllClientsBean.activateClient(client)}" />
+                    <h:commandButton styleClass="btn btn-danger mod-button" value="Dezaktywuj" rendered="#{client.clientStatusActive eq true}" action="#{readAllClientsBean.deactivateClient(client)}" />
+                    <h:commandButton styleClass="btn btn-primary mod-button" value="Edycja" action="#{readAllClientsBean.updateClient(client)}" />
+                </h:column>
+            </h:dataTable>
+
+            <h:panelGroup rendered="#{not empty readAllClientsBean.message}">
+                <h5><h:outputText value="#{readAllClientsBean.message}"/></h5>
+            </h:panelGroup>
+        </h:form>
+    </ui:define>
+
+</ui:composition>

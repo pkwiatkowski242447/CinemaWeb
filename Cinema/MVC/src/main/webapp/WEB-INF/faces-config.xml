@@ -1,0 +1,115 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<faces-config version="4.0" xmlns="https://jakarta.ee/xml/ns/jakartaee"
+              xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+              xsi:schemaLocation="https://jakarta.ee/xml/ns/jakartaee
+                                  https://jakarta.ee/xml/ns/jakartaee/web-facesconfig_4_0.xsd" >
+
+    <application>
+        <locale-config>
+            <default-locale>pl</default-locale>
+            <supported-locale>pl</supported-locale>
+            <supported-locale>en</supported-locale>
+        </locale-config>
+
+        <resource-bundle>
+            <base-name>i18n.messages</base-name>
+            <var>msg</var>
+        </resource-bundle>
+
+        <message-bundle>
+            i18n.jsf_messages
+        </message-bundle>
+    </application>
+
+    <navigation-rule>
+        <from-view-id>*</from-view-id>
+        <navigation-case>
+            <from-outcome>clientCreatedSuccessfully</from-outcome>
+            <to-view-id>/create-account-success.xhtml</to-view-id>
+            <redirect />
+        </navigation-case>
+        <navigation-case>
+            <from-outcome>movieCreatedSuccessfully</from-outcome>
+            <to-view-id>/create-movie-success.xhtml</to-view-id>
+            <redirect />
+        </navigation-case>
+        <navigation-case>
+            <from-outcome>ticketCreatedSuccessfully</from-outcome>
+            <to-view-id>/create-ticket-success.xhtml</to-view-id>
+            <redirect />
+        </navigation-case>
+
+        <navigation-case>
+            <from-outcome>deleteMovieAction</from-outcome>
+            <to-view-id>/delete-movie.xhtml</to-view-id>
+            <redirect />
+        </navigation-case>
+        <navigation-case>
+            <from-outcome>movieCouldNotBeDeleted</from-outcome>
+            <to-view-id>/delete-movie-error.xhtml</to-view-id>
+            <redirect />
+        </navigation-case>
+
+        <navigation-case>
+            <from-outcome>deleteTicketAction</from-outcome>
+            <to-view-id>/delete-ticket.xhtml</to-view-id>
+            <redirect />
+        </navigation-case>
+        <navigation-case>
+            <from-outcome>ticketCouldNotBeDeleted</from-outcome>
+            <to-view-id>/delete-ticket-error.xhtml</to-view-id>
+            <redirect />
+        </navigation-case>
+
+        <navigation-case>
+            <from-outcome>listOfAllClients</from-outcome>
+            <to-view-id>/show-clients.xhtml</to-view-id>
+            <redirect />
+        </navigation-case>
+        <navigation-case>
+            <from-outcome>listOfAllMovies</from-outcome>
+            <to-view-id>/show-movies.xhtml</to-view-id>
+            <redirect />
+        </navigation-case>
+        <navigation-case>
+            <from-outcome>listOfAllTickets</from-outcome>
+            <to-view-id>/show-tickets.xhtml</to-view-id>
+            <redirect />
+        </navigation-case>
+
+        <navigation-case>
+            <from-outcome>goToMovieSelection</from-outcome>
+            <to-view-id>/select-movie.xhtml</to-view-id>
+        </navigation-case>
+
+        <navigation-case>
+            <from-outcome>goToTicketDetails</from-outcome>
+            <to-view-id>/create-ticket.xhtml</to-view-id>
+        </navigation-case>
+
+        <navigation-case>
+            <from-outcome>ticketCouldNotBeCreated</from-outcome>
+            <to-view-id>/create-ticket-error.xhtml</to-view-id>
+            <redirect />
+        </navigation-case>
+
+        <navigation-case>
+            <from-outcome>updateClientAction</from-outcome>
+            <to-view-id>/update-account.xhtml</to-view-id>
+            <redirect />
+        </navigation-case>
+
+        <navigation-case>
+            <from-outcome>updateMovieAction</from-outcome>
+            <to-view-id>/update-movie.xhtml</to-view-id>
+            <redirect />
+        </navigation-case>
+
+        <navigation-case>
+            <from-outcome>updateTicketAction</from-outcome>
+            <to-view-id>/update-ticket.xhtml</to-view-id>
+            <redirect />
+        </navigation-case>
+    </navigation-rule>
+
+</faces-config>

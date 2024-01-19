@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE composition
+        PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+        "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<ui:composition xmlns:ui="http://xmlns.jcp.org/jsf/facelets"
+                xmlns:h="http://xmlns.jcp.org/jsf/html"
+                xmlns:f="http://xmlns.jcp.org/jsf/core"
+                template="templates/template.xhtml">
+
+    <ui:define name="top">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><h:outputLink value="index.xhtml">Strona główna</h:outputLink></li>
+            <li class="breadcrumb-item active">Tworzenie filmu</li>
+        </ol>
+    </ui:define>
+
+    <ui:define name="menu">
+        <ui:include src="templates/menu.xhtml"/>
+    </ui:define>
+
+    <ui:define name="content">
+        <h3>Tworzenie filmu</h3>
+
+        <h:form>
+            <div class="form-group">
+                <h:outputLabel for="movieTitleInput">Tytuł filmu</h:outputLabel>
+                <h:inputText styleClass="form-control" id="movieTitleInput" value="#{createMovieBean.movieInputDTO.movieTitle}" required="true">
+                    <f:validateLength minimum="1" maximum="150"/>
+                </h:inputText>
+                <small id="movieTitleHelp" class="form-text text-muted"><h:message for="movieTitleInput"/></small>
+            </div>
+            <br />
+            <div class="form-group">
+                <h:outputLabel for="movieBasePriceInput">Cena biletu</h:outputLabel>
+                <h:inputText styleClass="form-control" id="movieBasePriceInput" value="#{createMovieBean.movieInputDTO.movieBasePrice}" required="true">
+                    <f:validateDoubleRange minimum="0.00" maximum="100.00"/>
+                </h:inputText>
+                <small id="movieBasePriceHelp" class="form-text text-muted"><h:message for="movieBasePriceInput"/></small>
+            </div>
+            <br />
+            <div class="form-group">
+                <h:outputLabel for="screeningRoomNumberInput">Numer sali kinowej</h:outputLabel>
+                <h:inputText styleClass="form-control" id="screeningRoomNumberInput" value="#{createMovieBean.movieInputDTO.scrRoomNumber}" required="true">
+                    <f:validateLongRange minimum="1" maximum="20"/>
+                </h:inputText>
+                <small id="screenignRoomNumberHelp" class="form-text text-muted"><h:message for="screeningRoomNumberInput"/></small>
+            </div>
+            <br />
+            <div class="form-group">
+                <h:outputLabel for="numberOfAvailableSeatsInput">Liczba wolnych miejsc</h:outputLabel>
+                <h:inputText styleClass="form-control" id="numberOfAvailableSeatsInput" value="#{createMovieBean.movieInputDTO.numberOfAvailableSeats}" required="true">
+                    <f:validateLongRange minimum="0" maximum="150"/>
+                </h:inputText>
+                <small id="numberOfAvailableSeatsHelp" class="form-text text-muted"><h:message for="numberOfAvailableSeatsInput"/></small>
+            </div>
+            <br />
+            <h:commandButton styleClass="btn btn-primary" action="#{createMovieBean.createMovie()}" value="Utwórz film"/>
+        </h:form>
+
+        <h:outputText id="outputMessage" value="#{createMovieBean.message != null ? createMovieBean.message : ''}"/>
+    </ui:define>
+
+</ui:composition>
