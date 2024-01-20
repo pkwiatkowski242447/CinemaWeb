@@ -1,4 +1,4 @@
-package pl.pas.gr3.dto.users;
+package pl.pas.gr3.dto.output;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;

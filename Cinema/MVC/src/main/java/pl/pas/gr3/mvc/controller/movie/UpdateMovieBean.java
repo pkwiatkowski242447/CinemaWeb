@@ -1,14 +1,13 @@
 package pl.pas.gr3.mvc.controller.movie;
 
 import jakarta.annotation.PostConstruct;
-import jakarta.enterprise.context.ConversationScoped;
 import jakarta.enterprise.context.RequestScoped;
 import jakarta.inject.Inject;
 import jakarta.inject.Named;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
-import pl.pas.gr3.dto.MovieDTO;
+import pl.pas.gr3.dto.output.MovieDTO;
 import pl.pas.gr3.mvc.exceptions.beans.movies.MovieUpdateException;
 
 import java.io.Serializable;

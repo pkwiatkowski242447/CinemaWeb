@@ -16,9 +16,9 @@ import pl.pas.gr3.cinema.exceptions.services.crud.staff.StaffServiceReadExceptio
 import pl.pas.gr3.cinema.model.users.Staff;
 import pl.pas.gr3.cinema.repositories.implementations.UserRepository;
 import pl.pas.gr3.cinema.services.implementations.StaffService;
-import pl.pas.gr3.dto.users.StaffDTO;
-import pl.pas.gr3.dto.users.StaffInputDTO;
-import pl.pas.gr3.dto.users.StaffPasswordDTO;
+import pl.pas.gr3.dto.output.StaffDTO;
+import pl.pas.gr3.dto.input.StaffInputDTO;
+import pl.pas.gr3.dto.update.StaffPasswordDTO;
 
 import java.util.List;
 import java.util.UUID;

@@ -1,7 +1,7 @@
 package pl.pas.gr3.mvc.dao.interfaces;
 
-import pl.pas.gr3.dto.MovieDTO;
-import pl.pas.gr3.dto.MovieInputDTO;
+import pl.pas.gr3.dto.output.MovieDTO;
+import pl.pas.gr3.dto.input.MovieInputDTO;
 import pl.pas.gr3.mvc.exceptions.daos.movie.MovieDaoCreateException;
 import pl.pas.gr3.mvc.exceptions.daos.movie.MovieDaoDeleteException;
 import pl.pas.gr3.mvc.exceptions.daos.movie.MovieDaoReadException;

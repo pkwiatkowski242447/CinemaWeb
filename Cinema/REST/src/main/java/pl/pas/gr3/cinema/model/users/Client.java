@@ -23,6 +23,7 @@ public class Client extends User {
         this.userLogin = clientLogin;
         this.userPassword = clientPassword;
         this.userStatusActive = true;
+        this.userRole = Role.CLIENT;
     }
 
     @BsonCreator
@@ -34,5 +35,6 @@ public class Client extends User {
         this.userLogin = clientLogin;
         this.userPassword = clientPassword;
         this.userStatusActive = clientStatusActive;
+        this.userRole = Role.CLIENT;
     }
 }

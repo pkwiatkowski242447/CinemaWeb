@@ -3,7 +3,7 @@ package dto.users;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import pl.pas.gr3.dto.users.StaffDTO;
+import pl.pas.gr3.dto.output.StaffDTO;
 
 import java.util.UUID;
 

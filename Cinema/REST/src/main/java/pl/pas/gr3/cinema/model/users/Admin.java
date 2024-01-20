@@ -16,6 +16,9 @@ import java.util.UUID;
 @BsonDiscriminator(key = UserConstants.USER_DISCRIMINATOR_NAME, value = UserConstants.ADMIN_DISCRIMINATOR)
 public class Admin extends User {
 
+    public Admin() {
+    }
+
     public Admin(UUID clientID,
                  String clientLogin,
                  String clientPassword) {
@@ -23,6 +26,7 @@ public class Admin extends User {
         this.userLogin = clientLogin;
         this.userPassword = clientPassword;
         this.userStatusActive = true;
+        this.userRole = Role.ADMIN;
     }
 
     @BsonCreator
@@ -34,5 +38,6 @@ public class Admin extends User {
         this.userLogin = clientLogin;
         this.userPassword = clientPassword;
         this.userStatusActive = clientStatusActive;
+        this.userRole = Role.ADMIN;
     }
 }

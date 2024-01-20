@@ -7,7 +7,7 @@ import jakarta.inject.Named;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
-import pl.pas.gr3.dto.users.ClientDTO;
+import pl.pas.gr3.dto.output.ClientDTO;
 import pl.pas.gr3.mvc.dao.implementations.ClientDao;
 import pl.pas.gr3.mvc.dao.interfaces.IClientDao;
 import pl.pas.gr3.mvc.exceptions.beans.clients.ClientActivateException;

@@ -16,9 +16,9 @@ import pl.pas.gr3.cinema.exceptions.services.crud.client.ClientServiceReadExcept
 import pl.pas.gr3.cinema.repositories.implementations.UserRepository;
 import pl.pas.gr3.cinema.services.implementations.ClientService;
 import pl.pas.gr3.cinema.model.users.Client;
-import pl.pas.gr3.dto.users.ClientDTO;
-import pl.pas.gr3.dto.users.ClientInputDTO;
-import pl.pas.gr3.dto.users.ClientPasswordDTO;
+import pl.pas.gr3.dto.output.ClientDTO;
+import pl.pas.gr3.dto.input.ClientInputDTO;
+import pl.pas.gr3.dto.update.ClientPasswordDTO;
 
 import java.util.List;
 import java.util.UUID;

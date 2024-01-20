@@ -240,6 +240,21 @@ public class UserRepository extends MongoRepository implements UserRepositoryInt
         return client;
     }
 
+    public User findByLogin(String userLogin) throws UserRepositoryReadException {
+        User user;
+        try {
+            Bson filter = Filters.eq(UserConstants.USER_LOGIN, userLogin);
+            user = getClientCollection().find(filter).first();
+            if (user != null) {
+                return user;
+            } else {
+                throw new UserNullReferenceException(MongoRepositoryMessages.USER_DOC_OBJECT_NOT_FOUND);
+            }
+        } catch (MongoException | UserNullReferenceException exception) {
+            throw new UserRepositoryReadException(exception.getMessage(), exception);
+        }
+    }
+
     // Find users by UUID
 
     public Client findClientByUUID(UUID clientID) throws UserRepositoryReadException {

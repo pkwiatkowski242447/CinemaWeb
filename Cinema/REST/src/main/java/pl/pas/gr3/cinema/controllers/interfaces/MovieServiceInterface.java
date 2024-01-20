@@ -1,8 +1,8 @@
 package pl.pas.gr3.cinema.controllers.interfaces;
 
 import org.springframework.http.ResponseEntity;
-import pl.pas.gr3.dto.MovieDTO;
-import pl.pas.gr3.dto.MovieInputDTO;
+import pl.pas.gr3.dto.output.MovieDTO;
+import pl.pas.gr3.dto.input.MovieInputDTO;
 import pl.pas.gr3.cinema.model.Movie;
 
 import java.util.UUID;

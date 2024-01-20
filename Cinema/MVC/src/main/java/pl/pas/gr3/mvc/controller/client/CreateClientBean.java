@@ -1,13 +1,12 @@
 package pl.pas.gr3.mvc.controller.client;
 
-import jakarta.enterprise.context.ConversationScoped;
 import jakarta.enterprise.context.RequestScoped;
 import jakarta.inject.Inject;
 import jakarta.inject.Named;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
-import pl.pas.gr3.dto.users.ClientInputDTO;
+import pl.pas.gr3.dto.input.ClientInputDTO;
 import pl.pas.gr3.mvc.exceptions.beans.clients.ClientCreateException;
 
 import java.io.Serializable;

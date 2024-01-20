@@ -1,9 +1,9 @@
 package pl.pas.gr3.mvc.dto;
 
 import lombok.Data;
-import pl.pas.gr3.dto.MovieDTO;
-import pl.pas.gr3.dto.TicketDTO;
-import pl.pas.gr3.dto.users.ClientDTO;
+import pl.pas.gr3.dto.output.MovieDTO;
+import pl.pas.gr3.dto.output.TicketDTO;
+import pl.pas.gr3.dto.output.ClientDTO;
 
 @Data
 public class TicketWithUserAndMovie {
