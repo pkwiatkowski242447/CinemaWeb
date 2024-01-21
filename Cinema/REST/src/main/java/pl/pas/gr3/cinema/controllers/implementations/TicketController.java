@@ -23,6 +23,7 @@ import java.util.UUID;
 
 @RestController
 @RequestMapping("/api/v1/tickets")
+@CrossOrigin(origins = "http://localhost:3000", allowedHeaders = "*")
 public class TicketController implements TicketServiceInterface {
 
     private static final Validator validator = Validation.buildDefaultValidatorFactory().getValidator();
