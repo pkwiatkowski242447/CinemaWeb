@@ -18,8 +18,4 @@ public interface UserServiceInterface<Type> extends ServiceInterface<Type> {
     // Deactivate
 
     ResponseEntity<?> deactivate(UUID userID);
-
-    // Other methods
-
-    ResponseEntity<?> getTicketsForCertainUser(UUID userID);
 }

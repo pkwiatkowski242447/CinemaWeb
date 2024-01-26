@@ -4,10 +4,13 @@ import jakarta.validation.ConstraintViolation;
 import jakarta.validation.Validation;
 import jakarta.validation.Validator;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import pl.pas.gr3.cinema.exceptions.services.crud.movie.MovieServiceMovieNotFoundException;
+import pl.pas.gr3.cinema.security.services.JWSService;
 import pl.pas.gr3.dto.output.MovieDTO;
 import pl.pas.gr3.dto.input.MovieInputDTO;
 import pl.pas.gr3.dto.output.TicketDTO;
@@ -30,12 +33,15 @@ public class MovieController implements MovieServiceInterface {
     private final static Validator validator = Validation.buildDefaultValidatorFactory().getValidator();
 
     private final MovieService movieService;
+    private final JWSService jwsService;
 
     @Autowired
-    public MovieController(MovieService movieService) {
+    public MovieController(MovieService movieService, JWSService jwsService) {
         this.movieService = movieService;
+        this.jwsService = jwsService;
     }
 
+    @PreAuthorize(value = "hasRole(T(pl.pas.gr3.cinema.model.users.Role).STAFF.name())")
     @PostMapping(consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
     @Override
     public ResponseEntity<?> create(@RequestBody MovieInputDTO movieInputDTO) {
@@ -55,6 +61,7 @@ public class MovieController implements MovieServiceInterface {
         }
     }
 
+    @PreAuthorize(value = "hasRole(T(pl.pas.gr3.cinema.model.users.Role).STAFF.name()) or hasRole(T(pl.pas.gr3.cinema.model.users.Role).CLIENT.name())")
     @GetMapping(value = "/all", produces = MediaType.APPLICATION_JSON_VALUE)
     @Override
     public ResponseEntity<?> findAll() {
@@ -75,13 +82,14 @@ public class MovieController implements MovieServiceInterface {
         }
     }
 
+    @PreAuthorize(value = "hasRole(T(pl.pas.gr3.cinema.model.users.Role).STAFF.name()) or hasRole(T(pl.pas.gr3.cinema.model.users.Role).CLIENT.name())")
     @GetMapping(value = "/{id}", produces = MediaType.APPLICATION_JSON_VALUE)
     @Override
     public ResponseEntity<?> findByUUID(@PathVariable("id") UUID movieID) {
         try {
             Movie movie = this.movieService.findByUUID(movieID);
             MovieDTO movieDTO = new MovieDTO(movie.getMovieID(), movie.getMovieTitle(), movie.getMovieBasePrice(), movie.getScrRoomNumber(), movie.getNumberOfAvailableSeats());
-            return ResponseEntity.ok().contentType(MediaType.APPLICATION_JSON).body(movieDTO);
+            return ResponseEntity.ok().header(HttpHeaders.ETAG, jwsService.generateSignatureForMovie(movie)).contentType(MediaType.APPLICATION_JSON).body(movieDTO);
         } catch (MovieServiceMovieNotFoundException exception) {
             return ResponseEntity.notFound().build();
         } catch (GeneralServiceException exception) {
@@ -89,6 +97,7 @@ public class MovieController implements MovieServiceInterface {
         }
     }
 
+    @PreAuthorize(value = "hasRole(T(pl.pas.gr3.cinema.model.users.Role).STAFF.name())")
     @GetMapping(value = "{id}/tickets", produces = MediaType.APPLICATION_JSON_VALUE)
     @Override
     public ResponseEntity<?> findAllTicketsForCertainMovie(@PathVariable("id") UUID movieID) {
@@ -105,6 +114,7 @@ public class MovieController implements MovieServiceInterface {
         }
     }
 
+    @PreAuthorize(value = "hasRole(T(pl.pas.gr3.cinema.model.users.Role).STAFF.name())")
     @PutMapping(consumes = MediaType.APPLICATION_JSON_VALUE)
     @Override
     public ResponseEntity<?> update(@RequestBody MovieDTO movieDTO) {
@@ -124,6 +134,7 @@ public class MovieController implements MovieServiceInterface {
         }
     }
 
+    @PreAuthorize(value = "hasRole(T(pl.pas.gr3.cinema.model.users.Role).STAFF.name())")
     @DeleteMapping(value = "/{id}")
     @Override
     public ResponseEntity<?> delete(@PathVariable("id") UUID movieID) {

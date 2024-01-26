@@ -21,7 +21,7 @@ import java.util.UUID;
 
 @Getter @Setter
 @BsonDiscriminator(key = UserConstants.USER_DISCRIMINATOR_NAME)
-public abstract class User implements UserDetails {
+public abstract class User {
 
     @BsonProperty(UserConstants.GENERAL_IDENTIFIER)
     @Setter(AccessLevel.NONE)
@@ -74,42 +74,5 @@ public abstract class User implements UserDetails {
                 .append(userPassword)
                 .append(userStatusActive)
                 .toHashCode();
-    }
-
-    // UserDetails methods
-
-    @Override
-    public Collection<? extends GrantedAuthority> getAuthorities() {
-        return List.of(new SimpleGrantedAuthority(this.userRole.name()));
-    }
-
-    @Override
-    public String getPassword() {
-        return this.userPassword;
-    }
-
-    @Override
-    public String getUsername() {
-        return this.userLogin;
-    }
-
-    @Override
-    public boolean isAccountNonExpired() {
-        return true;
-    }
-
-    @Override
-    public boolean isAccountNonLocked() {
-        return true;
-    }
-
-    @Override
-    public boolean isCredentialsNonExpired() {
-        return true;
-    }
-
-    @Override
-    public boolean isEnabled() {
-        return this.userStatusActive;
     }
 }

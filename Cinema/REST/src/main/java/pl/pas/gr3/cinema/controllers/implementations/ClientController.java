@@ -4,24 +4,24 @@ import jakarta.validation.ConstraintViolation;
 import jakarta.validation.Validation;
 import jakarta.validation.Validator;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.HttpStatus;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
 import pl.pas.gr3.cinema.exceptions.services.crud.client.ClientServiceClientNotFoundException;
-import pl.pas.gr3.cinema.exceptions.services.crud.client.ClientServiceCreateClientDuplicateLoginException;
-import pl.pas.gr3.cinema.model.users.User;
+import pl.pas.gr3.cinema.security.services.JWSService;
+import pl.pas.gr3.dto.auth.UserOutputDTO;
+import pl.pas.gr3.dto.auth.UserUpdateDTO;
 import pl.pas.gr3.dto.output.TicketDTO;
-import pl.pas.gr3.dto.output.ClientDTO;
-import pl.pas.gr3.dto.input.ClientInputDTO;
-import pl.pas.gr3.dto.update.ClientPasswordDTO;
 import pl.pas.gr3.cinema.exceptions.services.GeneralServiceException;
 import pl.pas.gr3.cinema.services.implementations.ClientService;
 import pl.pas.gr3.cinema.model.Ticket;
 import pl.pas.gr3.cinema.model.users.Client;
 import pl.pas.gr3.cinema.controllers.interfaces.UserServiceInterface;
 
-import java.net.URI;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
@@ -34,50 +34,36 @@ public class ClientController implements UserServiceInterface<Client> {
     private static final Validator validator = Validation.buildDefaultValidatorFactory().getValidator();
 
     private final ClientService clientService;
+    private final JWSService jwsService;
+    private final PasswordEncoder passwordEncoder;
 
     @Autowired
-    public ClientController(ClientService clientService) {
+    public ClientController(ClientService clientService, JWSService jwsService, PasswordEncoder passwordEncoder) {
         this.clientService = clientService;
+        this.jwsService = jwsService;
+        this.passwordEncoder = passwordEncoder;
     }
 
-    @PostMapping(consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
-    public ResponseEntity<?> create(@RequestBody ClientInputDTO clientInputDTO) {
-        try {
-            Client client = this.clientService.create(clientInputDTO.getClientLogin(), clientInputDTO.getClientPassword());
-
-            Set<ConstraintViolation<User>> violationSet = validator.validate(client);
-            List<String> messages = violationSet.stream().map(ConstraintViolation::getMessage).toList();
-            if (!violationSet.isEmpty()) {
-                return ResponseEntity.badRequest().contentType(MediaType.APPLICATION_JSON).body(messages);
-            }
-
-            ClientDTO clientDTO = new ClientDTO(client.getUserID(), client.getUserLogin(), client.isUserStatusActive());
-            return ResponseEntity.created(URI.create("http://localhost:8000/api/v1/clients/" + clientDTO.getClientID().toString())).contentType(MediaType.APPLICATION_JSON).body(clientDTO);
-        } catch (ClientServiceCreateClientDuplicateLoginException exception) {
-            return ResponseEntity.status(HttpStatus.CONFLICT).contentType(MediaType.APPLICATION_JSON).body(exception.getMessage());
-        } catch (GeneralServiceException exception) {
-            return ResponseEntity.badRequest().contentType(MediaType.APPLICATION_JSON).body(exception.getMessage());
-        }
-    }
-
+    @PreAuthorize(value = "hasRole(T(pl.pas.gr3.cinema.model.users.Role).STAFF.name()) || hasRole(T(pl.pas.gr3.cinema.model.users.Role).ADMIN.name())")
     @GetMapping(value = "/all", produces = MediaType.APPLICATION_JSON_VALUE)
     @Override
     public ResponseEntity<?> findAll() {
         try {
-            List<ClientDTO> listOfDTOs = this.getListOfClientDTOs(this.clientService.findAll());
+            List<UserOutputDTO> listOfDTOs = this.getListOfUserDTOs(this.clientService.findAll());
             return this.generateResponseForListOfDTOs(listOfDTOs);
         } catch (GeneralServiceException exception) {
             return ResponseEntity.badRequest().contentType(MediaType.APPLICATION_JSON).body(exception.getMessage());
         }
     }
 
+    @PreAuthorize(value = "hasRole(T(pl.pas.gr3.cinema.model.users.Role).STAFF.name()) || hasRole(T(pl.pas.gr3.cinema.model.users.Role).ADMIN.name())")
     @GetMapping(value = "/{id}", produces = MediaType.APPLICATION_JSON_VALUE)
     @Override
     public ResponseEntity<?> findByUUID(@PathVariable("id") UUID clientID) {
         try {
             Client client = this.clientService.findByUUID(clientID);
-            ClientDTO clientDTO = new ClientDTO(client.getUserID(), client.getUserLogin(), client.isUserStatusActive());
-            return this.generateResponseForDTO(clientDTO);
+            UserOutputDTO userOutputDTO = new UserOutputDTO(client.getUserID(), client.getUserLogin(), client.isUserStatusActive());
+            return this.generateResponseForDTO(userOutputDTO);
         } catch (ClientServiceClientNotFoundException exception) {
             return ResponseEntity.notFound().build();
         } catch (GeneralServiceException exception) {
@@ -85,13 +71,14 @@ public class ClientController implements UserServiceInterface<Client> {
         }
     }
 
+    @PreAuthorize(value = "hasRole(T(pl.pas.gr3.cinema.model.users.Role).STAFF.name()) || hasRole(T(pl.pas.gr3.cinema.model.users.Role).ADMIN.name())")
     @GetMapping(value = "/login/{login}", produces = MediaType.APPLICATION_JSON_VALUE)
     @Override
     public ResponseEntity<?> findByLogin(@PathVariable("login") String clientLogin) {
         try {
             Client client = this.clientService.findByLogin(clientLogin);
-            ClientDTO clientDTO = new ClientDTO(client.getUserID(), client.getUserLogin(), client.isUserStatusActive());
-            return this.generateResponseForDTO(clientDTO);
+            UserOutputDTO userOutputDTO = new UserOutputDTO(client.getUserID(), client.getUserLogin(), client.isUserStatusActive());
+            return this.generateResponseForDTO(userOutputDTO);
         } catch (ClientServiceClientNotFoundException exception) {
             return ResponseEntity.notFound().build();
         } catch (GeneralServiceException exception) {
@@ -99,19 +86,33 @@ public class ClientController implements UserServiceInterface<Client> {
         }
     }
 
+    @GetMapping(value = "/login/self", produces = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity<?> findByLogin() {
+        try {
+            Client client = this.clientService.findByLogin(SecurityContextHolder.getContext().getAuthentication().getName());
+            UserOutputDTO userOutputDTO = new UserOutputDTO(client.getUserID(), client.getUserLogin(), client.isUserStatusActive());
+            return ResponseEntity.ok().header(HttpHeaders.ETAG, jwsService.generateSignatureForUser(client)).contentType(MediaType.APPLICATION_JSON).body(userOutputDTO);
+        } catch (ClientServiceClientNotFoundException exception) {
+            return ResponseEntity.notFound().build();
+        } catch (GeneralServiceException exception) {
+            return ResponseEntity.badRequest().contentType(MediaType.APPLICATION_JSON).body(exception.getMessage());
+        }
+    }
+
+    @PreAuthorize(value = "hasRole(T(pl.pas.gr3.cinema.model.users.Role).STAFF.name()) || hasRole(T(pl.pas.gr3.cinema.model.users.Role).ADMIN.name())")
     @GetMapping(produces = MediaType.APPLICATION_JSON_VALUE)
     @Override
     public ResponseEntity<?> findAllWithMatchingLogin(@RequestParam("match") String clientLogin) {
         try {
-            List<ClientDTO> listOfDTOs = this.getListOfClientDTOs(this.clientService.findAllMatchingLogin(clientLogin));
+            List<UserOutputDTO> listOfDTOs = this.getListOfUserDTOs(this.clientService.findAllMatchingLogin(clientLogin));
             return this.generateResponseForListOfDTOs(listOfDTOs);
         } catch (GeneralServiceException exception) {
             return ResponseEntity.badRequest().contentType(MediaType.APPLICATION_JSON).body(exception.getMessage());
         }
     }
 
+    @PreAuthorize(value = "hasRole(T(pl.pas.gr3.cinema.model.users.Role).STAFF.name())")
     @GetMapping(value = "/{id}/ticket-list", produces = MediaType.APPLICATION_JSON_VALUE)
-    @Override
     public ResponseEntity<?> getTicketsForCertainUser(@PathVariable("id") UUID clientID) {
         try {
             List<Ticket> listOfTicketsForAClient = this.clientService.getTicketsForClient(clientID);
@@ -129,24 +130,47 @@ public class ClientController implements UserServiceInterface<Client> {
         }
     }
 
-    @PutMapping(consumes = MediaType.APPLICATION_JSON_VALUE)
-    public ResponseEntity<?> update(@RequestBody ClientPasswordDTO clientPasswordDTO) {
+    @GetMapping(value = "/ticket-list/self", produces = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity<?> getTicketsForCertainUser() {
         try {
-            Client client = new Client(clientPasswordDTO.getClientID(), clientPasswordDTO.getClientLogin(), clientPasswordDTO.getClientPassword(), clientPasswordDTO.isClientStatusActive());
-
-            Set<ConstraintViolation<Client>> violationSet = validator.validate(client);
-            List<String> messages = violationSet.stream().map(ConstraintViolation::getMessage).toList();
-            if (!violationSet.isEmpty()) {
-                return ResponseEntity.badRequest().contentType(MediaType.APPLICATION_JSON).body(messages);
+            Client client = this.clientService.findByLogin(SecurityContextHolder.getContext().getAuthentication().getName());
+            List<Ticket> listOfTicketsForAClient = this.clientService.getTicketsForClient(client.getUserID());
+            List<TicketDTO> listOfDTOs = new ArrayList<>();
+            for (Ticket ticket : listOfTicketsForAClient) {
+                listOfDTOs.add(new TicketDTO(ticket.getTicketID(), ticket.getMovieTime(), ticket.getTicketPrice(), ticket.getUserID(), ticket.getMovieID()));
             }
-
-            this.clientService.update(client);
-            return ResponseEntity.noContent().build();
+            if (listOfTicketsForAClient.isEmpty()) {
+                return ResponseEntity.noContent().build();
+            } else {
+                return ResponseEntity.ok().contentType(MediaType.APPLICATION_JSON).body(listOfDTOs);
+            }
         } catch (GeneralServiceException exception) {
             return ResponseEntity.badRequest().contentType(MediaType.APPLICATION_JSON).body(exception.getMessage());
         }
     }
 
+    @PutMapping(consumes = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity<?> update(@RequestHeader(value = HttpHeaders.IF_MATCH) String ifMatch, @RequestBody UserUpdateDTO userUpdateDTO) {
+        try {
+            Client client = new Client(userUpdateDTO.getUserID(), userUpdateDTO.getUserLogin(), passwordEncoder.encode(userUpdateDTO.getUserPassword()), userUpdateDTO.isUserStatusActive());
+            if (jwsService.verifyUserSignature(ifMatch, client)) {
+                Set<ConstraintViolation<Client>> violationSet = validator.validate(client);
+                List<String> messages = violationSet.stream().map(ConstraintViolation::getMessage).toList();
+                if (!violationSet.isEmpty()) {
+                    return ResponseEntity.badRequest().contentType(MediaType.APPLICATION_JSON).body(messages);
+                }
+
+                this.clientService.update(client);
+                return ResponseEntity.noContent().build();
+            } else {
+                return ResponseEntity.badRequest().contentType(MediaType.APPLICATION_JSON).body("Signature and given object does not match.");
+            }
+        } catch (GeneralServiceException exception) {
+            return ResponseEntity.badRequest().contentType(MediaType.APPLICATION_JSON).body(exception.getMessage());
+        }
+    }
+
+    @PreAuthorize(value = "hasRole(T(pl.pas.gr3.cinema.model.users.Role).ADMIN.name())")
     @PostMapping(value = "/{id}/activate")
     @Override
     public ResponseEntity<?> activate(@PathVariable("id") UUID clientID) {
@@ -158,6 +182,7 @@ public class ClientController implements UserServiceInterface<Client> {
         }
     }
 
+    @PreAuthorize(value = "hasRole(T(pl.pas.gr3.cinema.model.users.Role).ADMIN.name())")
     @PostMapping(value = "/{id}/deactivate")
     @Override
     public ResponseEntity<?> deactivate(@PathVariable("id") UUID clientID) {
@@ -169,23 +194,23 @@ public class ClientController implements UserServiceInterface<Client> {
         }
     }
 
-    private List<ClientDTO> getListOfClientDTOs(List<Client> listOfClients) {
-        List<ClientDTO> listOfDTOs = new ArrayList<>();
+    private List<UserOutputDTO> getListOfUserDTOs(List<Client> listOfClients) {
+        List<UserOutputDTO> listOfDTOs = new ArrayList<>();
         for (Client client : listOfClients) {
-            listOfDTOs.add(new ClientDTO(client.getUserID(), client.getUserLogin(), client.isUserStatusActive()));
+            listOfDTOs.add(new UserOutputDTO(client.getUserID(), client.getUserLogin(), client.isUserStatusActive()));
         }
         return listOfDTOs;
     }
 
-    private ResponseEntity<?> generateResponseForDTO(ClientDTO clientDTO) {
-        if (clientDTO == null) {
+    private ResponseEntity<?> generateResponseForDTO(UserOutputDTO userOutputDTO) {
+        if (userOutputDTO == null) {
             return ResponseEntity.noContent().build();
         } else {
-            return ResponseEntity.ok().contentType(MediaType.APPLICATION_JSON).body(clientDTO);
+            return ResponseEntity.ok().contentType(MediaType.APPLICATION_JSON).body(userOutputDTO);
         }
     }
 
-    private ResponseEntity<?> generateResponseForListOfDTOs(List<ClientDTO> listOfDTOs) {
+    private ResponseEntity<?> generateResponseForListOfDTOs(List<UserOutputDTO> listOfDTOs) {
         if (listOfDTOs.isEmpty()) {
             return ResponseEntity.noContent().build();
         } else {

@@ -6,114 +6,92 @@ import org.springframework.security.authentication.UsernamePasswordAuthenticatio
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import pl.pas.gr3.cinema.exceptions.repositories.UserRepositoryException;
+import pl.pas.gr3.cinema.exceptions.repositories.crud.user.UserRepositoryCreateUserDuplicateLoginException;
+import pl.pas.gr3.cinema.exceptions.services.crud.authentication.login.AuthenticationServiceLoginAdminException;
+import pl.pas.gr3.cinema.exceptions.services.crud.authentication.login.AuthenticationServiceLoginClientException;
+import pl.pas.gr3.cinema.exceptions.services.crud.authentication.login.AuthenticationServiceLoginStaffException;
+import pl.pas.gr3.cinema.exceptions.services.crud.authentication.login.GeneralAuthenticationLoginException;
+import pl.pas.gr3.cinema.exceptions.services.crud.authentication.register.*;
 import pl.pas.gr3.cinema.model.users.Admin;
 import pl.pas.gr3.cinema.model.users.Client;
 import pl.pas.gr3.cinema.model.users.Staff;
-import pl.pas.gr3.cinema.model.users.User;
 import pl.pas.gr3.cinema.repositories.implementations.UserRepository;
-import pl.pas.gr3.cinema.security.JWTService;
 import pl.pas.gr3.cinema.services.interfaces.AuthenticationServiceInterface;
-import pl.pas.gr3.dto.auth.LoginOutputDTO;
-import pl.pas.gr3.dto.auth.RegisterOutputDTO;
-import pl.pas.gr3.dto.auth.UserOutputDTO;
 
 @Service
 public class AuthenticationService implements AuthenticationServiceInterface {
 
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
-    private final JWTService jwtService;
     private final AuthenticationManager authenticationManager;
 
     @Autowired
-    public AuthenticationService(UserRepository userRepository, PasswordEncoder passwordEncoder, JWTService jwtService, AuthenticationManager authenticationManager) {
+    public AuthenticationService(UserRepository userRepository, PasswordEncoder passwordEncoder, AuthenticationManager authenticationManager) {
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
-        this.jwtService = jwtService;
         this.authenticationManager = authenticationManager;
     }
 
     @Override
-    public RegisterOutputDTO registerClient(String clientUsername, String clientPassword) {
+    public Client registerClient(String clientUsername, String clientPassword) throws GeneralAuthenticationRegisterException {
         try {
-            Client newClient = userRepository.createClient(clientUsername, passwordEncoder.encode(clientPassword));
-            return this.generateRegisterOutputDTO(newClient);
+            return userRepository.createClient(clientUsername, passwordEncoder.encode(clientPassword));
+        } catch (UserRepositoryCreateUserDuplicateLoginException exception) {
+            throw new AuthenticationServiceUserWithGivenLoginExistsException(exception.getMessage(), exception);
         } catch (UserRepositoryException exception) {
-            return null;
+            throw new AuthenticationServiceRegisterClientException(exception.getMessage(), exception);
         }
     }
 
     @Override
-    public RegisterOutputDTO registerAdmin(String adminUsername, String adminPassword) {
+    public Admin registerAdmin(String adminUsername, String adminPassword) throws GeneralAuthenticationRegisterException {
         try {
-            Admin newAdmin = userRepository.createAdmin(adminPassword, adminPassword);
-            return this.generateRegisterOutputDTO(newAdmin);
+            return userRepository.createAdmin(adminUsername, passwordEncoder.encode(adminPassword));
+        } catch (UserRepositoryCreateUserDuplicateLoginException exception) {
+            throw new AuthenticationServiceUserWithGivenLoginExistsException(exception.getMessage(), exception);
         } catch (UserRepositoryException exception) {
-            return null;
+            throw new AuthenticationServiceRegisterAdminException(exception.getMessage(), exception);
         }
     }
 
     @Override
-    public RegisterOutputDTO registerStaff(String staffUsername, String staffPassword) {
+    public Staff registerStaff(String staffUsername, String staffPassword) throws GeneralAuthenticationRegisterException {
         try {
-            Staff newStaff = userRepository.createStaff(staffUsername, staffPassword);
-            return this.generateRegisterOutputDTO(newStaff);
+            return userRepository.createStaff(staffUsername, passwordEncoder.encode(staffPassword));
+        } catch (UserRepositoryCreateUserDuplicateLoginException exception) {
+            throw new AuthenticationServiceUserWithGivenLoginExistsException(exception.getMessage(), exception);
         } catch (UserRepositoryException exception) {
-            return null;
+            throw new AuthenticationServiceRegisterStaffException(exception.getMessage(), exception);
         }
     }
 
     @Override
-    public LoginOutputDTO loginClient(String clientUsername, String clientPassword) {
+    public Client loginClient(String clientUsername, String clientPassword) throws GeneralAuthenticationLoginException {
         authenticationManager.authenticate(new UsernamePasswordAuthenticationToken(clientUsername, clientPassword));
         try {
-            Client client = userRepository.findClientByLogin(clientUsername);
-            return this.generateLoginOutputDTO(client);
+            return userRepository.findClientByLogin(clientUsername);
         } catch (UserRepositoryException exception) {
-            return null;
+            throw new AuthenticationServiceLoginClientException(exception.getMessage(), exception);
         }
     }
 
     @Override
-    public LoginOutputDTO loginAdmin(String adminUsername, String adminPassword) {
+    public Admin loginAdmin(String adminUsername, String adminPassword) throws GeneralAuthenticationLoginException {
         authenticationManager.authenticate(new UsernamePasswordAuthenticationToken(adminUsername, adminPassword));
         try {
-            Admin admin = userRepository.findAdminByLogin(adminUsername);
-            return this.generateLoginOutputDTO(admin);
+            return userRepository.findAdminByLogin(adminUsername);
         } catch (UserRepositoryException exception) {
-            return null;
+            throw new AuthenticationServiceLoginAdminException(exception.getMessage(), exception);
         }
     }
 
     @Override
-    public LoginOutputDTO loginStaff(String staffUsername, String staffPassword) {
+    public Staff loginStaff(String staffUsername, String staffPassword) throws GeneralAuthenticationLoginException {
         authenticationManager.authenticate(new UsernamePasswordAuthenticationToken(staffUsername, staffPassword));
         try {
-            Staff staff = userRepository.findStaffByLogin(staffUsername);
-            return this.generateLoginOutputDTO(staff);
+            return userRepository.findStaffByLogin(staffUsername);
         } catch (UserRepositoryException exception) {
-            return null;
+            throw new AuthenticationServiceLoginStaffException(exception.getMessage(), exception);
         }
-    }
-
-    private RegisterOutputDTO generateRegisterOutputDTO(User user) {
-        String jwtToken = jwtService.generateJWTToken(user);
-
-        UserOutputDTO userOutputDTO = new UserOutputDTO(user.getUserID(), user.getUserLogin(), user.isUserStatusActive());
-
-        return RegisterOutputDTO
-                .builder()
-                .user(userOutputDTO)
-                .accessToken(jwtToken)
-                .build();
-    }
-
-    private LoginOutputDTO generateLoginOutputDTO(User user) {
-        String jwtToken = jwtService.generateJWTToken(user);
-
-        return LoginOutputDTO
-                .builder()
-                .accessToken(jwtToken)
-                .build();
     }
 }
