@@ -16,7 +16,4 @@ public interface TicketServiceInterface extends ServiceInterface<Ticket> {
     // Update methods
 
     ResponseEntity<?> delete(UUID ticketID);
-
-    // Update methods
-    ResponseEntity<?> update(TicketDTO ticketDTO);
 }

@@ -1,6 +1,7 @@
 package pl.pas.gr3.cinema.controllers.implementations;
 
 import jakarta.validation.ConstraintViolation;
+import jakarta.validation.Valid;
 import jakarta.validation.Validation;
 import jakarta.validation.Validator;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -12,6 +13,7 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
 import pl.pas.gr3.cinema.exceptions.services.crud.staff.StaffServiceStaffNotFoundException;
+import pl.pas.gr3.cinema.model.users.User;
 import pl.pas.gr3.cinema.security.services.JWSService;
 import pl.pas.gr3.dto.auth.UserOutputDTO;
 import pl.pas.gr3.dto.auth.UserUpdateDTO;
@@ -79,7 +81,8 @@ public class StaffController implements UserServiceInterface<Staff> {
         try {
             Staff staff = this.staffService.findByLogin(SecurityContextHolder.getContext().getAuthentication().getName());
             UserOutputDTO userOutputDTO = new UserOutputDTO(staff.getUserID(), staff.getUserLogin(), staff.isUserStatusActive());
-            return ResponseEntity.ok().header(HttpHeaders.ETAG, jwsService.generateSignatureForUser(staff)).contentType(MediaType.APPLICATION_JSON).body(userOutputDTO);
+            String etagContent = jwsService.generateSignatureForUser(staff);
+            return ResponseEntity.ok().header(HttpHeaders.ETAG, etagContent).contentType(MediaType.APPLICATION_JSON).body(userOutputDTO);
         } catch (StaffServiceStaffNotFoundException exception) {
             return ResponseEntity.notFound().build();
         } catch (GeneralServiceException exception) {
@@ -111,17 +114,18 @@ public class StaffController implements UserServiceInterface<Staff> {
         }
     }
 
-    @PutMapping(consumes = MediaType.APPLICATION_JSON_VALUE)
-    public ResponseEntity<?> update(@RequestHeader(value = HttpHeaders.IF_MATCH) String ifMatch, @RequestBody UserUpdateDTO userUpdateDTO) {
+    @PutMapping(value = "/update", consumes = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity<?> update(@RequestHeader(value = HttpHeaders.IF_MATCH) String ifMatch, @RequestBody @Valid UserUpdateDTO userUpdateDTO) {
         try {
-            Staff staff = new Staff(userUpdateDTO.getUserID(), userUpdateDTO.getUserLogin(), passwordEncoder.encode(userUpdateDTO.getUserPassword()), userUpdateDTO.isUserStatusActive());
-            if (jwsService.verifyUserSignature(ifMatch, staff)) {
-                Set<ConstraintViolation<Staff>> violationSet = validator.validate(staff);
-                List<String> messages = violationSet.stream().map(ConstraintViolation::getMessage).toList();
-                if (!violationSet.isEmpty()) {
-                    return ResponseEntity.badRequest().contentType(MediaType.APPLICATION_JSON).body(messages);
-                }
+            String password = userUpdateDTO.getUserPassword() == null ? null : passwordEncoder.encode(userUpdateDTO.getUserPassword());
+            Staff staff = new Staff(userUpdateDTO.getUserID(), userUpdateDTO.getUserLogin(), password, userUpdateDTO.isUserStatusActive());
+            Set<ConstraintViolation<User>> violationSet = validator.validate(staff);
+            List<String> messages = violationSet.stream().map(ConstraintViolation::getMessage).toList();
+            if (!violationSet.isEmpty()) {
+                return ResponseEntity.badRequest().contentType(MediaType.APPLICATION_JSON).body(messages);
+            }
 
+            if (jwsService.verifyUserSignature(ifMatch.replace("\"", ""), staff)) {
                 this.staffService.update(staff);
                 return ResponseEntity.noContent().build();
             } else {

@@ -20,7 +20,4 @@ public interface MovieServiceInterface extends ServiceInterface<Movie> {
     // Other methods
 
     ResponseEntity<?> findAllTicketsForCertainMovie(UUID movieID);
-
-    // Update methods
-    ResponseEntity<?> update(MovieDTO movieDTO);
 }

@@ -1,9 +1,10 @@
 package pl.pas.gr3.cinema.security.services;
 
 import com.auth0.jwt.JWT;
+import com.auth0.jwt.JWTVerifier;
 import com.auth0.jwt.algorithms.Algorithm;
+import com.auth0.jwt.interfaces.DecodedJWT;
 import io.jsonwebtoken.io.Decoders;
-import io.jsonwebtoken.security.Keys;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import pl.pas.gr3.cinema.consts.model.MovieConstants;
@@ -12,9 +13,6 @@ import pl.pas.gr3.cinema.consts.model.UserConstants;
 import pl.pas.gr3.cinema.model.Movie;
 import pl.pas.gr3.cinema.model.Ticket;
 import pl.pas.gr3.cinema.model.users.User;
-import pl.pas.gr3.dto.auth.UserUpdateDTO;
-
-import javax.crypto.SecretKey;
 
 @Service
 public class JWSService {
@@ -49,6 +47,12 @@ public class JWSService {
                 .withClaim(TicketConstants.USER_ID, ticket.getUserID().toString())
                 .withClaim(TicketConstants.MOVIE_ID, ticket.getMovieID().toString())
                 .sign(algorithm);
+    }
+
+    public String extractUsernameFromSignature(String signature) {
+        JWTVerifier jwtVerifier = JWT.require(Algorithm.HMAC256(getSignInKey())).build();
+        DecodedJWT decodedJWT = jwtVerifier.verify(signature);
+        return decodedJWT.getClaim(UserConstants.USER_LOGIN).asString();
     }
 
     public boolean verifyUserSignature(String signature, User user) {

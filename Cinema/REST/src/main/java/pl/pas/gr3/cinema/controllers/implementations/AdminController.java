@@ -1,6 +1,7 @@
 package pl.pas.gr3.cinema.controllers.implementations;
 
 import jakarta.validation.ConstraintViolation;
+import jakarta.validation.Valid;
 import jakarta.validation.Validation;
 import jakarta.validation.Validator;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -12,6 +13,7 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
 import pl.pas.gr3.cinema.exceptions.services.crud.admin.AdminServiceAdminNotFoundException;
+import pl.pas.gr3.cinema.model.users.User;
 import pl.pas.gr3.cinema.security.services.JWSService;
 import pl.pas.gr3.dto.auth.UserOutputDTO;
 import pl.pas.gr3.dto.auth.UserUpdateDTO;
@@ -75,7 +77,8 @@ public class AdminController implements UserServiceInterface<Admin> {
         try {
             Admin admin = this.adminService.findByLogin(SecurityContextHolder.getContext().getAuthentication().getName());
             UserOutputDTO userOutputDTO = new UserOutputDTO(admin.getUserID(), admin.getUserLogin(), admin.isUserStatusActive());
-            return ResponseEntity.ok().header(HttpHeaders.ETAG, jwsService.generateSignatureForUser(admin)).contentType(MediaType.APPLICATION_JSON).body(userOutputDTO);
+            String etagContent = jwsService.generateSignatureForUser(admin);
+            return ResponseEntity.ok().header(HttpHeaders.ETAG, etagContent).contentType(MediaType.APPLICATION_JSON).body(userOutputDTO);
         } catch (AdminServiceAdminNotFoundException exception) {
             return ResponseEntity.notFound().build();
         } catch (GeneralServiceException exception) {
@@ -108,18 +111,18 @@ public class AdminController implements UserServiceInterface<Admin> {
         }
     }
 
-    @PreAuthorize(value = "hasRole(T(pl.pas.gr3.cinema.model.users.Role).ADMIN)")
-    @PutMapping(consumes = MediaType.APPLICATION_JSON_VALUE)
-    public ResponseEntity<?> update(@RequestHeader(value = HttpHeaders.IF_MATCH) String ifMatch, @RequestBody UserUpdateDTO userUpdateDTO) {
+    @PutMapping(value = "/update", consumes = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity<?> update(@RequestHeader(value = HttpHeaders.IF_MATCH) String ifMatch, @RequestBody @Valid UserUpdateDTO userUpdateDTO) {
         try {
-            Admin admin = new Admin(userUpdateDTO.getUserID(), userUpdateDTO.getUserLogin(), passwordEncoder.encode(userUpdateDTO.getUserPassword()), userUpdateDTO.isUserStatusActive());
-            if (jwsService.verifyUserSignature(ifMatch, admin)) {
-                Set<ConstraintViolation<Admin>> violationSet = validator.validate(admin);
-                List<String> messages = violationSet.stream().map(ConstraintViolation::getMessage).toList();
-                if (!violationSet.isEmpty()) {
-                    return ResponseEntity.badRequest().contentType(MediaType.APPLICATION_JSON).body(messages);
-                }
+            String password = userUpdateDTO.getUserPassword() == null ? null : passwordEncoder.encode(userUpdateDTO.getUserPassword());
+            Admin admin = new Admin(userUpdateDTO.getUserID(), userUpdateDTO.getUserLogin(), password, userUpdateDTO.isUserStatusActive());
+            Set<ConstraintViolation<User>> violationSet = validator.validate(admin);
+            List<String> messages = violationSet.stream().map(ConstraintViolation::getMessage).toList();
+            if (!violationSet.isEmpty()) {
+                return ResponseEntity.badRequest().contentType(MediaType.APPLICATION_JSON).body(messages);
+            }
 
+            if (jwsService.verifyUserSignature(ifMatch.replace("\"", ""), admin)) {
                 this.adminService.update(admin);
                 return ResponseEntity.noContent().build();
             } else {

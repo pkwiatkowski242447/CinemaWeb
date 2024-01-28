@@ -115,9 +115,8 @@ public class MovieController implements MovieServiceInterface {
     }
 
     @PreAuthorize(value = "hasRole(T(pl.pas.gr3.cinema.model.users.Role).STAFF.name())")
-    @PutMapping(consumes = MediaType.APPLICATION_JSON_VALUE)
-    @Override
-    public ResponseEntity<?> update(@RequestBody MovieDTO movieDTO) {
+    @PutMapping(value = "/update", consumes = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity<?> update(@RequestHeader(value = HttpHeaders.IF_MATCH) String ifMatch, @RequestBody MovieDTO movieDTO) {
         try {
             Movie movie = new Movie(movieDTO.getMovieID(), movieDTO.getMovieTitle(), movieDTO.getMovieBasePrice(), movieDTO.getScrRoomNumber(), movieDTO.getNumberOfAvailableSeats());
 
@@ -127,15 +126,19 @@ public class MovieController implements MovieServiceInterface {
                 return ResponseEntity.badRequest().contentType(MediaType.APPLICATION_JSON).body(messages);
             }
 
-            this.movieService.update(movie);
-            return ResponseEntity.noContent().build();
+            if (jwsService.verifyMovieSignature(ifMatch.replace("\"", ""), movie)) {
+                this.movieService.update(movie);
+                return ResponseEntity.noContent().build();
+            } else {
+                return ResponseEntity.badRequest().contentType(MediaType.APPLICATION_JSON).body("Signature and given object does not match.");
+            }
         } catch (GeneralServiceException exception) {
             return ResponseEntity.badRequest().contentType(MediaType.APPLICATION_JSON).body(exception.getMessage());
         }
     }
 
     @PreAuthorize(value = "hasRole(T(pl.pas.gr3.cinema.model.users.Role).STAFF.name())")
-    @DeleteMapping(value = "/{id}")
+    @DeleteMapping(value = "/{id}/delete")
     @Override
     public ResponseEntity<?> delete(@PathVariable("id") UUID movieID) {
         try {

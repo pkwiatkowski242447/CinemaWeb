@@ -1,6 +1,7 @@
 package pl.pas.gr3.cinema.controllers.implementations;
 
 import jakarta.validation.ConstraintViolation;
+import jakarta.validation.Valid;
 import jakarta.validation.Validation;
 import jakarta.validation.Validator;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -12,6 +13,7 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
 import pl.pas.gr3.cinema.exceptions.services.crud.client.ClientServiceClientNotFoundException;
+import pl.pas.gr3.cinema.model.users.User;
 import pl.pas.gr3.cinema.security.services.JWSService;
 import pl.pas.gr3.dto.auth.UserOutputDTO;
 import pl.pas.gr3.dto.auth.UserUpdateDTO;
@@ -91,7 +93,8 @@ public class ClientController implements UserServiceInterface<Client> {
         try {
             Client client = this.clientService.findByLogin(SecurityContextHolder.getContext().getAuthentication().getName());
             UserOutputDTO userOutputDTO = new UserOutputDTO(client.getUserID(), client.getUserLogin(), client.isUserStatusActive());
-            return ResponseEntity.ok().header(HttpHeaders.ETAG, jwsService.generateSignatureForUser(client)).contentType(MediaType.APPLICATION_JSON).body(userOutputDTO);
+            String etagContent = jwsService.generateSignatureForUser(client);
+            return ResponseEntity.ok().header(HttpHeaders.ETAG, etagContent).contentType(MediaType.APPLICATION_JSON).body(userOutputDTO);
         } catch (ClientServiceClientNotFoundException exception) {
             return ResponseEntity.notFound().build();
         } catch (GeneralServiceException exception) {
@@ -111,7 +114,7 @@ public class ClientController implements UserServiceInterface<Client> {
         }
     }
 
-    @PreAuthorize(value = "hasRole(T(pl.pas.gr3.cinema.model.users.Role).STAFF.name())")
+    @PreAuthorize(value = "hasRole(T(pl.pas.gr3.cinema.model.users.Role).STAFF)")
     @GetMapping(value = "/{id}/ticket-list", produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<?> getTicketsForCertainUser(@PathVariable("id") UUID clientID) {
         try {
@@ -130,7 +133,7 @@ public class ClientController implements UserServiceInterface<Client> {
         }
     }
 
-    @GetMapping(value = "/ticket-list/self", produces = MediaType.APPLICATION_JSON_VALUE)
+    @GetMapping(value = "/self/ticket-list", produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<?> getTicketsForCertainUser() {
         try {
             Client client = this.clientService.findByLogin(SecurityContextHolder.getContext().getAuthentication().getName());
@@ -149,17 +152,18 @@ public class ClientController implements UserServiceInterface<Client> {
         }
     }
 
-    @PutMapping(consumes = MediaType.APPLICATION_JSON_VALUE)
-    public ResponseEntity<?> update(@RequestHeader(value = HttpHeaders.IF_MATCH) String ifMatch, @RequestBody UserUpdateDTO userUpdateDTO) {
+    @PutMapping(value = "/update", consumes = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity<?> update(@RequestHeader(value = HttpHeaders.IF_MATCH) String ifMatch, @RequestBody @Valid UserUpdateDTO userUpdateDTO) {
         try {
-            Client client = new Client(userUpdateDTO.getUserID(), userUpdateDTO.getUserLogin(), passwordEncoder.encode(userUpdateDTO.getUserPassword()), userUpdateDTO.isUserStatusActive());
-            if (jwsService.verifyUserSignature(ifMatch, client)) {
-                Set<ConstraintViolation<Client>> violationSet = validator.validate(client);
-                List<String> messages = violationSet.stream().map(ConstraintViolation::getMessage).toList();
-                if (!violationSet.isEmpty()) {
-                    return ResponseEntity.badRequest().contentType(MediaType.APPLICATION_JSON).body(messages);
-                }
+            String password = userUpdateDTO.getUserPassword() == null ? null : passwordEncoder.encode(userUpdateDTO.getUserPassword());
+            Client client = new Client(userUpdateDTO.getUserID(), userUpdateDTO.getUserLogin(), password, userUpdateDTO.isUserStatusActive());
+            Set<ConstraintViolation<User>> violationSet = validator.validate(client);
+            List<String> messages = violationSet.stream().map(ConstraintViolation::getMessage).toList();
+            if (!violationSet.isEmpty()) {
+                return ResponseEntity.badRequest().contentType(MediaType.APPLICATION_JSON).body(messages);
+            }
 
+            if (jwsService.verifyUserSignature(ifMatch.replace("\"", ""), client)) {
                 this.clientService.update(client);
                 return ResponseEntity.noContent().build();
             } else {

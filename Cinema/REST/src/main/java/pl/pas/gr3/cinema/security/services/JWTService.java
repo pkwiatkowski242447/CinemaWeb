@@ -37,39 +37,6 @@ public class JWTService {
         return decodedJWT.getExpiresAt();
     }
 
-//    public String extractUsername(String jwtToken) {
-//        return extractClaim(jwtToken, Claims::getSubject);
-//    }
-
-//    public Date extractExpirationDate(String jwtToken) {
-//        return extractClaim(jwtToken, Claims::getExpiration);
-//    }
-
-//    public <T> T extractClaim(String jwtToken, Function<Claims, T> claimResolver) {
-//        final Claims claims = extractAllClaims(jwtToken);
-//        return claimResolver.apply(claims);
-//    }
-//
-//    public Claims extractAllClaims(String jwtToken) {
-//        return Jwts
-//                .parser()
-//                .setSigningKey(this.getSignInKey())
-//                .build()
-//                .parseSignedClaims(jwtToken)
-//                .getPayload();
-//    }
-
-//    public String generateJWTToken(Map<String, Object> extractClaims, UserDetails userDetails) {
-//        return Jwts
-//                .builder()
-//                .claims(extractClaims)
-//                .subject(userDetails.getUsername())
-//                .issuedAt(new Date(Instant.now().toEpochMilli()))
-//                .expiration(new Date(Instant.now().plus(15, ChronoUnit.MINUTES).toEpochMilli()))
-//                .signWith(this.getSignInKey(), SignatureAlgorithm.HS256)
-//                .compact();
-//    }
-
     public String generateJWTToken(UserDetails userDetails) {
         Algorithm algorithm = Algorithm.HMAC256(getSignInKey());
         List<String> listOfRoles = new ArrayList<>();

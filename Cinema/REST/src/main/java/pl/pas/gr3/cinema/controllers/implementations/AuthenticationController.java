@@ -1,6 +1,7 @@
 package pl.pas.gr3.cinema.controllers.implementations;
 
 import jakarta.validation.ConstraintViolation;
+import jakarta.validation.Valid;
 import jakarta.validation.Validation;
 import jakarta.validation.Validator;
 import lombok.RequiredArgsConstructor;
@@ -9,6 +10,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -49,7 +51,7 @@ public class AuthenticationController {
     @PostMapping("/register/client")
     public ResponseEntity<?> registerClient(@RequestBody UserInputDTO userInputDTO) {
         try {
-            Client mockClient = new Client(UUID.randomUUID(), userInputDTO.getUserLogin(), userInputDTO.getUserLogin());
+            Client mockClient = new Client(UUID.randomUUID(), userInputDTO.getUserLogin(), userInputDTO.getUserPassword());
 
             Set<ConstraintViolation<User>> violationSet = validator.validate(mockClient);
             List<String> messages = violationSet.stream().map(ConstraintViolation::getMessage).toList();
@@ -139,5 +141,10 @@ public class AuthenticationController {
         } catch (GeneralAuthenticationLoginException exception) {
             return ResponseEntity.badRequest().contentType(MediaType.APPLICATION_JSON).body(exception.getMessage());
         }
+    }
+
+    @PostMapping("/logout")
+    public void logout() {
+        SecurityContextHolder.clearContext();
     }
 }
