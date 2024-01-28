@@ -57,26 +57,17 @@ public class JWSService {
 
     public boolean verifyUserSignature(String signature, User user) {
         String currentSignature = this.generateSignatureForUser(user);
-        if (signature.equals(currentSignature)) {
-            return true;
-        }
-        return false;
+        return signature.equals(currentSignature);
     }
 
     public boolean verifyMovieSignature(String signature, Movie movie) {
         String currentSignature = this.generateSignatureForMovie(movie);
-        if (signature.equals(currentSignature)) {
-            return true;
-        }
-        return false;
+        return signature.equals(currentSignature);
     }
 
     public boolean verifyTicketSignature(String signature, Ticket ticket) {
         String currentSignature = this.generateSignatureForTicket(ticket);
-        if (signature.equals(currentSignature)) {
-            return true;
-        }
-        return false;
+        return signature.equals(currentSignature);
     }
 
     private String getSignInKey() {

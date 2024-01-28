@@ -73,7 +73,11 @@ public class AuthenticationController {
     public ResponseEntity<?> loginClient(@RequestBody UserInputDTO userInputDTO) {
         try {
             Client client = authenticationService.loginClient(userInputDTO.getUserLogin(), userInputDTO.getUserPassword());
-            return ResponseEntity.ok().contentType(MediaType.APPLICATION_JSON).body(jwtService.generateJWTToken(client));
+            if (client.isUserStatusActive()) {
+                return ResponseEntity.ok().contentType(MediaType.APPLICATION_JSON).body(jwtService.generateJWTToken(client));
+            } else {
+                return ResponseEntity.badRequest().contentType(MediaType.APPLICATION_JSON).body("The account that you want to use is disabled.");
+            }
         } catch (GeneralAuthenticationLoginException exception) {
             return ResponseEntity.badRequest().contentType(MediaType.APPLICATION_JSON).body(exception.getMessage());
         }
@@ -105,7 +109,11 @@ public class AuthenticationController {
     public ResponseEntity<?> loginAdmin(@RequestBody UserInputDTO userInputDTO) {
         try {
             Admin admin = authenticationService.loginAdmin(userInputDTO.getUserLogin(), userInputDTO.getUserPassword());
-            return ResponseEntity.ok().contentType(MediaType.APPLICATION_JSON).body(jwtService.generateJWTToken(admin));
+            if (admin.isUserStatusActive()) {
+                return ResponseEntity.ok().contentType(MediaType.APPLICATION_JSON).body(jwtService.generateJWTToken(admin));
+            } else {
+                return ResponseEntity.badRequest().contentType(MediaType.APPLICATION_JSON).body("The account that you want to use is disabled.");
+            }
         } catch (GeneralAuthenticationLoginException exception) {
             return ResponseEntity.badRequest().contentType(MediaType.APPLICATION_JSON).body(exception.getMessage());
         }
@@ -137,7 +145,11 @@ public class AuthenticationController {
     public ResponseEntity<?> loginStaff(@RequestBody UserInputDTO userInputDTO) {
         try {
             Staff staff = authenticationService.loginStaff(userInputDTO.getUserLogin(), userInputDTO.getUserPassword());
-            return ResponseEntity.ok().contentType(MediaType.APPLICATION_JSON).body(jwtService.generateJWTToken(staff));
+            if (staff.isUserStatusActive()) {
+                return ResponseEntity.ok().contentType(MediaType.APPLICATION_JSON).body(jwtService.generateJWTToken(staff));
+            } else {
+                return ResponseEntity.badRequest().contentType(MediaType.APPLICATION_JSON).body("The account that you want to use is disabled.");
+            }
         } catch (GeneralAuthenticationLoginException exception) {
             return ResponseEntity.badRequest().contentType(MediaType.APPLICATION_JSON).body(exception.getMessage());
         }

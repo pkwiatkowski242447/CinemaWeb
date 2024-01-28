@@ -46,7 +46,7 @@ public class ClientController implements UserServiceInterface<Client> {
         this.passwordEncoder = passwordEncoder;
     }
 
-    @PreAuthorize(value = "hasRole(T(pl.pas.gr3.cinema.model.users.Role).STAFF.name()) || hasRole(T(pl.pas.gr3.cinema.model.users.Role).ADMIN.name())")
+    @PreAuthorize(value = "hasRole(T(pl.pas.gr3.cinema.model.users.Role).STAFF) || hasRole(T(pl.pas.gr3.cinema.model.users.Role).ADMIN)")
     @GetMapping(value = "/all", produces = MediaType.APPLICATION_JSON_VALUE)
     @Override
     public ResponseEntity<?> findAll() {
@@ -58,7 +58,7 @@ public class ClientController implements UserServiceInterface<Client> {
         }
     }
 
-    @PreAuthorize(value = "hasRole(T(pl.pas.gr3.cinema.model.users.Role).STAFF.name()) || hasRole(T(pl.pas.gr3.cinema.model.users.Role).ADMIN.name())")
+    @PreAuthorize(value = "hasRole(T(pl.pas.gr3.cinema.model.users.Role).STAFF) || hasRole(T(pl.pas.gr3.cinema.model.users.Role).ADMIN)")
     @GetMapping(value = "/{id}", produces = MediaType.APPLICATION_JSON_VALUE)
     @Override
     public ResponseEntity<?> findByUUID(@PathVariable("id") UUID clientID) {
@@ -73,7 +73,7 @@ public class ClientController implements UserServiceInterface<Client> {
         }
     }
 
-    @PreAuthorize(value = "hasRole(T(pl.pas.gr3.cinema.model.users.Role).STAFF.name()) || hasRole(T(pl.pas.gr3.cinema.model.users.Role).ADMIN.name())")
+    @PreAuthorize(value = "hasRole(T(pl.pas.gr3.cinema.model.users.Role).STAFF) || hasRole(T(pl.pas.gr3.cinema.model.users.Role).ADMIN)")
     @GetMapping(value = "/login/{login}", produces = MediaType.APPLICATION_JSON_VALUE)
     @Override
     public ResponseEntity<?> findByLogin(@PathVariable("login") String clientLogin) {
@@ -102,7 +102,7 @@ public class ClientController implements UserServiceInterface<Client> {
         }
     }
 
-    @PreAuthorize(value = "hasRole(T(pl.pas.gr3.cinema.model.users.Role).STAFF.name()) || hasRole(T(pl.pas.gr3.cinema.model.users.Role).ADMIN.name())")
+    @PreAuthorize(value = "hasRole(T(pl.pas.gr3.cinema.model.users.Role).STAFF) || hasRole(T(pl.pas.gr3.cinema.model.users.Role).ADMIN)")
     @GetMapping(produces = MediaType.APPLICATION_JSON_VALUE)
     @Override
     public ResponseEntity<?> findAllWithMatchingLogin(@RequestParam("match") String clientLogin) {
@@ -174,7 +174,7 @@ public class ClientController implements UserServiceInterface<Client> {
         }
     }
 
-    @PreAuthorize(value = "hasRole(T(pl.pas.gr3.cinema.model.users.Role).ADMIN.name())")
+    @PreAuthorize(value = "hasRole(T(pl.pas.gr3.cinema.model.users.Role).ADMIN)")
     @PostMapping(value = "/{id}/activate")
     @Override
     public ResponseEntity<?> activate(@PathVariable("id") UUID clientID) {
@@ -186,7 +186,7 @@ public class ClientController implements UserServiceInterface<Client> {
         }
     }
 
-    @PreAuthorize(value = "hasRole(T(pl.pas.gr3.cinema.model.users.Role).ADMIN.name())")
+    @PreAuthorize(value = "hasRole(T(pl.pas.gr3.cinema.model.users.Role).ADMIN)")
     @PostMapping(value = "/{id}/deactivate")
     @Override
     public ResponseEntity<?> deactivate(@PathVariable("id") UUID clientID) {

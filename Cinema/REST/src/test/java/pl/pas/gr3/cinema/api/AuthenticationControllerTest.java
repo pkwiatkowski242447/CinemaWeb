@@ -1548,6 +1548,29 @@ public class AuthenticationControllerTest {
         assertTrue(response.getBody().asString().isEmpty());
     }
 
+    @Test
+    public void authorizationControllerLoginToClientAccountThatIsDisabledTestNegative() {
+        String accessToken = this.loginToAccount(new UserInputDTO(adminUser.getUserLogin(), passwordNotHashed), TestConstants.adminLoginURL);
+
+        RequestSpecification requestSpecification = RestAssured.given();
+        requestSpecification.header("Authorization", "Bearer " + accessToken);
+
+        Response response = requestSpecification.post(TestConstants.clientsURL + "/" + clientUser.getUserID() + "/deactivate");
+        logger.debug("Response: " + response.getBody().asString());
+        ValidatableResponse validatableResponse = response.then();
+        validatableResponse.statusCode(204);
+
+        requestSpecification = RestAssured.given();
+        requestSpecification.contentType(ContentType.JSON);
+        requestSpecification.body(new UserInputDTO(clientUser.getUserLogin(), passwordNotHashed));
+
+        response = requestSpecification.post(TestConstants.clientLoginURL);
+        logger.debug("Response: " + response.getBody().asString());
+        validatableResponse = response.then();
+
+        validatableResponse.statusCode(403);
+    }
+
     // Staff
 
     @Test
@@ -1593,6 +1616,29 @@ public class AuthenticationControllerTest {
 
         validatableResponse.statusCode(403);
         assertTrue(response.getBody().asString().isEmpty());
+    }
+
+    @Test
+    public void authorizationControllerLoginToStaffAccountThatIsDisabledTestNegative() {
+        String accessToken = this.loginToAccount(new UserInputDTO(adminUser.getUserLogin(), passwordNotHashed), TestConstants.adminLoginURL);
+
+        RequestSpecification requestSpecification = RestAssured.given();
+        requestSpecification.header("Authorization", "Bearer " + accessToken);
+
+        Response response = requestSpecification.post(TestConstants.staffsURL + "/" + staffUser.getUserID() + "/deactivate");
+        logger.debug("Response: " + response.getBody().asString());
+        ValidatableResponse validatableResponse = response.then();
+        validatableResponse.statusCode(204);
+
+        requestSpecification = RestAssured.given();
+        requestSpecification.contentType(ContentType.JSON);
+        requestSpecification.body(new UserInputDTO(staffUser.getUserLogin(), passwordNotHashed));
+
+        response = requestSpecification.post(TestConstants.staffLoginURL);
+        logger.debug("Response: " + response.getBody().asString());
+        validatableResponse = response.then();
+
+        validatableResponse.statusCode(403);
     }
 
     // Admin
@@ -1654,5 +1700,28 @@ public class AuthenticationControllerTest {
         validatableResponse.statusCode(200);
 
         return response.getBody().asString();
+    }
+
+    @Test
+    public void authorizationControllerLoginToAdminAccountThatIsDisabledTestNegative() {
+        String accessToken = this.loginToAccount(new UserInputDTO(adminUser.getUserLogin(), passwordNotHashed), TestConstants.adminLoginURL);
+
+        RequestSpecification requestSpecification = RestAssured.given();
+        requestSpecification.header("Authorization", "Bearer " + accessToken);
+
+        Response response = requestSpecification.post(TestConstants.staffsURL + "/" + adminUser.getUserID() + "/deactivate");
+        logger.debug("Response: " + response.getBody().asString());
+        ValidatableResponse validatableResponse = response.then();
+        validatableResponse.statusCode(204);
+
+        requestSpecification = RestAssured.given();
+        requestSpecification.contentType(ContentType.JSON);
+        requestSpecification.body(new UserInputDTO(adminUser.getUserLogin(), passwordNotHashed));
+
+        response = requestSpecification.post(TestConstants.adminLoginURL);
+        logger.debug("Response: " + response.getBody().asString());
+        validatableResponse = response.then();
+
+        validatableResponse.statusCode(403);
     }
 }

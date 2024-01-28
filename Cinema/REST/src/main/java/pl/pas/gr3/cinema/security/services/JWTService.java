@@ -31,12 +31,6 @@ public class JWTService {
         return decodedJWT.getSubject();
     }
 
-    public Date extractExpirationDate(String jwtToken) {
-        JWTVerifier jwtVerifier = JWT.require(Algorithm.HMAC256(getSignInKey())).build();
-        DecodedJWT decodedJWT = jwtVerifier.verify(jwtToken);
-        return decodedJWT.getExpiresAt();
-    }
-
     public String generateJWTToken(UserDetails userDetails) {
         Algorithm algorithm = Algorithm.HMAC256(getSignInKey());
         List<String> listOfRoles = new ArrayList<>();

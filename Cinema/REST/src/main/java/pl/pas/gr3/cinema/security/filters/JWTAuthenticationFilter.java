@@ -6,6 +6,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpStatus;
 import org.springframework.lang.NonNull;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -39,7 +40,19 @@ public class JWTAuthenticationFilter extends OncePerRequestFilter {
         // TODO: Do sth when user is not enabled and when token signature is invalid
         if (userName != null && SecurityContextHolder.getContext().getAuthentication() == null) {
             UserDetails userDetails = this.userDetailsService.loadUserByUsername(userName);
-            if (jwtService.isTokenValid(jwtToken, userDetails) && userDetails.isEnabled()) {
+            if (!userDetails.isEnabled()) {
+                HttpServletResponse httpServletResponse = (HttpServletResponse) response;
+                httpServletResponse.setStatus(HttpStatus.BAD_REQUEST.value());
+                httpServletResponse.getWriter().write("Account that you want to use is disabled.");
+                SecurityContextHolder.clearContext();
+                return;
+            } else if (!jwtService.isTokenValid(jwtToken, userDetails)) {
+                HttpServletResponse httpServletResponse = (HttpServletResponse) response;
+                httpServletResponse.setStatus(HttpStatus.BAD_REQUEST.value());
+                httpServletResponse.getWriter().write("JWT Token signature is invalid.");
+                SecurityContextHolder.clearContext();
+                return;
+            } else {
                 UsernamePasswordAuthenticationToken authToken = new UsernamePasswordAuthenticationToken(userDetails, null, userDetails.getAuthorities());
                 authToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
                 SecurityContextHolder.getContext().setAuthentication(authToken);

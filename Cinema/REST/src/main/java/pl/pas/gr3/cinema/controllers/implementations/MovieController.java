@@ -41,7 +41,7 @@ public class MovieController implements MovieServiceInterface {
         this.jwsService = jwsService;
     }
 
-    @PreAuthorize(value = "hasRole(T(pl.pas.gr3.cinema.model.users.Role).STAFF.name())")
+    @PreAuthorize(value = "hasRole(T(pl.pas.gr3.cinema.model.users.Role).STAFF)")
     @PostMapping(consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
     @Override
     public ResponseEntity<?> create(@RequestBody MovieInputDTO movieInputDTO) {
@@ -61,7 +61,7 @@ public class MovieController implements MovieServiceInterface {
         }
     }
 
-    @PreAuthorize(value = "hasRole(T(pl.pas.gr3.cinema.model.users.Role).STAFF.name()) or hasRole(T(pl.pas.gr3.cinema.model.users.Role).CLIENT.name())")
+    @PreAuthorize(value = "hasRole(T(pl.pas.gr3.cinema.model.users.Role).STAFF) or hasRole(T(pl.pas.gr3.cinema.model.users.Role).CLIENT)")
     @GetMapping(value = "/all", produces = MediaType.APPLICATION_JSON_VALUE)
     @Override
     public ResponseEntity<?> findAll() {
@@ -82,7 +82,7 @@ public class MovieController implements MovieServiceInterface {
         }
     }
 
-    @PreAuthorize(value = "hasRole(T(pl.pas.gr3.cinema.model.users.Role).STAFF.name()) or hasRole(T(pl.pas.gr3.cinema.model.users.Role).CLIENT.name())")
+    @PreAuthorize(value = "hasRole(T(pl.pas.gr3.cinema.model.users.Role).STAFF) or hasRole(T(pl.pas.gr3.cinema.model.users.Role).CLIENT)")
     @GetMapping(value = "/{id}", produces = MediaType.APPLICATION_JSON_VALUE)
     @Override
     public ResponseEntity<?> findByUUID(@PathVariable("id") UUID movieID) {
@@ -97,7 +97,7 @@ public class MovieController implements MovieServiceInterface {
         }
     }
 
-    @PreAuthorize(value = "hasRole(T(pl.pas.gr3.cinema.model.users.Role).STAFF.name())")
+    @PreAuthorize(value = "hasRole(T(pl.pas.gr3.cinema.model.users.Role).STAFF)")
     @GetMapping(value = "{id}/tickets", produces = MediaType.APPLICATION_JSON_VALUE)
     @Override
     public ResponseEntity<?> findAllTicketsForCertainMovie(@PathVariable("id") UUID movieID) {
@@ -114,7 +114,7 @@ public class MovieController implements MovieServiceInterface {
         }
     }
 
-    @PreAuthorize(value = "hasRole(T(pl.pas.gr3.cinema.model.users.Role).STAFF.name())")
+    @PreAuthorize(value = "hasRole(T(pl.pas.gr3.cinema.model.users.Role).STAFF)")
     @PutMapping(value = "/update", consumes = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<?> update(@RequestHeader(value = HttpHeaders.IF_MATCH) String ifMatch, @RequestBody MovieDTO movieDTO) {
         try {
@@ -137,7 +137,7 @@ public class MovieController implements MovieServiceInterface {
         }
     }
 
-    @PreAuthorize(value = "hasRole(T(pl.pas.gr3.cinema.model.users.Role).STAFF.name())")
+    @PreAuthorize(value = "hasRole(T(pl.pas.gr3.cinema.model.users.Role).STAFF)")
     @DeleteMapping(value = "/{id}/delete")
     @Override
     public ResponseEntity<?> delete(@PathVariable("id") UUID movieID) {

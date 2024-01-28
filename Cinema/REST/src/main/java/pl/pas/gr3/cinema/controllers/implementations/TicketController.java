@@ -44,7 +44,7 @@ public class TicketController implements TicketServiceInterface {
         this.jwsService = jwsService;
     }
 
-    @PreAuthorize(value = "hasRole(T(pl.pas.gr3.cinema.model.users.Role).STAFF.name())")
+    @PreAuthorize(value = "hasRole(T(pl.pas.gr3.cinema.model.users.Role).STAFF)")
     @PostMapping(consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
     @Override
     public ResponseEntity<?> create(@RequestBody TicketInputDTO ticketInputDTO) {
@@ -65,7 +65,7 @@ public class TicketController implements TicketServiceInterface {
         }
     }
 
-    @PreAuthorize(value = "hasRole(T(pl.pas.gr3.cinema.model.users.Role).CLIENT.name())")
+    @PreAuthorize(value = "hasRole(T(pl.pas.gr3.cinema.model.users.Role).CLIENT)")
     @PostMapping(value = "/self", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<?> create(@RequestBody TicketSelfInputDTO ticketSelfInputDTO) {
         try {
@@ -110,7 +110,7 @@ public class TicketController implements TicketServiceInterface {
         }
     }
 
-    @PreAuthorize(value = "hasRole(T(pl.pas.gr3.cinema.model.users.Role).STAFF.name())")
+    @PreAuthorize(value = "hasRole(T(pl.pas.gr3.cinema.model.users.Role).STAFF)")
     @GetMapping(value = "/all", produces = MediaType.APPLICATION_JSON_VALUE)
     @Override
     public ResponseEntity<?> findAll() {
@@ -131,7 +131,7 @@ public class TicketController implements TicketServiceInterface {
         }
     }
 
-    @PreAuthorize(value = "hasRole(T(pl.pas.gr3.cinema.model.users.Role).CLIENT.name())")
+    @PreAuthorize(value = "hasRole(T(pl.pas.gr3.cinema.model.users.Role).CLIENT)")
     @PutMapping(value = "/update", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<?> update(@RequestHeader(value = HttpHeaders.IF_MATCH) String ifMatch, @RequestBody TicketDTO ticketDTO) {
         try {
@@ -160,7 +160,7 @@ public class TicketController implements TicketServiceInterface {
         }
     }
 
-    @PreAuthorize(value = "hasRole(T(pl.pas.gr3.cinema.model.users.Role).CLIENT.name())")
+    @PreAuthorize(value = "hasRole(T(pl.pas.gr3.cinema.model.users.Role).CLIENT)")
     @DeleteMapping(value = "/{id}/delete")
     @Override
     public ResponseEntity<?> delete(@PathVariable("id") UUID ticketID) {
