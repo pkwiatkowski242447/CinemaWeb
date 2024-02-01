@@ -156,7 +156,8 @@ public class AuthenticationController {
     }
 
     @PostMapping("/logout")
-    public void logout() {
+    public ResponseEntity<?> logout() {
         SecurityContextHolder.clearContext();
+        return ResponseEntity.ok().build();
     }
 }
