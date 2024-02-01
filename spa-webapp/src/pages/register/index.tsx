@@ -23,10 +23,12 @@ const RegisterPage: FC = () => {
     const onSubmit = handleSubmit((values) => {
         api.post(`/auth/register/${selectedUserType.toLowerCase()}`, values)
             .then(response => {
-                navigation("/login");
                 console.log(response)
                 if (response != null || response != undefined) {
                     alert("Utworzono użytkownika. Proszę się zalogować.")
+                    navigation("/login");
+                } else {
+                    alert("Podano nieprawidłowe dane.")
                 }
 
             })
@@ -34,6 +36,10 @@ const RegisterPage: FC = () => {
                 console.error(error);
             });
     });
+
+    const handleClick = () => {
+        navigation("/login");
+    };
 
     return (
         <>
@@ -53,14 +59,17 @@ const RegisterPage: FC = () => {
                                 value={selectedUserType}
                                 onChange={(e) => setSelectedUserType(e.target.value)}
                             >
-                                <option value="admin">Admin</option>
-                                <option value="client">Client</option>
-                                <option value="staff">Staff</option>
+                                {/*<option value="admin">Admin</option>*/}
+                                <option value="client">Client </option>
+                                {/*<option value="staff">Staff</option>*/}
                             </select>
                         </div>
                         <br/>
                         <Input label="Login: " placeholder="..." name="userLogin"/>
                         <Input label="Hasło: " placeholder="..." name="userPassword" type="password"/>
+                        <div onClick={handleClick} className="hover:cursor-pointer">
+                            <strong>Wróć do ekranu logowania</strong>
+                        </div>
                         <div className="flex justify-center">
                             <Button type="submit" label="Zarejestruj się"
                                     className="bg-gray-800 w-full mt-6 h-10 rounded-md font-medium text-white"/>

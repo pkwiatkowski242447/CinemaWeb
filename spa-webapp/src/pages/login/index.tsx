@@ -35,6 +35,10 @@ const LoginPage: FC = () => {
 
         api.post(endpoint, values)
             .then((response) => {
+                if (response == null || response == undefined) {
+                    alert("Podano nieprawidłowe dane logowania.")
+                }
+
                 const receivedToken = response.data;
                 setAuthHeader(receivedToken);
                 const alreadyDecodedToken: DecodedToken = jwtDecode(receivedToken);

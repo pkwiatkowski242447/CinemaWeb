@@ -211,11 +211,11 @@ public class TicketRepository extends MongoRepository implements TicketRepositor
                 throw new MovieNullReferenceException(MongoRepositoryMessages.MOVIE_DOC_OBJECT_NOT_FOUND);
             }
 
-            ticket = new Ticket(UUID.randomUUID(), movieTime, foundMovie.getMovieBasePrice(), clientID, movieID);
-            getTicketCollection().insertOne(ticket);
-
             Bson update = Updates.inc(MovieConstants.NUMBER_OF_AVAILABLE_SEATS, -1);
             getMovieCollection().updateOne(movieFilter, update);
+
+            ticket = new Ticket(UUID.randomUUID(), movieTime, foundMovie.getMovieBasePrice(), clientID, movieID);
+            getTicketCollection().insertOne(ticket);
 
             clientSession.commitTransaction();
         } catch (MongoException |
