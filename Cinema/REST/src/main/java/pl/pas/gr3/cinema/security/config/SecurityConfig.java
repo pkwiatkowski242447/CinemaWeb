@@ -66,9 +66,12 @@ public class SecurityConfig {
         corsConfiguration.setAllowedHeaders(List.of(
                 HttpHeaders.AUTHORIZATION,
                 HttpHeaders.CONTENT_TYPE,
+                HttpHeaders.IF_MATCH,
                 HttpHeaders.ACCEPT));
         corsConfiguration.setAllowedOriginPatterns(List.of("https://localhost:3000"));
-
+        corsConfiguration.addExposedHeader("Access-Token");
+        corsConfiguration.addExposedHeader("Uid");
+        corsConfiguration.addExposedHeader("ETag");
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", corsConfiguration);
         return source;
