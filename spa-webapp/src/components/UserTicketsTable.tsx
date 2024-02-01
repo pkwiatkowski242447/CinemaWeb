@@ -36,7 +36,7 @@ const UserTicketsTable: React.FC<TicketsTableProps> = () => {
     };
 
     const validationSchema = Yup.object().shape({
-        movieTime: Yup.string().required('Czas Seansu jest wymagany').matches(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}$/, 'Nieprawidłowy format czasu'),
+        movieTime: Yup.string().required('Czas Seansu jest wymagany').matches(/^\d{4}-\d{2}-\d{2}T(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d$/, 'Nieprawidłowy format czasu'),
         movieId: Yup.string().required('Tytuł filmu jest wymagany'),
     });
 
@@ -44,35 +44,38 @@ const UserTicketsTable: React.FC<TicketsTableProps> = () => {
         fetchData();
     }, [movies]);
 
-
-    useEffect(() => {
+    const filterMovies = () => {
         const filteredMovies = movies.filter(movie => movie.numberOfAvailableSeats > 0);
         setAvailableMovies(filteredMovies);
-    }, [movies]);
+    }
 
     useEffect(() => {
-        const fetchData = async () => {
-            try {
-                const response = await api.get('/movies/all');
-                const data = await response.data;
+        filterMovies()
+    }, [movies]);
 
-                const transformedMovies = data.map((movie: MovieType) => {
-                    return {
-                        movieId: movie["movie-id"],
-                        movieTitle: movie["movie-title"],
-                        movieBasePrice: movie["movie-base-price"],
-                        scrRoomNumber: movie["scr-room-number"],
-                        numberOfAvailableSeats: movie["number-of-available-seats"],
-                    };
-                });
+    const getAllMovies = async () => {
+        try {
+            const response = await api.get('/movies/all');
+            const data = await response.data;
 
-                setMovies(transformedMovies);
-            } catch (error) {
-                console.error('Error fetching movies:', error);
-            }
-        };
+            const transformedMovies = data.map((movie: MovieType) => {
+                return {
+                    movieId: movie["movie-id"],
+                    movieTitle: movie["movie-title"],
+                    movieBasePrice: movie["movie-base-price"],
+                    scrRoomNumber: movie["scr-room-number"],
+                    numberOfAvailableSeats: movie["number-of-available-seats"],
+                };
+            });
 
-        fetchData();
+            setMovies(transformedMovies);
+        } catch (error) {
+            console.error('Error fetching movies:', error);
+        }
+    };
+
+    useEffect(() => {
+        getAllMovies()
     }, []);
 
     const fetchData = async () => {
@@ -179,15 +182,22 @@ const UserTicketsTable: React.FC<TicketsTableProps> = () => {
 
             if (confirmSave) {
                 try {
-                    await api.post(endpoint, ticketToSend, {
+                    const response = await api.post(endpoint, ticketToSend, {
                         headers: {
                             'If-Match': etag,
                         },
                     });
-                    fetchData();
-                    handleCloseCreateModal();
-                    setConfirmSave(false);
-                    formik.resetForm();
+                    if (response == null || response == undefined) {
+                        alert("Wystąpił problem z kupnem biletu na ten film. Proszę wybrać inny film.")
+                        await getAllMovies()
+                        filterMovies()
+                        setConfirmSave(false);
+                    } else {
+                        fetchData();
+                        handleCloseCreateModal();
+                        setConfirmSave(false);
+                        formik.resetForm();
+                    }
                 } catch (error) {
                     console.error('Error creating ticket:', error);
                 }

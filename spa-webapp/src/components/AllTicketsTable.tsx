@@ -1,6 +1,6 @@
 import React, {useEffect, useState} from 'react';
 import {Button, Form, Modal, Table} from 'react-bootstrap';
-import {api, getAuthToken} from '../api/api.config';
+import {api} from '../api/api.config';
 import {TicketType} from '../types/ticketType.ts';
 import {AccountType} from '../types/accountType.ts';
 import {MovieType} from '../types/movieType.ts';
@@ -22,13 +22,11 @@ const AllTicketsTable: React.FC<TicketsTableProps> = () => {
     const [editedTicketFinalPrice, setEditedTicketFinalPrice] = useState<number>(0);
     const [editedClientId, setEditedClientId] = useState<AccountType['id']>('');
     const [editedMovieId, setEditedMovieId] = useState<MovieType['movieId']>('');
-    const [showDeleteModal, setShowDeleteModal] = useState(false);
-    const [ticketToDeleteId, setTicketToDeleteId] = useState('');
     const [confirmSave, setConfirmSave] = useState(false);
     const [selectedClientId, setSelectedClientId] = useState('');
 
     const validationSchema = Yup.object().shape({
-        movieTime: Yup.string().required('Czas Seansu jest wymagany').matches(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}$/, 'Nieprawidłowy format czasu'),
+        movieTime: Yup.string().required('Czas Seansu jest wymagany').matches(/^\d{4}-\d{2}-\d{2}T(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d$/, 'Nieprawidłowy format czasu'),
         clientId: Yup.string().required('Klient jest wymagany'),
         movieId: Yup.string().required('Tytuł filmu jest wymagany'),
     });
@@ -37,10 +35,13 @@ const AllTicketsTable: React.FC<TicketsTableProps> = () => {
         fetchData();
     }, [clients, movies, selectedClientId]);
 
-
-    useEffect(() => {
+    const filterMovies = () => {
         const filteredMovies = movies.filter(movie => movie.numberOfAvailableSeats > 0);
         setAvailableMovies(filteredMovies);
+    }
+
+    useEffect(() => {
+        filterMovies()
     }, [movies]);
 
     useEffect(() => {
@@ -48,29 +49,29 @@ const AllTicketsTable: React.FC<TicketsTableProps> = () => {
         setActiveClients(filteredClients);
     }, [clients]);
 
+    const getAllMovies = async () => {
+        try {
+            const response = await api.get('/movies/all');
+            const data = await response.data;
+
+            const transformedMovies = data.map((movie: MovieType) => {
+                return {
+                    movieId: movie["movie-id"],
+                    movieTitle: movie["movie-title"],
+                    movieBasePrice: movie["movie-base-price"],
+                    scrRoomNumber: movie["scr-room-number"],
+                    numberOfAvailableSeats: movie["number-of-available-seats"],
+                };
+            });
+
+            setMovies(transformedMovies);
+        } catch (error) {
+            console.error('Error fetching movies:', error);
+        }
+    };
+
     useEffect(() => {
-        const fetchData = async () => {
-            try {
-                const response = await api.get('/movies/all');
-                const data = await response.data;
-
-                const transformedMovies = data.map((movie: MovieType) => {
-                    return {
-                        movieId: movie["movie-id"],
-                        movieTitle: movie["movie-title"],
-                        movieBasePrice: movie["movie-base-price"],
-                        scrRoomNumber: movie["scr-room-number"],
-                        numberOfAvailableSeats: movie["number-of-available-seats"],
-                    };
-                });
-
-                setMovies(transformedMovies);
-            } catch (error) {
-                console.error('Error fetching movies:', error);
-            }
-        };
-
-        fetchData();
+        getAllMovies()
     }, []);
 
     useEffect(() => {
@@ -138,34 +139,6 @@ const AllTicketsTable: React.FC<TicketsTableProps> = () => {
         }
     };
 
-
-    const deleteTicket = async (ticketId: string) => {
-        const endpoint = `/tickets/${ticketId}/delete`;
-        const config = {
-            headers: {Authorization: `Bearer ${getAuthToken()}`}
-        };
-
-        try {
-            await api.delete(endpoint, config);
-            fetchData();
-        } catch (error) {
-            console.error('Error deleting movie:', error);
-        }
-    };
-
-    const handleDelete = (ticketId: string) => {
-        setTicketToDeleteId(ticketId);
-        setShowDeleteModal(true);
-    };
-
-    const confirmDelete = async () => {
-        if (ticketToDeleteId) {
-            await deleteTicket(ticketToDeleteId);
-            setTicketToDeleteId('');
-            setShowDeleteModal(false);
-        }
-    };
-
     const handleCreate = () => {
         setEditedMovieTime('');
         setEditedTicketFinalPrice(0);
@@ -192,11 +165,18 @@ const AllTicketsTable: React.FC<TicketsTableProps> = () => {
 
             if (confirmSave) {
                 try {
-                    await api.post(endpoint, ticketToSend);
-                    fetchData();
-                    handleCloseCreateModal();
-                    setConfirmSave(false);
-                    formik.resetForm();
+                    const response = await api.post(endpoint, ticketToSend);
+                    if (response == null || response == undefined) {
+                        alert("Wystąpił problem z kupnem biletu na ten film. Proszę wybrać inny film.")
+                        await getAllMovies()
+                        filterMovies()
+                        setConfirmSave(false);
+                    } else {
+                        fetchData();
+                        handleCloseCreateModal();
+                        setConfirmSave(false);
+                        formik.resetForm();
+                    }
                 } catch (error) {
                     console.error('Error creating ticket:', error);
                 }
@@ -337,23 +317,6 @@ const AllTicketsTable: React.FC<TicketsTableProps> = () => {
                             <br/> <strong>Wciśnij ponownie by potwierdzić.</strong></div>}
                     </Form>
                 </Modal.Body>
-            </Modal>
-
-            <Modal show={showDeleteModal} onHide={() => setShowDeleteModal(false)}>
-                <Modal.Header closeButton>
-                    <Modal.Title>Usuń Bilet</Modal.Title>
-                </Modal.Header>
-                <Modal.Body>
-                    Czy na pewno chcesz usunąć bilet?
-                </Modal.Body>
-                <Modal.Footer>
-                    <Button variant="outline-secondary" onClick={() => setShowDeleteModal(false)}>
-                        Anuluj
-                    </Button>
-                    <Button variant="outline-danger" onClick={confirmDelete}>
-                        Usuń
-                    </Button>
-                </Modal.Footer>
             </Modal>
         </div>
     )

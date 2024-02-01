@@ -122,10 +122,10 @@ const MoviesTable: React.FC<MoviesTableProps> = () => {
 
     const formikEdit = useFormik({
         initialValues: {
-            title: selectedMovie?.movieTitle || '',
-            basePrice: selectedMovie?.movieBasePrice || 0,
-            scrRoomNumber: selectedMovie?.scrRoomNumber || 0,
-            availableSeats: selectedMovie?.numberOfAvailableSeats || 0,
+            title: editedTitle || 'AAAAAAAA',
+            basePrice: editedBasePrice || 0,
+            scrRoomNumber: editedScrRoomNumber || 0,
+            availableSeats: editedAvailableSeats || 0,
         },
 
         validationSchema,
