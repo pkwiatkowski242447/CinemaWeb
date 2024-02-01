@@ -1,3 +1,4 @@
+import React from "react";
 import { FC } from "react";
 import { useNavigate } from "react-router-dom";
 
@@ -6,11 +7,14 @@ const LoginButton: FC = () => {
 
     const handleClick = () => {
         navigation("/login")
-        console.log("dupa")
     }
 
     return (
-        <button onClick={handleClick}>
+        <button
+            className="login-button"
+            style={{ fontWeight: "bold", color: "white" }}
+            onClick={handleClick}
+        >
             Zaloguj się
         </button>
     );

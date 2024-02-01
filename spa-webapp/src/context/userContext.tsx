@@ -1,7 +1,6 @@
 import {createContext, FC, ReactNode, useContext, useEffect, useState} from "react";
 import {AccountType} from "../types/accountType.ts";
 
-
 interface UserState {
     account: AccountType | null;
     setAccount: (item: { role: any; login: any }) => void;

@@ -9,7 +9,6 @@ import * as Yup from 'yup';
 
 
 interface TicketsTableProps {
-
 }
 
 const AllTicketsTable: React.FC<TicketsTableProps> = () => {
@@ -18,8 +17,6 @@ const AllTicketsTable: React.FC<TicketsTableProps> = () => {
     const [movies, setMovies] = useState<MovieType[]>([]);
     const [availableMovies, setAvailableMovies] = useState<MovieType[]>([]);
     const [activeClients, setActiveClients] = useState<AccountType[]>([]);
-    const [selectedTicket, setSelectedTicket] = useState<TicketType | null>(null);
-    const [showEditModal, setShowEditModal] = useState(false);
     const [showCreateModal, setShowCreateModal] = useState(false);
     const [editedMovieTime, setEditedMovieTime] = useState<string>('');
     const [editedTicketFinalPrice, setEditedTicketFinalPrice] = useState<number>(0);
@@ -81,7 +78,6 @@ const AllTicketsTable: React.FC<TicketsTableProps> = () => {
             try {
                 const response = await api.get(`/clients/all`);
                 const data = await response.data
-                console.log(data)
                 const transformedClients = data.map((client: any) => {
                     return {
                         id: client.userID,
@@ -170,15 +166,6 @@ const AllTicketsTable: React.FC<TicketsTableProps> = () => {
         }
     };
 
-    const handleEdit = (ticket: TicketType) => {
-        setSelectedTicket(ticket);
-        setEditedMovieTime(ticket.movieTime);
-        setEditedTicketFinalPrice(ticket.ticketFinalPrice);
-        setEditedClientId(ticket.clientId);
-        setEditedMovieId(ticket.movieId);
-        setShowEditModal(true);
-    };
-
     const handleCreate = () => {
         setEditedMovieTime('');
         setEditedTicketFinalPrice(0);
@@ -219,45 +206,6 @@ const AllTicketsTable: React.FC<TicketsTableProps> = () => {
         },
     });
 
-    const formikEdit = useFormik({
-        initialValues: {
-            movieTime: selectedTicket?.movieTime,
-        },
-        validationSchema: Yup.object().shape({
-            movieTime: Yup.string()
-                .required('Czas Seansu jest wymagany')
-                .matches(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}$/, 'Nieprawidłowy format czasu'),
-        }),
-        onSubmit: async (values) => {
-            const endpoint = `/tickets`;
-
-            const ticketToSend = {
-                'ticket-id': selectedTicket.ticketId,
-                'movie-time': values.movieTime,
-            };
-
-            if (confirmSave) {
-                try {
-                    await api.put(endpoint, ticketToSend);
-                    fetchData();
-                    handleCloseEditModal();
-                    setConfirmSave(false);
-                } catch (error) {
-                    console.error('Error saving edit:', error);
-                }
-            } else {
-                setConfirmSave(true);
-            }
-        },
-    });
-
-    const handleCloseEditModal = () => {
-        setSelectedTicket(null);
-        setShowEditModal(false);
-        formikEdit.resetForm()
-        setConfirmSave(false);
-    };
-
     const handleCloseCreateModal = () => {
         setShowCreateModal(false);
         formik.resetForm();
@@ -293,8 +241,6 @@ const AllTicketsTable: React.FC<TicketsTableProps> = () => {
                         <th>Cena Biletu</th>
                         <th>Login Klienta</th>
                         <th>Tytuł Filmu</th>
-                        <th>Edytuj</th>
-                        <th>Usuń</th>
                     </tr>
                     </thead>
                     <tbody>
@@ -305,16 +251,6 @@ const AllTicketsTable: React.FC<TicketsTableProps> = () => {
                             <td>{ticket.ticketFinalPrice}</td>
                             <td>{ticket.clientId}</td>
                             <td>{ticket.movieId}</td>
-                            <td>
-                                <Button variant="outline-primary" onClick={() => handleEdit(ticket)}>
-                                    Edytuj
-                                </Button>
-                            </td>
-                            <td>
-                                <Button variant="outline-danger" onClick={() => handleDelete(ticket.ticketId)}>
-                                    Usuń
-                                </Button>
-                            </td>
                         </tr>
                     ))}
                     </tbody>
@@ -323,71 +259,6 @@ const AllTicketsTable: React.FC<TicketsTableProps> = () => {
             <Button variant="outline-success" onClick={handleCreate}>
                 Utwórz Bilet
             </Button>
-            <Modal show={showEditModal} onHide={handleCloseEditModal}>
-                <Modal.Header closeButton>
-                    <Modal.Title>Edytuj Bilet</Modal.Title>
-                </Modal.Header>
-                <Modal.Body>
-                    <Form onSubmit={formikEdit.handleSubmit}>
-                        <Form.Group controlId="editMovieTimeInput">
-                            <Form.Label>Czas Seansu:</Form.Label>
-                            <Form.Control
-                                type="text"
-                                placeholder="Wpisz czas seansu:"
-                                name="movieTime"
-                                value={formikEdit.values.movieTime}
-                                onChange={formikEdit.handleChange}
-                                onBlur={formikEdit.handleBlur}
-                                isInvalid={formikEdit.touched.movieTime && !!formikEdit.errors.movieTime}
-                            />
-                            <Form.Control.Feedback type="invalid">{formikEdit.errors.movieTime}</Form.Control.Feedback>
-                        </Form.Group>
-                        <br/>
-                        <Form.Group controlId="editTicketFinalPriceInput">
-                            <Form.Label>Cena Biletu:</Form.Label>
-                            <Form.Control
-                                type="number"
-                                placeholder="Wpisz cenę biletu"
-                                step="0.01"
-                                value={editedTicketFinalPrice}
-                                onChange={(e) => setEditedTicketFinalPrice(Number(e.target.value))}
-                                disabled
-                            />
-                        </Form.Group>
-                        <br/>
-                        <Form.Group controlId="editClientIdInput">
-                            <Form.Label>Login Klienta:</Form.Label>
-                            <Form.Control
-                                type="text"
-                                placeholder="Enter client ID"
-                                value={editedClientId}
-                                onChange={(e) => setEditedClientId(e.target.value)}
-                                disabled
-                            />
-                        </Form.Group>
-                        <br/>
-                        <Form.Group controlId="editMovieIdInput">
-                            <Form.Label>Tytuł Filmu:</Form.Label>
-                            <Form.Control
-                                type="text"
-                                placeholder="Enter movie ID"
-                                value={editedMovieId}
-                                onChange={(e) => setEditedMovieId(e.target.value)}
-                                disabled
-                            />
-                        </Form.Group>
-                        <br/>
-                        <Button variant="outline-secondary" onClick={handleCloseEditModal}>
-                            Anuluj
-                        </Button>
-                        <Button variant="outline-primary" type="submit">
-                            Zapisz zmiany
-                        </Button>
-                        {confirmSave && <div>
-                            <br/> <strong>Wciśnij ponownie by potwierdzić.</strong></div>}
-                    </Form>
-                </Modal.Body>
-            </Modal>
 
             <Modal show={showCreateModal} onHide={handleCloseCreateModal}>
                 <Modal.Header closeButton>

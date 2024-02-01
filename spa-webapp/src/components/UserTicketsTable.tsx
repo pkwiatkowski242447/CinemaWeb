@@ -25,9 +25,15 @@ const UserTicketsTable: React.FC<TicketsTableProps> = () => {
     const [confirmSave, setConfirmSave] = useState(false);
 
     const getUserID = async () => {
-        const test = await api.get('/clients/login/self')
-        return test.data.userID;
-    }
+        try {
+            const test = await api.get('/clients/login/self');
+            const userID = test.data.userID;
+            return userID.toString();
+        } catch (error) {
+            console.error("Error fetching user ID:", error);
+            return null;
+        }
+    };
 
     const validationSchema = Yup.object().shape({
         movieTime: Yup.string().required('Czas Seansu jest wymagany').matches(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}$/, 'Nieprawidłowy format czasu'),
@@ -162,15 +168,22 @@ const UserTicketsTable: React.FC<TicketsTableProps> = () => {
         validationSchema,
         onSubmit: async (values) => {
             const endpoint = '/tickets/self';
+
+            const test = await api.get('/clients/login/self')
+            const etag = test.headers.etag;
+
             const ticketToSend = {
-                'movie-time': values.movieTime,
-                'client-id': getUserID(),
-                'movie-id': values.movieId,
+                movieTime: values.movieTime,
+                movieID: values.movieId,
             };
 
             if (confirmSave) {
                 try {
-                    await api.post(endpoint, ticketToSend);
+                    await api.post(endpoint, ticketToSend, {
+                        headers: {
+                            'If-Match': etag,
+                        },
+                    });
                     fetchData();
                     handleCloseCreateModal();
                     setConfirmSave(false);
@@ -194,16 +207,29 @@ const UserTicketsTable: React.FC<TicketsTableProps> = () => {
                 .matches(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}$/, 'Nieprawidłowy format czasu'),
         }),
         onSubmit: async (values) => {
-            const endpoint = `/tickets`;
+            const endpoint = `/tickets/update`;
+
+            const test = await api.get(`/tickets/${selectedTicket?.ticketId}`)
+            const etag = test.headers.etag;
+
+            const movieTest = movies.find((m) => m.movieTitle === selectedTicket?.movieId);
 
             const ticketToSend = {
-                'ticket-id': selectedTicket.ticketId,
+                'ticket-id': selectedTicket?.ticketId,
                 'movie-time': values.movieTime,
+                'ticket-final-price': selectedTicket?.ticketFinalPrice,
+                'client-id': await getUserID(),
+                'movie-id': movieTest?.movieId
             };
 
             if (confirmSave) {
                 try {
-                    await api.put(endpoint, ticketToSend);
+                    await api.put(endpoint, ticketToSend, {
+                            headers: {
+                                'If-Match': etag,
+                            },
+                        }
+                    );
                     fetchData();
                     handleCloseEditModal();
                     setConfirmSave(false);

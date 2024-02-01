@@ -31,12 +31,10 @@ const LoginPage: FC = () => {
     const [selectedUserType, setSelectedUserType] = useState<string>("client");
 
     const onSubmit = handleSubmit((values) => {
-        console.log(values);
         const endpoint = `/auth/login/${selectedUserType}`;
 
         api.post(endpoint, values)
             .then((response) => {
-                console.log(response.data);
                 const receivedToken = response.data;
                 setAuthHeader(receivedToken);
                 const alreadyDecodedToken: DecodedToken = jwtDecode(receivedToken);
