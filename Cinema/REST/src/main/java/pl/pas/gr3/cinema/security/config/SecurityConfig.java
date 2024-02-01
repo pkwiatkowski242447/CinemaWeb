@@ -45,20 +45,6 @@ public class SecurityConfig {
     }
 
     @Bean
-//    public CorsConfigurationSource corsConfigurationSource() {
-//        final CorsConfiguration corsConfiguration = new CorsConfiguration();
-//        corsConfiguration.setAllowCredentials(true);
-//        corsConfiguration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE"));
-//        corsConfiguration.setAllowedHeaders(List.of(
-//                HttpHeaders.AUTHORIZATION,
-//                HttpHeaders.CONTENT_TYPE,
-//                HttpHeaders.ACCEPT));
-//        corsConfiguration.setAllowedOrigins(List.of("https://localhost:3000"));
-//
-//        UrlBasedCorsConfigurationSource urlBasedCorsConfigurationSource = new UrlBasedCorsConfigurationSource();
-//        urlBasedCorsConfigurationSource.registerCorsConfiguration("/**", corsConfiguration);
-//        return urlBasedCorsConfigurationSource;
-//    }
     private static CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration corsConfiguration = new CorsConfiguration();
         corsConfiguration.setAllowCredentials(true);

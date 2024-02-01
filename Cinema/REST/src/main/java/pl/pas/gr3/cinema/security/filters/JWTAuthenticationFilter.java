@@ -37,7 +37,6 @@ public class JWTAuthenticationFilter extends OncePerRequestFilter {
         }
         final String jwtToken = authHeader.replaceAll("\\s+", "").substring(6);
         final String userName = jwtService.extractUsername(jwtToken);
-        // TODO: Do sth when user is not enabled and when token signature is invalid
         if (userName != null && SecurityContextHolder.getContext().getAuthentication() == null) {
             UserDetails userDetails = this.userDetailsService.loadUserByUsername(userName);
             if (!userDetails.isEnabled()) {
