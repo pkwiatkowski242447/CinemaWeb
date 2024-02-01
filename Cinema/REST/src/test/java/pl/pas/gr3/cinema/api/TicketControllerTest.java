@@ -221,7 +221,7 @@ public class TicketControllerTest {
     // Create tests
 
     @Test
-    public void ticketControllerCreateTicketAsAnUnauthenticatedClientTestNegative() {
+    public void ticketControllerCreateTicketAsAnUnauthenticatedUserTestNegative() {
         TicketSelfInputDTO ticketSelfInputDTO = new TicketSelfInputDTO(movieTimeNo1.toString(), movieNo1.getMovieID());
 
         RequestSpecification requestSpecification = RestAssured.given();

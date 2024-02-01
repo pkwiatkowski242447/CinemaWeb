@@ -36,7 +36,7 @@ const UserTicketsTable: React.FC<TicketsTableProps> = () => {
     };
 
     const validationSchema = Yup.object().shape({
-        movieTime: Yup.string().required('Czas Seansu jest wymagany').matches(/^\d{4}-\d{2}-\d{2}T(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d$/, 'Nieprawidłowy format czasu'),
+        movieTime: Yup.string().required('Czas Seansu jest wymagany').matches(/^\d{4}-(0[1-9]|1[0-2])-([0-2]\d|3[01])T(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d$/, 'Nieprawidłowy format czasu'),
         movieId: Yup.string().required('Tytuł filmu jest wymagany'),
     });
 

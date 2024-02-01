@@ -111,11 +111,16 @@ const UsersTable: React.FC<TableProps> = ({role}) => {
 
             if (confirmSave) {
                 try {
-                    await api.post(endpoint, saveToSend);
-                    fetchData();
-                    handleCloseCreateModal();
-                    setConfirmSave(false);
-                    formik.resetForm()
+                    const response = await api.post(endpoint, saveToSend);
+                    if (response == null || response == undefined) {
+                        alert("Wystąpił problem z utworzeniem użytkownika o wybranym loginie. Login już istnieje albo posiada go użytkownik o innej roli. ")
+                        setConfirmSave(false);
+                    } else {
+                        fetchData();
+                        handleCloseCreateModal();
+                        setConfirmSave(false);
+                        formik.resetForm()
+                    }
                 } catch (error) {
                     console.error('Error creating user:', error);
                 }

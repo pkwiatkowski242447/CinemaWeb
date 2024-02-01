@@ -26,7 +26,7 @@ const AllTicketsTable: React.FC<TicketsTableProps> = () => {
     const [selectedClientId, setSelectedClientId] = useState('');
 
     const validationSchema = Yup.object().shape({
-        movieTime: Yup.string().required('Czas Seansu jest wymagany').matches(/^\d{4}-\d{2}-\d{2}T(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d$/, 'Nieprawidłowy format czasu'),
+        movieTime: Yup.string().required('Czas Seansu jest wymagany').matches(/^\d{4}-(0[1-9]|1[0-2])-([0-2]\d|3[01])T(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d$/, 'Nieprawidłowy format czasu'),
         clientId: Yup.string().required('Klient jest wymagany'),
         movieId: Yup.string().required('Tytuł filmu jest wymagany'),
     });
@@ -44,9 +44,13 @@ const AllTicketsTable: React.FC<TicketsTableProps> = () => {
         filterMovies()
     }, [movies]);
 
-    useEffect(() => {
+    const filterClients = () => {
         const filteredClients = clients.filter(client => client.statusActive);
         setActiveClients(filteredClients);
+    }
+
+    useEffect(() => {
+        filterClients()
     }, [clients]);
 
     const getAllMovies = async () => {
@@ -74,25 +78,25 @@ const AllTicketsTable: React.FC<TicketsTableProps> = () => {
         getAllMovies()
     }, []);
 
-    useEffect(() => {
-        const fetchData = async () => {
-            try {
-                const response = await api.get(`/clients/all`);
-                const data = await response.data
-                const transformedClients = data.map((client: any) => {
-                    return {
-                        id: client.userID,
-                        login: client.userLogin,
-                        statusActive: client.userStatusActive,
-                    };
-                });
-                setClients(transformedClients);
-            } catch (error) {
-                console.error('Error fetching data:', error);
-            }
-        };
+    const fetchClients = async () => {
+        try {
+            const response = await api.get(`/clients/all`);
+            const data = await response.data
+            const transformedClients = data.map((client: any) => {
+                return {
+                    id: client.userID,
+                    login: client.userLogin,
+                    statusActive: client.userStatusActive,
+                };
+            });
+            setClients(transformedClients);
+        } catch (error) {
+            console.error('Error fetching data:', error);
+        }
+    };
 
-        fetchData();
+    useEffect(() => {
+        fetchClients()
     }, []);
 
     const fetchData = async () => {
@@ -167,9 +171,11 @@ const AllTicketsTable: React.FC<TicketsTableProps> = () => {
                 try {
                     const response = await api.post(endpoint, ticketToSend);
                     if (response == null || response == undefined) {
-                        alert("Wystąpił problem z kupnem biletu na ten film. Proszę wybrać inny film.")
+                        alert("Wystąpił problem z kupnem biletu na ten film - film jest już niedostępny i/lub klient został dezaktywowany.")
                         await getAllMovies()
+                        await fetchClients()
                         filterMovies()
+                        filterClients()
                         setConfirmSave(false);
                     } else {
                         fetchData();
