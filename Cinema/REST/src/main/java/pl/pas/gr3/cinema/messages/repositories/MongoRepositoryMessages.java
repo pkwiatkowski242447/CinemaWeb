@@ -2,6 +2,7 @@ package pl.pas.gr3.cinema.messages.repositories;
 
 public class MongoRepositoryMessages {
 
+    public static final String USER_DOC_OBJECT_NOT_FOUND = "User document with given login could not be found in the database.";
     public static final String CLIENT_DOC_OBJECT_NOT_FOUND = "Client document with given ID could not be found in the database.";
     public static final String ADMIN_DOC_OBJECT_NOT_FOUND = "Admin document with given ID could not be found in the database.";
     public static final String STAFF_DOC_OBJECT_NOT_FOUND = "Staff document with given ID could not be found in the database.";

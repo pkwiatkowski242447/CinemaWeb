@@ -1,8 +1,8 @@
 package pl.pas.gr3.mvc.dao.interfaces;
 
-import pl.pas.gr3.dto.users.ClientDTO;
-import pl.pas.gr3.dto.users.ClientInputDTO;
-import pl.pas.gr3.dto.users.ClientPasswordDTO;
+import pl.pas.gr3.dto.output.ClientDTO;
+import pl.pas.gr3.dto.input.ClientInputDTO;
+import pl.pas.gr3.dto.update.ClientPasswordDTO;
 import pl.pas.gr3.mvc.exceptions.daos.client.*;
 
 import java.util.List;

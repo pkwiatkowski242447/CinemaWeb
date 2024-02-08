@@ -1,13 +1,27 @@
-import {FC} from "react";
+import {FC, useEffect} from "react";
 import 'bootstrap/dist/css/bootstrap.min.css';
 import UsersTable from "../../../components/UsersTable.tsx";
+import {useUserContext} from "../../../context/userContext.tsx";
+import {useNavigate} from "react-router-dom";
+import {AccountTypeEnum} from "../../../types/accountType.ts";
 
 const StaffsPage: FC = () => {
+    const {account} = useUserContext();
+    const navigation = useNavigate();
 
+    useEffect(() => {
+        if (account?.role[0] !== AccountTypeEnum.ADMIN) {
+            navigation("/");
+        }
+    }, [account, navigation]);
     return (
-        <div>
-            <UsersTable role={"staffs"}/>
-        </div>
+        <>
+            {account?.role[0] === AccountTypeEnum.ADMIN && (
+                <div>
+                    <UsersTable role={"staffs"}/>
+                </div>
+            )}
+        </>
     );
 };
 

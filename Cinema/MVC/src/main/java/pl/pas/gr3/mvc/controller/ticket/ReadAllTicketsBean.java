@@ -1,14 +1,13 @@
 package pl.pas.gr3.mvc.controller.ticket;
 
 import jakarta.annotation.PostConstruct;
-import jakarta.enterprise.context.RequestScoped;
 import jakarta.faces.view.ViewScoped;
 import jakarta.inject.Inject;
 import jakarta.inject.Named;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
-import pl.pas.gr3.dto.TicketDTO;
+import pl.pas.gr3.dto.output.TicketDTO;
 import pl.pas.gr3.mvc.dao.implementations.TicketDao;
 import pl.pas.gr3.mvc.dao.interfaces.ITicketDao;
 import pl.pas.gr3.mvc.dto.TicketWithUserAndMovie;

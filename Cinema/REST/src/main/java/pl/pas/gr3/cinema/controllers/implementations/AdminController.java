@@ -1,27 +1,27 @@
 package pl.pas.gr3.cinema.controllers.implementations;
 
 import jakarta.validation.ConstraintViolation;
+import jakarta.validation.Valid;
 import jakarta.validation.Validation;
 import jakarta.validation.Validator;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.HttpStatus;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
 import pl.pas.gr3.cinema.exceptions.services.crud.admin.AdminServiceAdminNotFoundException;
-import pl.pas.gr3.cinema.exceptions.services.crud.admin.AdminServiceCreateAdminDuplicateLoginException;
 import pl.pas.gr3.cinema.model.users.User;
-import pl.pas.gr3.dto.TicketDTO;
-import pl.pas.gr3.dto.users.AdminDTO;
-import pl.pas.gr3.dto.users.AdminInputDTO;
-import pl.pas.gr3.dto.users.AdminPasswordDTO;
+import pl.pas.gr3.cinema.security.services.JWSService;
+import pl.pas.gr3.dto.auth.UserOutputDTO;
+import pl.pas.gr3.dto.auth.UserUpdateDTO;
 import pl.pas.gr3.cinema.exceptions.services.GeneralServiceException;
 import pl.pas.gr3.cinema.services.implementations.AdminService;
-import pl.pas.gr3.cinema.model.Ticket;
 import pl.pas.gr3.cinema.model.users.Admin;
 import pl.pas.gr3.cinema.controllers.interfaces.UserServiceInterface;
 
-import java.net.URI;
 import java.util.*;
 
 
@@ -33,39 +33,24 @@ public class AdminController implements UserServiceInterface<Admin> {
     private final Validator validator = Validation.buildDefaultValidatorFactory().getValidator();
 
     private final AdminService adminService;
+    private final JWSService jwsService;
+    private final PasswordEncoder passwordEncoder;
 
     @Autowired
-    public AdminController(AdminService adminService) {
+    public AdminController(AdminService adminService, JWSService jwsService, PasswordEncoder passwordEncoder) {
         this.adminService = adminService;
+        this.jwsService = jwsService;
+        this.passwordEncoder = passwordEncoder;
     }
 
-    @PostMapping(consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
-    public ResponseEntity<?> create(@RequestBody AdminInputDTO adminInputDTO) {
-        try {
-            Admin admin = this.adminService.create(adminInputDTO.getAdminLogin(), adminInputDTO.getAdminPassword());
-
-            Set<ConstraintViolation<User>> violationSet = validator.validate(admin);
-            List<String> messages = violationSet.stream().map(ConstraintViolation::getMessage).toList();
-            if (!violationSet.isEmpty()) {
-                return ResponseEntity.status(HttpStatus.BAD_REQUEST).contentType(MediaType.APPLICATION_JSON).body(messages);
-            }
-
-            AdminDTO adminDTO = new AdminDTO(admin.getUserID(), admin.getUserLogin(), admin.isUserStatusActive());
-            return ResponseEntity.created(URI.create("http://localhost:8000/api/v1/admins/" + adminDTO.getAdminID().toString())).contentType(MediaType.APPLICATION_JSON).body(adminDTO);
-        } catch (AdminServiceCreateAdminDuplicateLoginException exception) {
-            return ResponseEntity.status(HttpStatus.CONFLICT).contentType(MediaType.APPLICATION_JSON).body(exception.getMessage());
-        } catch (GeneralServiceException exception) {
-            return ResponseEntity.badRequest().contentType(MediaType.APPLICATION_JSON).body(exception.getMessage());
-        }
-    }
-
+    @PreAuthorize(value = "hasRole(T(pl.pas.gr3.cinema.model.users.Role).ADMIN)")
     @GetMapping(value = "/{id}", produces = MediaType.APPLICATION_JSON_VALUE)
     @Override
     public ResponseEntity<?> findByUUID(@PathVariable("id") UUID adminID) {
         try {
             Admin admin = this.adminService.findByUUID(adminID);
-            AdminDTO adminDTO = new AdminDTO(admin.getUserID(), admin.getUserLogin(), admin.isUserStatusActive());
-            return this.generateResponseEntityForDTO(adminDTO);
+            UserOutputDTO userOutputDTO = new UserOutputDTO(admin.getUserID(), admin.getUserLogin(), admin.isUserStatusActive());
+            return this.generateResponseEntityForDTO(userOutputDTO);
         } catch (AdminServiceAdminNotFoundException exception) {
             return ResponseEntity.notFound().build();
         } catch (GeneralServiceException exception) {
@@ -73,13 +58,14 @@ public class AdminController implements UserServiceInterface<Admin> {
         }
     }
 
+    @PreAuthorize(value = "hasRole(T(pl.pas.gr3.cinema.model.users.Role).ADMIN)")
     @GetMapping(value = "/login/{login}", produces = MediaType.APPLICATION_JSON_VALUE)
     @Override
     public ResponseEntity<?> findByLogin(@PathVariable("login") String adminLogin) {
         try {
             Admin admin = this.adminService.findByLogin(adminLogin);
-            AdminDTO adminDTO = new AdminDTO(admin.getUserID(), admin.getUserLogin(), admin.isUserStatusActive());
-            return this.generateResponseEntityForDTO(adminDTO);
+            UserOutputDTO userOutputDTO = new UserOutputDTO(admin.getUserID(), admin.getUserLogin(), admin.isUserStatusActive());
+            return this.generateResponseEntityForDTO(userOutputDTO);
         } catch (AdminServiceAdminNotFoundException exception) {
             return ResponseEntity.notFound().build();
         } catch (GeneralServiceException exception) {
@@ -87,66 +73,68 @@ public class AdminController implements UserServiceInterface<Admin> {
         }
     }
 
+    @GetMapping(value = "/login/self", produces = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity<?> findByLogin() {
+        try {
+            Admin admin = this.adminService.findByLogin(SecurityContextHolder.getContext().getAuthentication().getName());
+            UserOutputDTO userOutputDTO = new UserOutputDTO(admin.getUserID(), admin.getUserLogin(), admin.isUserStatusActive());
+            String etagContent = jwsService.generateSignatureForUser(admin);
+            return ResponseEntity.ok().header(HttpHeaders.ETAG, etagContent).contentType(MediaType.APPLICATION_JSON).body(userOutputDTO);
+        } catch (AdminServiceAdminNotFoundException exception) {
+            return ResponseEntity.notFound().build();
+        } catch (GeneralServiceException exception) {
+            return ResponseEntity.badRequest().contentType(MediaType.APPLICATION_JSON).body(exception.getMessage());
+        }
+    }
+
+    @PreAuthorize(value = "hasRole(T(pl.pas.gr3.cinema.model.users.Role).ADMIN)")
     @GetMapping(produces = MediaType.APPLICATION_JSON_VALUE)
     @Override
     public ResponseEntity<?> findAllWithMatchingLogin(@RequestParam("match") String adminLogin) {
         try {
-            List<AdminDTO> listOfDTOs = this.getListOfAdminDTOs(this.adminService.findAllMatchingLogin(adminLogin));
+            List<UserOutputDTO> listOfDTOs = this.getListOfUserDTOs(this.adminService.findAllMatchingLogin(adminLogin));
             return this.generateResponseEntityForListOfDTOs(listOfDTOs);
         } catch (GeneralServiceException exception) {
             return ResponseEntity.badRequest().contentType(MediaType.APPLICATION_JSON).body(exception.getMessage());
         }
     }
 
-    @GetMapping(value = "/{id}/ticket-list", produces = MediaType.APPLICATION_JSON_VALUE)
-    @Override
-    public ResponseEntity<?> getTicketsForCertainUser(@PathVariable("id") UUID adminID) {
-        try {
-            List<Ticket> listOfTicketsForAnAdmin = this.adminService.getTicketsForClient(adminID);
-            List<TicketDTO> listOfDTOs = new ArrayList<>();
-            for (Ticket ticket : listOfTicketsForAnAdmin) {
-                listOfDTOs.add(new TicketDTO(ticket.getTicketID(), ticket.getMovieTime(), ticket.getTicketPrice(), ticket.getUserID(), ticket.getMovieID()));
-            }
-            if (listOfTicketsForAnAdmin.isEmpty()) {
-                return ResponseEntity.noContent().build();
-            } else {
-                return ResponseEntity.ok().contentType(MediaType.APPLICATION_JSON).body(listOfDTOs);
-            }
-        } catch (GeneralServiceException exception) {
-            return ResponseEntity.badRequest().contentType(MediaType.APPLICATION_JSON).body(exception.getMessage());
-        }
-    }
-
+    @PreAuthorize(value = "hasRole(T(pl.pas.gr3.cinema.model.users.Role).ADMIN)")
     @GetMapping(value = "/all", produces = MediaType.APPLICATION_JSON_VALUE)
     @Override
     public ResponseEntity<?> findAll() {
         try {
             List<Admin> listOfAdmins = this.adminService.findAll();
-            List<AdminDTO> listOfDTOs = this.getListOfAdminDTOs(listOfAdmins);
+            List<UserOutputDTO> listOfDTOs = this.getListOfUserDTOs(listOfAdmins);
             return this.generateResponseEntityForListOfDTOs(listOfDTOs);
         } catch (GeneralServiceException exception) {
             return ResponseEntity.badRequest().contentType(MediaType.APPLICATION_JSON).body(exception.getMessage());
         }
     }
 
-    @PutMapping(consumes = MediaType.APPLICATION_JSON_VALUE)
-    public ResponseEntity<?> update(@RequestBody AdminPasswordDTO adminPasswordDTO) {
+    @PutMapping(value = "/update", consumes = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity<?> update(@RequestHeader(value = HttpHeaders.IF_MATCH) String ifMatch, @RequestBody @Valid UserUpdateDTO userUpdateDTO) {
         try {
-            Admin admin = new Admin(adminPasswordDTO.getAdminID(), adminPasswordDTO.getAdminLogin(), adminPasswordDTO.getAdminPassword(), adminPasswordDTO.isAdminStatusActive());
-
-            Set<ConstraintViolation<Admin>> violationSet = validator.validate(admin);
+            String password = userUpdateDTO.getUserPassword() == null ? null : passwordEncoder.encode(userUpdateDTO.getUserPassword());
+            Admin admin = new Admin(userUpdateDTO.getUserID(), userUpdateDTO.getUserLogin(), password, userUpdateDTO.isUserStatusActive());
+            Set<ConstraintViolation<User>> violationSet = validator.validate(admin);
             List<String> messages = violationSet.stream().map(ConstraintViolation::getMessage).toList();
             if (!violationSet.isEmpty()) {
                 return ResponseEntity.badRequest().contentType(MediaType.APPLICATION_JSON).body(messages);
             }
 
-            this.adminService.update(admin);
-            return ResponseEntity.noContent().build();
+            if (jwsService.verifyUserSignature(ifMatch.replace("\"", ""), admin)) {
+                this.adminService.update(admin);
+                return ResponseEntity.noContent().build();
+            } else {
+                return ResponseEntity.badRequest().contentType(MediaType.APPLICATION_JSON).body("Signature and given object does not match.");
+            }
         } catch (GeneralServiceException exception) {
             return ResponseEntity.badRequest().contentType(MediaType.APPLICATION_JSON).body(exception.getMessage());
         }
     }
 
+    @PreAuthorize(value = "hasRole(T(pl.pas.gr3.cinema.model.users.Role).ADMIN)")
     @PostMapping(value = "/{id}/activate")
     @Override
     public ResponseEntity<?> activate(@PathVariable("id") UUID adminID) {
@@ -158,6 +146,7 @@ public class AdminController implements UserServiceInterface<Admin> {
         }
     }
 
+    @PreAuthorize(value = "hasRole(T(pl.pas.gr3.cinema.model.users.Role).ADMIN)")
     @PostMapping(value = "/{id}/deactivate")
     @Override
     public ResponseEntity<?> deactivate(@PathVariable("id") UUID adminID) {
@@ -169,23 +158,23 @@ public class AdminController implements UserServiceInterface<Admin> {
         }
     }
 
-    private List<AdminDTO> getListOfAdminDTOs(List<Admin> listOfAdmins) {
-        List<AdminDTO> listOfDTOs = new ArrayList<>();
+    private List<UserOutputDTO> getListOfUserDTOs(List<Admin> listOfAdmins) {
+        List<UserOutputDTO> listOfDTOs = new ArrayList<>();
         for (Admin admin : listOfAdmins) {
-            listOfDTOs.add(new AdminDTO(admin.getUserID(), admin.getUserLogin(), admin.isUserStatusActive()));
+            listOfDTOs.add(new UserOutputDTO(admin.getUserID(), admin.getUserLogin(), admin.isUserStatusActive()));
         }
         return listOfDTOs;
     }
 
-    private ResponseEntity<?> generateResponseEntityForDTO(AdminDTO adminDTO) {
-        if (adminDTO == null) {
+    private ResponseEntity<?> generateResponseEntityForDTO(UserOutputDTO userOutputDTO) {
+        if (userOutputDTO == null) {
             return ResponseEntity.noContent().build();
         } else {
-            return ResponseEntity.ok().contentType(MediaType.APPLICATION_JSON).body(adminDTO);
+            return ResponseEntity.ok().contentType(MediaType.APPLICATION_JSON).body(userOutputDTO);
         }
     }
 
-    private ResponseEntity<?> generateResponseEntityForListOfDTOs(List<AdminDTO> listOfDTOs) {
+    private ResponseEntity<?> generateResponseEntityForListOfDTOs(List<UserOutputDTO> listOfDTOs) {
         if (listOfDTOs.isEmpty()) {
             return ResponseEntity.noContent().build();
         } else {

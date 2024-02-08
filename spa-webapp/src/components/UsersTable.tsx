@@ -4,6 +4,7 @@ import {AccountType} from "../types/accountType.ts";
 import {api} from "../api/api.config.ts";
 import {useFormik} from 'formik';
 import * as Yup from 'yup';
+import {useUserContext} from "../context/userContext.tsx";
 
 interface TableProps {
     role: 'clients' | 'admins' | 'staffs';
@@ -12,13 +13,12 @@ interface TableProps {
 const UsersTable: React.FC<TableProps> = ({role}) => {
     const [users, setUsers] = useState<AccountType[]>([]);
     const [filter, setFilter] = useState('');
-    const [selectedUser, setSelectedUser] = useState<AccountType | null>(null);
-    const [showEditModal, setShowEditModal] = useState(false);
     const [showCreateModal, setShowCreateModal] = useState(false);
     const [editedPassword, setEditedPassword] = useState('');
     const [editedLogin, setEditedLogin] = useState('');
     const [confirmPassword, setConfirmPassword] = useState('');
     const [confirmSave, setConfirmSave] = useState(false);
+    const {account} = useUserContext();
 
     let modalTitle = '';
     let filterText = '';
@@ -57,22 +57,15 @@ const UsersTable: React.FC<TableProps> = ({role}) => {
 
             const transformedUsers = data.map((user: any) => {
                 return {
-                    id: user.id,
-                    login: user.login,
-                    statusActive: user['status-active'],
+                    id: user.userID,
+                    login: user.userLogin,
+                    statusActive: user.userStatusActive
                 };
             });
             setUsers(transformedUsers);
         } catch (error) {
             console.error('Error fetching data:', error);
         }
-    };
-
-    const handleEdit = (user: AccountType) => {
-        setSelectedUser(user);
-        setEditedPassword('');
-        setConfirmPassword('');
-        setShowEditModal(true);
     };
 
     const handleCreate = () => {
@@ -111,56 +104,23 @@ const UsersTable: React.FC<TableProps> = ({role}) => {
             }
 
             const saveToSend = {
-                login: values.login,
-                password: values.password
+                userLogin: values.login,
+                userPassword: values.password
             }
-            const endpoint = `/${role}`;
+            const endpoint = `/auth/register/${role.slice(0, -1)}`;
 
-            console.log(saveToSend)
             if (confirmSave) {
                 try {
-                    await api.post(endpoint, saveToSend);
-                    fetchData();
-                    handleCloseCreateModal();
-                    setConfirmSave(false);
-                    formik.resetForm()
-                } catch (error) {
-                    console.error('Error creating user:', error);
-                }
-            } else {
-                setConfirmSave(true);
-            }
-        },
-    });
-
-    const formikEdit = useFormik({
-        initialValues: {
-            login: selectedUser?.login,
-            password: '',
-            confirmPassword: '',
-        },
-        validationSchema,
-        onSubmit: async (values) => {
-            if (editedPassword !== confirmPassword) {
-                console.error('Passwords do not match');
-                return;
-            }
-
-            const editToSend = {
-                id: selectedUser?.id,
-                login: values.login,
-                password: values.password
-            }
-            const endpoint = `/${role}`;
-
-            console.log(editToSend)
-            if (confirmSave) {
-                try {
-                    await api.put(endpoint, editToSend);
-                    fetchData();
-                    handleCloseEditModal();
-                    setConfirmSave(false);
-                    formik.resetForm()
+                    const response = await api.post(endpoint, saveToSend);
+                    if (response == null || response == undefined) {
+                        alert("Wystąpił problem z utworzeniem użytkownika o wybranym loginie. Login już istnieje albo posiada go użytkownik o innej roli. ")
+                        setConfirmSave(false);
+                    } else {
+                        fetchData();
+                        handleCloseCreateModal();
+                        setConfirmSave(false);
+                        formik.resetForm()
+                    }
                 } catch (error) {
                     console.error('Error creating user:', error);
                 }
@@ -181,12 +141,6 @@ const UsersTable: React.FC<TableProps> = ({role}) => {
         } catch (error) {
             console.error('Error toggling status:', error);
         }
-    };
-
-    const handleCloseEditModal = () => {
-        setShowEditModal(false);
-        setConfirmSave(false);
-        formikEdit.resetForm();
     };
 
     const handleCloseCreateModal = () => {
@@ -214,7 +168,6 @@ const UsersTable: React.FC<TableProps> = ({role}) => {
                     <th>Login</th>
                     <th>Status</th>
                     <th>Akcja</th>
-                    <th>Edytuj</th>
                 </tr>
                 </thead>
                 <tbody>
@@ -227,13 +180,9 @@ const UsersTable: React.FC<TableProps> = ({role}) => {
                             <Button
                                 variant={user.statusActive ? 'outline-danger' : 'outline-success'}
                                 onClick={() => handleToggleStatus(user.id, !user.statusActive)}
+                                disabled={account.login == user.login}
                             >
                                 {user.statusActive ? 'Dezaktywuj' : 'Aktywuj'}
-                            </Button>
-                        </td>
-                        <td>
-                            <Button variant="outline-primary" onClick={() => handleEdit(user)}>
-                                Edytuj
                             </Button>
                         </td>
                     </tr>
@@ -244,67 +193,6 @@ const UsersTable: React.FC<TableProps> = ({role}) => {
             <Button variant="outline-success" onClick={handleCreate}>
                 {modalTitle}
             </Button>
-
-            <Modal show={showEditModal} onHide={handleCloseEditModal}>
-                <Modal.Header closeButton>
-                    <Modal.Title>Edytuj użytkownika {selectedUser?.login}:</Modal.Title>
-                </Modal.Header>
-                <Modal.Body>
-                    <Form onSubmit={formikEdit.handleSubmit}>
-                        <Form.Group controlId="createLoginInput">
-                            <Form.Label><strong>Login:</strong></Form.Label>
-                            <Form.Control
-                                type="text"
-                                placeholder="Wpisz nowy login"
-                                name="login"
-                                value={formikEdit.values.login}
-                                onChange={formikEdit.handleChange}
-                                onBlur={formikEdit.handleBlur}
-                                isInvalid={formikEdit.touched.login && !!formikEdit.errors.login}
-                            />
-                            <Form.Control.Feedback type="invalid">{formikEdit.errors.login}</Form.Control.Feedback>
-                        </Form.Group>
-                        <br/>
-                        <Form.Group controlId="createPasswordInput">
-                            <Form.Label><strong>Hasło:</strong></Form.Label>
-                            <Form.Control
-                                type="password"
-                                placeholder="Wpisz nowe hasło"
-                                name="password"
-                                value={formikEdit.values.password}
-                                onChange={formikEdit.handleChange}
-                                onBlur={formikEdit.handleBlur}
-                                isInvalid={formikEdit.touched.password && !!formikEdit.errors.password}
-                            />
-                            <Form.Control.Feedback type="invalid">{formikEdit.errors.password}</Form.Control.Feedback>
-                        </Form.Group>
-                        <br/>
-                        <Form.Group controlId="confirmCreatePasswordInput">
-                            <Form.Label><strong>Potwierdź hasło:</strong></Form.Label>
-                            <Form.Control
-                                type="password"
-                                placeholder="Powtórz hasło"
-                                name="confirmPassword"
-                                value={formikEdit.values.confirmPassword}
-                                onChange={formikEdit.handleChange}
-                                onBlur={formikEdit.handleBlur}
-                                isInvalid={formikEdit.touched.confirmPassword && !!formikEdit.errors.confirmPassword}
-                            />
-                            <Form.Control.Feedback
-                                type="invalid">{formikEdit.errors.confirmPassword}</Form.Control.Feedback>
-                        </Form.Group>
-                        <br/>
-                        <Button variant="outline-secondary" onClick={handleCloseEditModal}>
-                            Anuluj
-                        </Button>
-                        <Button variant="outline-success" type="submit">
-                            Zapisz zmiany
-                        </Button>
-                        {confirmSave && <div>
-                            <br/> <strong>Wciśnij ponownie by potwierdzić.</strong></div>}
-                    </Form>
-                </Modal.Body>
-            </Modal>
 
             <Modal show={showCreateModal} onHide={handleCloseCreateModal}>
                 <Modal.Header closeButton>

@@ -1,7 +1,7 @@
 package pl.pas.gr3.mvc.dao.interfaces;
 
-import pl.pas.gr3.dto.TicketDTO;
-import pl.pas.gr3.dto.TicketInputDTO;
+import pl.pas.gr3.dto.output.TicketDTO;
+import pl.pas.gr3.dto.input.TicketInputDTO;
 import pl.pas.gr3.mvc.dto.TicketWithUserAndMovie;
 import pl.pas.gr3.mvc.exceptions.daos.ticket.TicketDaoCreateException;
 import pl.pas.gr3.mvc.exceptions.daos.ticket.TicketDaoDeleteException;

@@ -3,7 +3,7 @@ package dto;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import pl.pas.gr3.dto.TicketInputDTO;
+import pl.pas.gr3.dto.input.TicketInputDTO;
 
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;

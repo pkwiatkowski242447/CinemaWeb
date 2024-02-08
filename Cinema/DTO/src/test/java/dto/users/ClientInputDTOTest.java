@@ -3,7 +3,7 @@ package dto.users;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import pl.pas.gr3.dto.users.ClientInputDTO;
+import pl.pas.gr3.dto.input.ClientInputDTO;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;

@@ -1,26 +1,31 @@
 package pl.pas.gr3.cinema.api;
 
 import io.restassured.RestAssured;
+import io.restassured.common.mapper.TypeRef;
+import io.restassured.config.RestAssuredConfig;
+import io.restassured.config.SSLConfig;
 import io.restassured.response.Response;
 import io.restassured.http.ContentType;
 import io.restassured.response.ValidatableResponse;
 import io.restassured.specification.RequestSpecification;
-import jakarta.json.bind.Jsonb;
-import jakarta.json.bind.JsonbBuilder;
 import org.junit.jupiter.api.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import pl.pas.gr3.dto.users.AdminDTO;
-import pl.pas.gr3.dto.users.AdminInputDTO;
-import pl.pas.gr3.dto.users.AdminPasswordDTO;
-import pl.pas.gr3.cinema.exceptions.services.crud.admin.AdminServiceCreateException;
-import pl.pas.gr3.cinema.exceptions.services.crud.admin.AdminServiceDeleteException;
-import pl.pas.gr3.cinema.exceptions.services.crud.admin.AdminServiceReadException;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.security.crypto.password.PasswordEncoder;
+import pl.pas.gr3.cinema.TestConstants;
+import pl.pas.gr3.cinema.consts.model.UserConstants;
+import pl.pas.gr3.cinema.exceptions.repositories.UserRepositoryException;
+import pl.pas.gr3.cinema.model.users.Client;
+import pl.pas.gr3.cinema.model.users.Staff;
+import pl.pas.gr3.dto.auth.UserInputDTO;
+import pl.pas.gr3.dto.auth.UserOutputDTO;
+import pl.pas.gr3.dto.auth.UserUpdateDTO;
 import pl.pas.gr3.cinema.services.implementations.AdminService;
 import pl.pas.gr3.cinema.model.users.Admin;
 import pl.pas.gr3.cinema.repositories.implementations.UserRepository;
 
-import java.net.URISyntaxException;
+import java.net.URL;
 import java.util.List;
 import java.util.UUID;
 
@@ -29,32 +34,48 @@ import static org.junit.jupiter.api.Assertions.*;
 public class AdminControllerTest {
 
     private static final Logger logger = LoggerFactory.getLogger(AdminControllerTest.class);
-    private static String adminsBaseURL;
 
-    private static final String databaseName = "default";
     private static UserRepository userRepository;
     private static AdminService adminService;
+    private static PasswordEncoder passwordEncoder;
 
-    private Admin adminNo1;
-    private Admin adminNo2;
+    private Client clientUser;
+    private Staff staffUser;
+    private Admin adminUserNo1;
+    private Admin adminUserNo2;
+    private static String passwordNotHashed;
 
     @BeforeAll
     public static void init() {
-        userRepository = new UserRepository(databaseName);
+        userRepository = new UserRepository(TestConstants.databaseName);
         adminService = new AdminService(userRepository);
 
-        adminsBaseURL = "http://localhost:8000/api/v1/admins";
-        RestAssured.baseURI = adminsBaseURL;
+        passwordEncoder = new BCryptPasswordEncoder();
+
+        ClassLoader classLoader = AuthenticationControllerTest.class.getClassLoader();
+        URL resourceURL = classLoader.getResource("pas-truststore.jks");
+
+        RestAssured.config = RestAssuredConfig.newConfig().sslConfig(
+                new SSLConfig().trustStore(resourceURL.getPath(), "password")
+                        .and()
+                        .port(8000)
+                        .and()
+                        .allowAllHostnames()
+        );
+
+        passwordNotHashed = "password";
     }
 
     @BeforeEach
     public void initializeSampleData() {
         this.clearCollection();
         try {
-            adminNo1 = adminService.create("UniqueAdminLoginNo1", "UniqueAdminPasswordNo1");
-            adminNo2 = adminService.create("UniqueAdminLoginNo2", "UniqueAdminPasswordNo2");
-        } catch (AdminServiceCreateException exception) {
-            logger.debug(exception.getMessage());
+            clientUser = userRepository.createClient("ClientLoginX", passwordEncoder.encode(passwordNotHashed));
+            staffUser = userRepository.createStaff("StaffLoginX", passwordEncoder.encode(passwordNotHashed));
+            adminUserNo1 = userRepository.createAdmin("AdminLoginX1", passwordEncoder.encode(passwordNotHashed));
+            adminUserNo2 = userRepository.createAdmin("AdminLoginX2", passwordEncoder.encode(passwordNotHashed));
+        } catch (UserRepositoryException exception) {
+            throw new RuntimeException("Could not create sample users with userRepository object.", exception);
         }
     }
 
@@ -65,12 +86,22 @@ public class AdminControllerTest {
 
     private void clearCollection() {
         try {
-            List<Admin> listOfAdmins = adminService.findAll();
-            for (Admin admin : listOfAdmins) {
-                adminService.delete(admin.getUserID());
+            List<Client> listOfClients = userRepository.findAllClients();
+            for (Client client : listOfClients) {
+                userRepository.delete(client.getUserID(), UserConstants.CLIENT_DISCRIMINATOR);
             }
-        } catch (AdminServiceReadException | AdminServiceDeleteException exception) {
-            logger.debug(exception.getMessage());
+
+            List<Admin> listOfAdmins = userRepository.findAllAdmins();
+            for (Admin admin : listOfAdmins) {
+                userRepository.delete(admin.getUserID(), UserConstants.ADMIN_DISCRIMINATOR);
+            }
+
+            List<Staff> listOfStaffs = userRepository.findAllStaffs();
+            for (Staff staff : listOfStaffs) {
+                userRepository.delete(staff.getUserID(), UserConstants.STAFF_DISCRIMINATOR);
+            }
+        } catch (UserRepositoryException exception) {
+            throw new RuntimeException("Could not delete sample users with userRepository object.", exception);
         }
     }
 
@@ -79,524 +110,181 @@ public class AdminControllerTest {
         userRepository.close();
     }
 
-    // Create tests
-
-    @Test
-    public void adminControllerCreateAdminTestPositive() throws Exception {
-        String adminLogin = "SecretAdminLoginNo1";
-        String adminPassword = "SecretAdminPasswordNo1";
-        AdminInputDTO adminInputDTO = new AdminInputDTO(adminLogin, adminPassword);
-
-        try (Jsonb jsonb = JsonbBuilder.create()) {
-            String jsonPayload = jsonb.toJson(adminInputDTO);
-            logger.info("Json: " + jsonPayload);
-
-            RequestSpecification requestSpecification = RestAssured.given();
-            requestSpecification.contentType(ContentType.JSON);
-            requestSpecification.accept(ContentType.JSON);
-            requestSpecification.body(jsonPayload);
-
-            Response response = requestSpecification.post(adminsBaseURL);
-
-            assertNotNull(response.asString());
-            logger.info("Response: " + response.asString());
-
-            ValidatableResponse validatableResponse = response.then();
-            validatableResponse.statusCode(201);
-
-            AdminDTO createdObject = jsonb.fromJson(response.asString(), AdminDTO.class);
-
-            assertNotNull(createdObject);
-            assertNotNull(createdObject.getAdminID());
-            assertEquals(createdObject.getAdminLogin(), adminInputDTO.getAdminLogin());
-            assertTrue(createdObject.isAdminStatusActive());
-        }
-    }
-
-    @Test
-    public void adminControllerCreateAdminWithNullLoginThatTestNegative() throws Exception {
-        String adminLogin = null;
-        String adminPassword = "SecretAdminPasswordNo1";
-        AdminInputDTO adminInputDTO = new AdminInputDTO(adminLogin, adminPassword);
-
-        try (Jsonb jsonb = JsonbBuilder.create()) {
-            String jsonPayload = jsonb.toJson(adminInputDTO);
-            logger.info("Json: " + jsonPayload);
-
-            RequestSpecification requestSpecification = RestAssured.given();
-            requestSpecification.contentType(ContentType.JSON);
-            requestSpecification.accept(ContentType.JSON);
-            requestSpecification.body(jsonPayload);
-
-            Response response = requestSpecification.post(adminsBaseURL);
-
-            assertNotNull(response.asString());
-            logger.info("Response: " + response.asString());
-
-            ValidatableResponse validatableResponse = response.then();
-            validatableResponse.statusCode(400);
-        }
-    }
-
-    @Test
-    public void adminControllerCreateAdminWithEmptyLoginThatTestNegative() throws Exception {
-        String adminLogin = "";
-        String adminPassword = "SecretAdminPasswordNo1";
-        AdminInputDTO adminInputDTO = new AdminInputDTO(adminLogin, adminPassword);
-
-        try (Jsonb jsonb = JsonbBuilder.create()) {
-            String jsonPayload = jsonb.toJson(adminInputDTO);
-            logger.info("Json: " + jsonPayload);
-
-            RequestSpecification requestSpecification = RestAssured.given();
-            requestSpecification.contentType(ContentType.JSON);
-            requestSpecification.accept(ContentType.JSON);
-            requestSpecification.body(jsonPayload);
-
-            Response response = requestSpecification.post(adminsBaseURL);
-
-            assertNotNull(response.asString());
-            logger.info("Response: " + response.asString());
-
-            ValidatableResponse validatableResponse = response.then();
-            validatableResponse.statusCode(400);
-        }
-    }
-
-    @Test
-    public void adminControllerCreateAdminWithLoginTooShortThatTestNegative() throws Exception {
-        String adminLogin = "ddddfdd";
-        String adminPassword = "SecretAdminPasswordNo1";
-        AdminInputDTO adminInputDTO = new AdminInputDTO(adminLogin, adminPassword);
-
-        try (Jsonb jsonb = JsonbBuilder.create()) {
-            String jsonPayload = jsonb.toJson(adminInputDTO);
-            logger.info("Json: " + jsonPayload);
-
-            RequestSpecification requestSpecification = RestAssured.given();
-            requestSpecification.contentType(ContentType.JSON);
-            requestSpecification.accept(ContentType.JSON);
-            requestSpecification.body(jsonPayload);
-
-            Response response = requestSpecification.post(adminsBaseURL);
-
-            assertNotNull(response.asString());
-            logger.info("Response: " + response.asString());
-
-            ValidatableResponse validatableResponse = response.then();
-            validatableResponse.statusCode(400);
-        }
-    }
-
-    @Test
-    public void adminControllerCreateAdminWithLoginTooLongThatTestNegative() throws Exception {
-        String adminLogin = "ddddfddddfddddfddddfd";
-        String adminPassword = "SecretAdminPasswordNo1";
-        AdminInputDTO adminInputDTO = new AdminInputDTO(adminLogin, adminPassword);
-
-        try (Jsonb jsonb = JsonbBuilder.create()) {
-            String jsonPayload = jsonb.toJson(adminInputDTO);
-            logger.info("Json: " + jsonPayload);
-
-            RequestSpecification requestSpecification = RestAssured.given();
-            requestSpecification.contentType(ContentType.JSON);
-            requestSpecification.accept(ContentType.JSON);
-            requestSpecification.body(jsonPayload);
-
-            Response response = requestSpecification.post(adminsBaseURL);
-
-            assertNotNull(response.asString());
-            logger.info("Response: " + response.asString());
-
-            ValidatableResponse validatableResponse = response.then();
-            validatableResponse.statusCode(400);
-        }
-    }
-
-    @Test
-    public void adminControllerCreateAdminWithLoginLengthEqualTo8ThatTestPositive() throws Exception {
-        String adminLogin = "ddddfddd";
-        String adminPassword = "SecretAdminPasswordNo1";
-        AdminInputDTO adminInputDTO = new AdminInputDTO(adminLogin, adminPassword);
-
-        try (Jsonb jsonb = JsonbBuilder.create()) {
-            String jsonPayload = jsonb.toJson(adminInputDTO);
-            logger.info("Json: " + jsonPayload);
-
-            RequestSpecification requestSpecification = RestAssured.given();
-            requestSpecification.contentType(ContentType.JSON);
-            requestSpecification.accept(ContentType.JSON);
-            requestSpecification.body(jsonPayload);
-
-            Response response = requestSpecification.post(adminsBaseURL);
-            logger.info(response.asString());
-
-            ValidatableResponse validatableResponse = response.then();
-            validatableResponse.statusCode(201);
-
-            assertNotNull(response.asString());
-            logger.info("Response: " + response.asString());
-
-            AdminDTO createdObject = jsonb.fromJson(response.asString(), AdminDTO.class);
-
-            assertNotNull(createdObject);
-            assertNotNull(createdObject.getAdminID());
-            assertEquals(createdObject.getAdminLogin(), adminInputDTO.getAdminLogin());
-            assertTrue(createdObject.isAdminStatusActive());
-        }
-    }
-
-    @Test
-    public void adminControllerCreateAdminWithLoginLengthEqualTo20ThatTestPositive() throws Exception {
-        String adminLogin = "ddddfddddfddddfddddf";
-        String adminPassword = "SecretAdminPasswordNo1";
-        AdminInputDTO adminInputDTO = new AdminInputDTO(adminLogin, adminPassword);
-
-        try (Jsonb jsonb = JsonbBuilder.create()) {
-            String jsonPayload = jsonb.toJson(adminInputDTO);
-            logger.info("Json: " + jsonPayload);
-
-            RequestSpecification requestSpecification = RestAssured.given();
-            requestSpecification.contentType(ContentType.JSON);
-            requestSpecification.accept(ContentType.JSON);
-            requestSpecification.body(jsonPayload);
-
-            Response response = requestSpecification.post(adminsBaseURL);
-            logger.info(response.asString());
-
-            ValidatableResponse validatableResponse = response.then();
-            validatableResponse.statusCode(201);
-
-            assertNotNull(response.asString());
-            logger.info("Response: " + response.asString());
-
-            AdminDTO createdObject = jsonb.fromJson(response.asString(), AdminDTO.class);
-
-            assertNotNull(createdObject);
-            assertNotNull(createdObject.getAdminID());
-            assertEquals(createdObject.getAdminLogin(), adminInputDTO.getAdminLogin());
-            assertTrue(createdObject.isAdminStatusActive());
-        }
-    }
-
-    @Test
-    public void adminControllerCreateAdminWithLoginThatDoesNotMeetRegExTestNegative() throws Exception {
-        String adminLogin = "Some Invalid Login";
-        String adminPassword = "SecretAdminPasswordNo1";
-        AdminInputDTO adminInputDTO = new AdminInputDTO(adminLogin, adminPassword);
-
-        try (Jsonb jsonb = JsonbBuilder.create()) {
-            String jsonPayload = jsonb.toJson(adminInputDTO);
-            logger.info("Json: " + jsonPayload);
-
-            RequestSpecification requestSpecification = RestAssured.given();
-            requestSpecification.contentType(ContentType.JSON);
-            requestSpecification.accept(ContentType.JSON);
-            requestSpecification.body(jsonPayload);
-
-            Response response = requestSpecification.post(adminsBaseURL);
-
-            assertNotNull(response.asString());
-            logger.info("Response: " + response.asString());
-
-            ValidatableResponse validatableResponse = response.then();
-            validatableResponse.statusCode(400);
-        }
-    }
-
-    @Test
-    public void adminControllerCreateAdminWithLoginThatIsAlreadyInTheDatabaseTestNegative() throws Exception {
-        String adminLogin = adminNo1.getUserLogin();
-        String adminPassword = "SecretAdminPasswordNo1";
-        AdminInputDTO adminInputDTO = new AdminInputDTO(adminLogin, adminPassword);
-
-        try (Jsonb jsonb = JsonbBuilder.create()) {
-            String jsonPayload = jsonb.toJson(adminInputDTO);
-            logger.info("Json: " + jsonPayload);
-
-            RequestSpecification requestSpecification = RestAssured.given();
-            requestSpecification.contentType(ContentType.JSON);
-            requestSpecification.accept(ContentType.JSON);
-            requestSpecification.body(jsonPayload);
-
-            Response response = requestSpecification.post(adminsBaseURL);
-
-            assertNotNull(response.asString());
-            logger.info("Response: " + response.asString());
-
-            ValidatableResponse validatableResponse = response.then();
-            validatableResponse.statusCode(409);
-        }
-    }
-
-    @Test
-    public void adminControllerCreateAdminWithNullPasswordThatTestNegative() throws Exception {
-        String adminLogin = "SecretAdminLoginNo1";
-        String adminPassword = null;
-        AdminInputDTO adminInputDTO = new AdminInputDTO(adminLogin, adminPassword);
-
-        try (Jsonb jsonb = JsonbBuilder.create()) {
-            String jsonPayload = jsonb.toJson(adminInputDTO);
-            logger.info("Json: " + jsonPayload);
-
-            RequestSpecification requestSpecification = RestAssured.given();
-            requestSpecification.contentType(ContentType.JSON);
-            requestSpecification.accept(ContentType.JSON);
-            requestSpecification.body(jsonPayload);
-
-            Response response = requestSpecification.post(adminsBaseURL);
-
-            assertNotNull(response.asString());
-            logger.info("Response: " + response.asString());
-
-            ValidatableResponse validatableResponse = response.then();
-            validatableResponse.statusCode(400);
-        }
-    }
-
-    @Test
-    public void adminControllerCreateAdminWithEmptyPasswordThatTestNegative() throws Exception {
-        String adminLogin = "SecretAdminLoginNo1";
-        String adminPassword = "";
-        AdminInputDTO adminInputDTO = new AdminInputDTO(adminLogin, adminPassword);
-
-        try (Jsonb jsonb = JsonbBuilder.create()) {
-            String jsonPayload = jsonb.toJson(adminInputDTO);
-            logger.info("Json: " + jsonPayload);
-
-            RequestSpecification requestSpecification = RestAssured.given();
-            requestSpecification.contentType(ContentType.JSON);
-            requestSpecification.accept(ContentType.JSON);
-            requestSpecification.body(jsonPayload);
-
-            Response response = requestSpecification.post(adminsBaseURL);
-
-            assertNotNull(response.asString());
-            logger.info("Response: " + response.asString());
-
-            ValidatableResponse validatableResponse = response.then();
-            validatableResponse.statusCode(400);
-        }
-    }
-
-    @Test
-    public void adminControllerCreateAdminWithPasswordTooShortThatTestNegative() throws Exception {
-        String adminLogin = "SecretAdminLoginNo1";
-        String adminPassword = "ddddfdd";
-        AdminInputDTO adminInputDTO = new AdminInputDTO(adminLogin, adminPassword);
-
-        try (Jsonb jsonb = JsonbBuilder.create()) {
-            String jsonPayload = jsonb.toJson(adminInputDTO);
-            logger.info("Json: " + jsonPayload);
-
-            RequestSpecification requestSpecification = RestAssured.given();
-            requestSpecification.contentType(ContentType.JSON);
-            requestSpecification.accept(ContentType.JSON);
-            requestSpecification.body(jsonPayload);
-
-            Response response = requestSpecification.post(adminsBaseURL);
-
-            assertNotNull(response.asString());
-            logger.info("Response: " + response.asString());
-
-            ValidatableResponse validatableResponse = response.then();
-            validatableResponse.statusCode(400);
-        }
-    }
-
-    @Test
-    public void adminControllerCreateAdminWithPasswordTooLongThatTestNegative() throws Exception {
-        String adminLogin = "SecretAdminLoginNo1";
-        String adminPassword = "ddddfddddfddddfddddfddddfddddfddddfddddfd";
-        AdminInputDTO adminInputDTO = new AdminInputDTO(adminLogin, adminPassword);
-
-        try (Jsonb jsonb = JsonbBuilder.create()) {
-            String jsonPayload = jsonb.toJson(adminInputDTO);
-            logger.info("Json: " + jsonPayload);
-
-            RequestSpecification requestSpecification = RestAssured.given();
-            requestSpecification.contentType(ContentType.JSON);
-            requestSpecification.accept(ContentType.JSON);
-            requestSpecification.body(jsonPayload);
-
-            Response response = requestSpecification.post(adminsBaseURL);
-
-            assertNotNull(response.asString());
-            logger.info("Response: " + response.asString());
-
-            ValidatableResponse validatableResponse = response.then();
-            validatableResponse.statusCode(400);
-        }
-    }
-
-    @Test
-    public void adminControllerCreateAdminWithPasswordLengthEqualTo8ThatTestPositive() throws Exception {
-        String adminLogin = "SecretAdminLoginNo1";
-        String adminPassword = "ddddfddd";
-        AdminInputDTO adminInputDTO = new AdminInputDTO(adminLogin, adminPassword);
-
-        try (Jsonb jsonb = JsonbBuilder.create()) {
-            String jsonPayload = jsonb.toJson(adminInputDTO);
-            logger.info("Json: " + jsonPayload);
-
-            RequestSpecification requestSpecification = RestAssured.given();
-            requestSpecification.contentType(ContentType.JSON);
-            requestSpecification.accept(ContentType.JSON);
-            requestSpecification.body(jsonPayload);
-
-            Response response = requestSpecification.post(adminsBaseURL);
-            logger.info(response.asString());
-
-            ValidatableResponse validatableResponse = response.then();
-            validatableResponse.statusCode(201);
-
-            assertNotNull(response.asString());
-            logger.info("Response: " + response.asString());
-
-            AdminDTO createdObject = jsonb.fromJson(response.asString(), AdminDTO.class);
-
-            assertNotNull(createdObject);
-            assertNotNull(createdObject.getAdminID());
-            assertEquals(createdObject.getAdminLogin(), adminInputDTO.getAdminLogin());
-            assertTrue(createdObject.isAdminStatusActive());
-        }
-    }
-
-    @Test
-    public void adminControllerCreateAdminWithPasswordLengthEqualTo40ThatTestPositive() throws Exception {
-        String adminLogin = "SecretAdminLoginNo1";
-        String adminPassword = "ddddfddddfddddfddddfddddfddddfddddfddddf";
-        AdminInputDTO adminInputDTO = new AdminInputDTO(adminLogin, adminPassword);
-
-        try (Jsonb jsonb = JsonbBuilder.create()) {
-            String jsonPayload = jsonb.toJson(adminInputDTO);
-            logger.info("Json: " + jsonPayload);
-
-            RequestSpecification requestSpecification = RestAssured.given();
-            requestSpecification.contentType(ContentType.JSON);
-            requestSpecification.accept(ContentType.JSON);
-            requestSpecification.body(jsonPayload);
-
-            Response response = requestSpecification.post(adminsBaseURL);
-            logger.info(response.asString());
-
-            ValidatableResponse validatableResponse = response.then();
-            validatableResponse.statusCode(201);
-
-            assertNotNull(response.asString());
-            logger.info("Response: " + response.asString());
-
-            AdminDTO createdObject = jsonb.fromJson(response.asString(), AdminDTO.class);
-
-            assertNotNull(createdObject);
-            assertNotNull(createdObject.getAdminID());
-            assertEquals(createdObject.getAdminLogin(), adminInputDTO.getAdminLogin());
-            assertTrue(createdObject.isAdminStatusActive());
-        }
-    }
-
-    @Test
-    public void adminControllerCreateAdminWithPasswordThatDoesNotMeetRegExTestNegative() throws Exception {
-        String adminLogin = "SecretAdminLoginNo1";
-        String adminPassword = "Some Invalid Password";
-        AdminInputDTO adminInputDTO = new AdminInputDTO(adminLogin, adminPassword);
-
-        try (Jsonb jsonb = JsonbBuilder.create()) {
-            String jsonPayload = jsonb.toJson(adminInputDTO);
-            logger.info("Json: " + jsonPayload);
-
-            RequestSpecification requestSpecification = RestAssured.given();
-            requestSpecification.contentType(ContentType.JSON);
-            requestSpecification.accept(ContentType.JSON);
-            requestSpecification.body(jsonPayload);
-
-            Response response = requestSpecification.post(adminsBaseURL);
-
-            assertNotNull(response.asString());
-            logger.info("Response: " + response.asString());
-
-            ValidatableResponse validatableResponse = response.then();
-            validatableResponse.statusCode(400);
-        }
-    }
-
     // Read tests
 
     @Test
-    public void adminControllerFindAdminByIDTestPositive() throws Exception {
-        UUID searchedAdminID = adminNo1.getUserID();
-        try (Jsonb jsonb = JsonbBuilder.create()) {
-            String path = adminsBaseURL + "/" + searchedAdminID;
+    public void adminControllerFindAdminByIDAsUnauthenticatedUserTestNegative() {
+        UUID searchedAdminID = adminUserNo1.getUserID();
+        String path = TestConstants.adminsURL + "/" + searchedAdminID;
+        RequestSpecification requestSpecification = RestAssured.given();
+        requestSpecification.accept(ContentType.JSON);
 
-            RequestSpecification requestSpecification = RestAssured.given();
-            requestSpecification.accept(ContentType.JSON);
+        Response response = requestSpecification.get(path);
+        logger.info("Response: " + response.asString());
+        ValidatableResponse validatableResponse = response.then();
 
-            Response response = requestSpecification.get(path);
-            logger.info(response.asString());
-
-            ValidatableResponse validatableResponse = response.then();
-            validatableResponse.statusCode(200);
-
-            assertNotNull(response.asString());
-            logger.info("Response: " + response.asString());
-
-            AdminDTO adminDTO = jsonb.fromJson(response.asString(), AdminDTO.class);
-
-            assertEquals(adminNo1.getUserID(), adminDTO.getAdminID());
-            assertEquals(adminNo1.getUserLogin(), adminDTO.getAdminLogin());
-            assertEquals(adminNo1.isUserStatusActive(), adminDTO.isAdminStatusActive());
-        }
+        validatableResponse.statusCode(403);
     }
 
     @Test
-    public void adminControllerFindAdminByIDThatIsNotInTheDatabaseTestNegative() throws URISyntaxException {
+    public void adminControllerFindAdminByIDAsAuthenticatedClientTestNegative() {
+        String accessToken = this.loginToAccount(new UserInputDTO(clientUser.getUserLogin(), passwordNotHashed), TestConstants.clientLoginURL);
+
+        UUID searchedAdminID = adminUserNo1.getUserID();
+        String path = TestConstants.adminsURL + "/" + searchedAdminID;
+        RequestSpecification requestSpecification = RestAssured.given();
+        requestSpecification.header("Authorization", "Bearer " + accessToken);
+        requestSpecification.accept(ContentType.JSON);
+
+        Response response = requestSpecification.get(path);
+        logger.info("Response: " + response.asString());
+        ValidatableResponse validatableResponse = response.then();
+
+        validatableResponse.statusCode(403);
+    }
+
+    @Test
+    public void adminControllerFindAdminByIDAsAuthenticatedStaffTestNegative() {
+        String accessToken = this.loginToAccount(new UserInputDTO(staffUser.getUserLogin(), passwordNotHashed), TestConstants.staffLoginURL);
+
+        UUID searchedAdminID = adminUserNo1.getUserID();
+        String path = TestConstants.adminsURL + "/" + searchedAdminID;
+        RequestSpecification requestSpecification = RestAssured.given();
+        requestSpecification.header("Authorization", "Bearer " + accessToken);
+        requestSpecification.accept(ContentType.JSON);
+
+        Response response = requestSpecification.get(path);
+        logger.info("Response: " + response.asString());
+        ValidatableResponse validatableResponse = response.then();
+
+        validatableResponse.statusCode(403);
+    }
+
+    @Test
+    public void adminControllerFindAdminByIDAsAuthenticatedAdminTestPositive() {
+        String accessToken = this.loginToAccount(new UserInputDTO(adminUserNo1.getUserLogin(), passwordNotHashed), TestConstants.adminLoginURL);
+
+        UUID searchedAdminID = adminUserNo1.getUserID();
+        String path = TestConstants.adminsURL + "/" + searchedAdminID;
+        RequestSpecification requestSpecification = RestAssured.given();
+        requestSpecification.header("Authorization", "Bearer " + accessToken);
+        requestSpecification.accept(ContentType.JSON);
+
+        Response response = requestSpecification.get(path);
+        logger.info("Response: " + response.asString());
+        ValidatableResponse validatableResponse = response.then();
+
+        validatableResponse.statusCode(200);
+
+        UserOutputDTO userOutputDTO = response.getBody().as(UserOutputDTO.class);
+
+        assertEquals(adminUserNo1.getUserID(), userOutputDTO.getUserID());
+        assertEquals(adminUserNo1.getUserLogin(), userOutputDTO.getUserLogin());
+        assertEquals(adminUserNo1.isUserStatusActive(), userOutputDTO.isUserStatusActive());
+    }
+
+    @Test
+    public void adminControllerFindAdminByIDThatIsNotInTheDatabaseAsAuthenticatedAdminTestNegative() {
+        String accessToken = this.loginToAccount(new UserInputDTO(adminUserNo1.getUserLogin(), passwordNotHashed), TestConstants.adminLoginURL);
+
         UUID searchedAdminID = UUID.randomUUID();
-        String path = adminsBaseURL + "/" + searchedAdminID;
+        String path = TestConstants.adminsURL + "/" + searchedAdminID;
+
+        RequestSpecification requestSpecification = RestAssured.given();
+        requestSpecification.header("Authorization", "Bearer " + accessToken);
+        requestSpecification.accept(ContentType.JSON);
+
+        Response response = requestSpecification.get(path);
+        logger.info("Response: " + response.asString());
+        ValidatableResponse validatableResponse = response.then();
+
+        validatableResponse.statusCode(404);
+    }
+
+    @Test
+    public void adminControllerFindAdminByLoginAsUnauthenticatedUserTestNegative() {
+        String searchedAdminLogin = adminUserNo1.getUserLogin();
+        String path = TestConstants.adminsURL + "/login/" + searchedAdminLogin;
 
         RequestSpecification requestSpecification = RestAssured.given();
         requestSpecification.accept(ContentType.JSON);
 
         Response response = requestSpecification.get(path);
+        logger.info("Response: " + response.asString());
+        ValidatableResponse validatableResponse = response.then();
+
+        validatableResponse.statusCode(403);
+    }
+
+    @Test
+    public void adminControllerFindAdminByLoginAsAuthenticatedClientTestNegative() {
+        String accessToken = this.loginToAccount(new UserInputDTO(clientUser.getUserLogin(), passwordNotHashed), TestConstants.clientLoginURL);
+
+        String searchedAdminLogin = adminUserNo1.getUserLogin();
+        String path = TestConstants.adminsURL + "/login/" + searchedAdminLogin;
+
+        RequestSpecification requestSpecification = RestAssured.given();
+        requestSpecification.header("Authorization", "Bearer " + accessToken);
+        requestSpecification.accept(ContentType.JSON);
+
+        Response response = requestSpecification.get(path);
+        logger.info("Response: " + response.asString());
+        ValidatableResponse validatableResponse = response.then();
+
+        validatableResponse.statusCode(403);
+    }
+
+    @Test
+    public void adminControllerFindAdminByLoginAsAuthenticatedStaffTestNegative() throws Exception {
+        String accessToken = this.loginToAccount(new UserInputDTO(staffUser.getUserLogin(), passwordNotHashed), TestConstants.staffLoginURL);
+
+        String searchedAdminLogin = adminUserNo1.getUserLogin();
+        String path = TestConstants.adminsURL + "/login/" + searchedAdminLogin;
+
+        RequestSpecification requestSpecification = RestAssured.given();
+        requestSpecification.header("Authorization", "Bearer " + accessToken);
+        requestSpecification.accept(ContentType.JSON);
+
+        Response response = requestSpecification.get(path);
+        logger.info("Response: " + response.asString());
+        ValidatableResponse validatableResponse = response.then();
+        validatableResponse.statusCode(403);
+    }
+
+    @Test
+    public void adminControllerFindAdminByLoginAsAuthenticatedAdminTestPositive() throws Exception {
+        String accessToken = this.loginToAccount(new UserInputDTO(adminUserNo1.getUserLogin(), passwordNotHashed), TestConstants.adminLoginURL);
+
+        String searchedAdminLogin = adminUserNo1.getUserLogin();
+        String path = TestConstants.adminsURL + "/login/" + searchedAdminLogin;
+
+        RequestSpecification requestSpecification = RestAssured.given();
+        requestSpecification.header("Authorization", "Bearer " + accessToken);
+        requestSpecification.accept(ContentType.JSON);
+
+        Response response = requestSpecification.get(path);
+        logger.info("Response: " + response.asString());
+        ValidatableResponse validatableResponse = response.then();
+        validatableResponse.statusCode(200);
 
         assertNotNull(response.asString());
-        logger.info("Response: " + response.asString());
 
-        ValidatableResponse validatableResponse = response.then();
-        validatableResponse.statusCode(404);
+        UserOutputDTO userOutputDTO = response.getBody().as(UserOutputDTO.class);
+
+        assertEquals(adminUserNo1.getUserID(), userOutputDTO.getUserID());
+        assertEquals(adminUserNo1.getUserLogin(), userOutputDTO.getUserLogin());
+        assertEquals(adminUserNo1.isUserStatusActive(), userOutputDTO.isUserStatusActive());
     }
 
     @Test
-    public void adminControllerFindAdminByLoginTestPositive() throws Exception {
-        String searchedAdminLogin = adminNo1.getUserLogin();
-        try (Jsonb jsonb = JsonbBuilder.create()) {
-            String path = adminsBaseURL + "/login/" + searchedAdminLogin;
+    public void adminControllerFindAdminByLoginThatIsNotInTheDatabaseAsAnAuthenticatedAdminTestNegative() {
+        String accessToken = this.loginToAccount(new UserInputDTO(adminUserNo1.getUserLogin(), passwordNotHashed), TestConstants.adminLoginURL);
 
-            RequestSpecification requestSpecification = RestAssured.given();
-            requestSpecification.accept(ContentType.JSON);
-
-            Response response = requestSpecification.get(path);
-            logger.info(response.asString());
-
-            ValidatableResponse validatableResponse = response.then();
-            validatableResponse.statusCode(200);
-
-            assertNotNull(response.asString());
-            logger.info("Response: " + response.asString());
-
-            AdminDTO adminDTO = jsonb.fromJson(response.asString(), AdminDTO.class);
-
-            assertEquals(adminNo1.getUserID(), adminDTO.getAdminID());
-            assertEquals(adminNo1.getUserLogin(), adminDTO.getAdminLogin());
-            assertEquals(adminNo1.isUserStatusActive(), adminDTO.isAdminStatusActive());
-        }
-    }
-
-    @Test
-    public void adminControllerFindAdminByLoginThatIsNotInTheDatabaseTestNegative() {
         String searchedAdminLogin = "SomeNonExistentLogin";
-        String path = adminsBaseURL + "/login/" + searchedAdminLogin;
+        String path = TestConstants.adminsURL + "/login/" + searchedAdminLogin;
 
         RequestSpecification requestSpecification = RestAssured.given();
+        requestSpecification.header("Authorization", "Bearer " + accessToken);
         requestSpecification.accept(ContentType.JSON);
 
         Response response = requestSpecification.get(path);
@@ -607,497 +295,672 @@ public class AdminControllerTest {
         validatableResponse.statusCode(404);
     }
 
+    // Current
+
     @Test
-    public void adminControllerFindAllAdminsMatchingLoginTestPositive() throws Exception {
+    public void adminControllerFindAllAdminsMatchingLoginAsUnauthenticatedUserTestNegative() throws Exception {
         adminService.create("ExtraAdminLogin", "ExtraAdminPassword");
+
         String matchedLogin = "Extra";
-        String path = adminsBaseURL + "?match=" + matchedLogin;
+        String path = TestConstants.adminsURL + "?match=" + matchedLogin;
 
         RequestSpecification requestSpecification = RestAssured.given();
         requestSpecification.accept(ContentType.JSON);
 
         Response response = requestSpecification.get(path);
         logger.info("Response: " + response.asString());
-
         ValidatableResponse validatableResponse = response.then();
-        validatableResponse.statusCode(200);
+
+        validatableResponse.statusCode(403);
     }
 
     @Test
-    public void adminControllerFindAllAdminsTestPositive() throws Exception {
-        String path = adminsBaseURL + "/all";
+    public void adminControllerFindAllAdminsMatchingLoginAsAuthenticatedClientTestNegative() throws Exception {
+        adminService.create("ExtraAdminLogin", "ExtraAdminPassword");
+
+        String accessToken = this.loginToAccount(new UserInputDTO(clientUser.getUserLogin(), passwordNotHashed), TestConstants.clientLoginURL);
+
+        String matchedLogin = "Extra";
+        String path = TestConstants.adminsURL + "?match=" + matchedLogin;
+
+        RequestSpecification requestSpecification = RestAssured.given();
+        requestSpecification.header("Authorization", "Bearer " + accessToken);
+        requestSpecification.accept(ContentType.JSON);
+
+        Response response = requestSpecification.get(path);
+        logger.info("Response: " + response.asString());
+        ValidatableResponse validatableResponse = response.then();
+
+        validatableResponse.statusCode(403);
+    }
+
+    @Test
+    public void adminControllerFindAllAdminsMatchingLoginAsAuthenticatedStaffTestNegative() throws Exception {
+        adminService.create("ExtraAdminLogin", "ExtraAdminPassword");
+
+        String accessToken = this.loginToAccount(new UserInputDTO(staffUser.getUserLogin(), passwordNotHashed), TestConstants.staffLoginURL);
+
+        String matchedLogin = "Extra";
+        String path = TestConstants.adminsURL + "?match=" + matchedLogin;
+
+        RequestSpecification requestSpecification = RestAssured.given();
+        requestSpecification.header("Authorization", "Bearer " + accessToken);
+        requestSpecification.accept(ContentType.JSON);
+
+        Response response = requestSpecification.get(path);
+        logger.info("Response: " + response.asString());
+        ValidatableResponse validatableResponse = response.then();
+
+        validatableResponse.statusCode(403);
+    }
+
+    @Test
+    public void adminControllerFindAllAdminsMatchingLoginAsAuthenticatedAdminTestPositive() throws Exception {
+        adminService.create("ExtraAdminLogin", "ExtraAdminPassword");
+
+        String accessToken = this.loginToAccount(new UserInputDTO(adminUserNo1.getUserLogin(), passwordNotHashed), TestConstants.adminLoginURL);
+
+        String matchedLogin = "Extra";
+        String path = TestConstants.adminsURL + "?match=" + matchedLogin;
+
+        RequestSpecification requestSpecification = RestAssured.given();
+        requestSpecification.header("Authorization", "Bearer " + accessToken);
+        requestSpecification.accept(ContentType.JSON);
+
+        Response response = requestSpecification.get(path);
+        logger.info("Response: " + response.asString());
+        ValidatableResponse validatableResponse = response.then();
+
+        validatableResponse.statusCode(200);
+
+        List<UserOutputDTO> listOfAdmins = response.getBody().as(new TypeRef<List<UserOutputDTO>>() {});
+        assertEquals(1, listOfAdmins.size());
+    }
+
+    @Test
+    public void adminControllerFindAllAdminsAsAnUnauthenticatedUserTestNegative() throws Exception {
+        String path = TestConstants.adminsURL + "/all";
 
         RequestSpecification requestSpecification = RestAssured.given();
         requestSpecification.accept(ContentType.JSON);
 
         Response response = requestSpecification.get(path);
         logger.info("Response: " + response.asString());
-
         ValidatableResponse validatableResponse = response.then();
+
+        validatableResponse.statusCode(403);
+    }
+
+    @Test
+    public void adminControllerFindAllAdminsAsAnAuthenticatedClientTestNegative() throws Exception {
+        String accessToken = this.loginToAccount(new UserInputDTO(clientUser.getUserLogin(), passwordNotHashed), TestConstants.clientLoginURL);
+
+        String path = TestConstants.adminsURL + "/all";
+
+        RequestSpecification requestSpecification = RestAssured.given();
+        requestSpecification.header("Authorization", "Bearer " + accessToken);
+        requestSpecification.accept(ContentType.JSON);
+
+        Response response = requestSpecification.get(path);
+        logger.info("Response: " + response.asString());
+        ValidatableResponse validatableResponse = response.then();
+
+        validatableResponse.statusCode(403);
+    }
+
+    @Test
+    public void adminControllerFindAllAdminsAsAnAuthenticatedStaffTestNegative() throws Exception {
+        String accessToken = this.loginToAccount(new UserInputDTO(staffUser.getUserLogin(), passwordNotHashed), TestConstants.staffLoginURL);
+
+        String path = TestConstants.adminsURL + "/all";
+
+        RequestSpecification requestSpecification = RestAssured.given();
+        requestSpecification.header("Authorization", "Bearer " + accessToken);
+        requestSpecification.accept(ContentType.JSON);
+
+        Response response = requestSpecification.get(path);
+        logger.info("Response: " + response.asString());
+        ValidatableResponse validatableResponse = response.then();
+
+        validatableResponse.statusCode(403);
+    }
+
+    @Test
+    public void adminControllerFindAllAdminsAsAnAuthenticatedAdminTestPositive() throws Exception {
+        String accessToken = this.loginToAccount(new UserInputDTO(adminUserNo1.getUserLogin(), passwordNotHashed), TestConstants.adminLoginURL);
+
+        String path = TestConstants.adminsURL + "/all";
+
+        RequestSpecification requestSpecification = RestAssured.given();
+        requestSpecification.header("Authorization", "Bearer " + accessToken);
+        requestSpecification.accept(ContentType.JSON);
+
+        Response response = requestSpecification.get(path);
+        logger.info("Response: " + response.asString());
+        ValidatableResponse validatableResponse = response.then();
+
         validatableResponse.statusCode(200);
+
+        List<UserOutputDTO> listOfAdmins = response.getBody().as(new TypeRef<List<UserOutputDTO>>() {});
+        assertEquals(2, listOfAdmins.size());
     }
 
     // Update tests
 
     @Test
-    public void adminControllerUpdateAdminTestPositive() throws Exception {
-        String adminLoginBefore = adminNo1.getUserLogin();
-        String adminPasswordBefore = adminNo1.getUserPassword();
-        String newAdminLogin = "SomeNewAdminLoginNo1";
+    public void adminControllerUpdateAdminAsUnauthenticatedUserTestNegative() {
+        // Login with admin (owner) credentials
+        String accessToken = this.loginToAccount(new UserInputDTO(adminUserNo1.getUserLogin(), passwordNotHashed), TestConstants.adminLoginURL);
+
+        // Get current user account by login
+        RequestSpecification requestSpecification = RestAssured.given();
+        requestSpecification.header("Authorization", "Bearer " + accessToken);
+        requestSpecification.accept(ContentType.JSON);
+
+        Response response = requestSpecification.get(TestConstants.adminsURL + "/login/self");
+        logger.debug("Response: " + response.getBody().asString());
+        ValidatableResponse validatableResponse = response.then();
+        validatableResponse.statusCode(200);
+
+        String eTag = response.getHeader("ETag");
+        UserOutputDTO userOutputDTO = response.getBody().as(UserOutputDTO.class);
+
+        // Prepare user update
         String newAdminPassword = "SomeNewAdminPasswordNo1";
 
-        adminNo1.setUserLogin(newAdminLogin);
-        adminNo1.setUserPassword(newAdminPassword);
+        UserUpdateDTO userUpdateDTO = new UserUpdateDTO(userOutputDTO.getUserID(), userOutputDTO.getUserLogin(), newAdminPassword, userOutputDTO.isUserStatusActive());
+        requestSpecification = RestAssured.given();
+        requestSpecification.header("If-Match", eTag);
+        requestSpecification.contentType(ContentType.JSON);
+        requestSpecification.body(userUpdateDTO);
 
-        try (Jsonb jsonb = JsonbBuilder.create()) {
-            AdminPasswordDTO adminPasswordDTO = new AdminPasswordDTO(adminNo1.getUserID(), adminNo1.getUserLogin(), adminNo1.getUserPassword(), adminNo1.isUserStatusActive());
-            AdminPasswordDTO[] arr = new AdminPasswordDTO[1];
-            arr[0] = adminPasswordDTO;
-            String jsonPayload = jsonb.toJson(arr[0]);
-            logger.info("Json: " + jsonPayload);
+        response = requestSpecification.put(TestConstants.adminsURL + "/update");
+        assertTrue(response.asString().isEmpty());
+        validatableResponse = response.then();
+        validatableResponse.statusCode(403);
+    }
 
-            RequestSpecification requestSpecification = RestAssured.given();
-            requestSpecification.contentType(ContentType.JSON);
-            requestSpecification.body(jsonPayload);
+    @Test
+    public void adminControllerUpdateAdminAsAuthenticatedClientTestNegative() {
+        // Login with admin (owner) credentials
+        String accessToken = this.loginToAccount(new UserInputDTO(adminUserNo1.getUserLogin(), passwordNotHashed), TestConstants.adminLoginURL);
 
-            Response response = requestSpecification.put(adminsBaseURL);
+        // Get current user account by login
+        RequestSpecification requestSpecification = RestAssured.given();
+        requestSpecification.header("Authorization", "Bearer " + accessToken);
+        requestSpecification.accept(ContentType.JSON);
 
-            assertTrue(response.asString().isEmpty());
+        Response response = requestSpecification.get(TestConstants.adminsURL + "/login/self");
+        logger.debug("Response: " + response.getBody().asString());
+        ValidatableResponse validatableResponse = response.then();
+        validatableResponse.statusCode(200);
 
-            ValidatableResponse validatableResponse = response.then();
-            validatableResponse.statusCode(204);
-        }
+        String eTag = response.getHeader("ETag");
+        UserOutputDTO userOutputDTO = response.getBody().as(UserOutputDTO.class);
 
-        Admin foundAdmin = adminService.findByUUID(adminNo1.getUserID());
+        // Login to staff (not owner) account
+        accessToken = this.loginToAccount(new UserInputDTO(clientUser.getUserLogin(), passwordNotHashed), TestConstants.clientLoginURL);
 
-        String adminLoginAfter = foundAdmin.getUserLogin();
+        // Prepare user update
+        String newAdminPassword = "SomeNewAdminPasswordNo1";
+
+        UserUpdateDTO userUpdateDTO = new UserUpdateDTO(userOutputDTO.getUserID(), userOutputDTO.getUserLogin(), newAdminPassword, userOutputDTO.isUserStatusActive());
+        requestSpecification = RestAssured.given();
+        requestSpecification.header("Authorization", "Bearer " + accessToken);
+        requestSpecification.header("If-Match", eTag);
+        requestSpecification.contentType(ContentType.JSON);
+        requestSpecification.body(userUpdateDTO);
+
+        response = requestSpecification.put(TestConstants.adminsURL + "/update");
+        validatableResponse = response.then();
+        validatableResponse.statusCode(403);
+    }
+
+    @Test
+    public void adminControllerUpdateAdminAsAuthenticatedStaffTestNegative() {
+        // Login with admin (owner) credentials
+        String accessToken = this.loginToAccount(new UserInputDTO(adminUserNo1.getUserLogin(), passwordNotHashed), TestConstants.adminLoginURL);
+
+        // Get current user account by login
+        RequestSpecification requestSpecification = RestAssured.given();
+        requestSpecification.header("Authorization", "Bearer " + accessToken);
+        requestSpecification.accept(ContentType.JSON);
+
+        Response response = requestSpecification.get(TestConstants.adminsURL + "/login/self");
+        logger.debug("Response: " + response.getBody().asString());
+        ValidatableResponse validatableResponse = response.then();
+        validatableResponse.statusCode(200);
+
+        String eTag = response.getHeader("ETag");
+        UserOutputDTO userOutputDTO = response.getBody().as(UserOutputDTO.class);
+
+        // Login to staff (not owner) account
+        accessToken = this.loginToAccount(new UserInputDTO(staffUser.getUserLogin(), passwordNotHashed), TestConstants.staffLoginURL);
+
+        // Prepare user update
+        String newAdminPassword = "SomeNewAdminPasswordNo1";
+
+        UserUpdateDTO userUpdateDTO = new UserUpdateDTO(userOutputDTO.getUserID(), userOutputDTO.getUserLogin(), newAdminPassword, userOutputDTO.isUserStatusActive());
+        requestSpecification = RestAssured.given();
+        requestSpecification.header("Authorization", "Bearer " + accessToken);
+        requestSpecification.header("If-Match", eTag);
+        requestSpecification.contentType(ContentType.JSON);
+        requestSpecification.body(userUpdateDTO);
+
+        response = requestSpecification.put(TestConstants.adminsURL + "/update");
+        validatableResponse = response.then();
+        validatableResponse.statusCode(403);
+    }
+
+    @Test
+    public void adminControllerUpdateAdminAsAuthenticatedAdminThatIsNotAccountOwnerTestPositive() {
+        // Login with admin (owner) credentials
+        RequestSpecification requestSpecification = RestAssured.given();
+        requestSpecification.contentType(ContentType.JSON);
+        requestSpecification.accept(ContentType.JSON);
+        requestSpecification.body(new UserInputDTO(adminUserNo1.getUserLogin(), passwordNotHashed));
+
+        Response response = requestSpecification.post(TestConstants.adminLoginURL);
+        ValidatableResponse validatableResponse = response.then();
+
+        validatableResponse.statusCode(200);
+        String accessToken = response.getBody().asString();
+
+        // Get current user account by login
+        requestSpecification = RestAssured.given();
+        requestSpecification.header("Authorization", "Bearer " + accessToken);
+        requestSpecification.accept(ContentType.JSON);
+
+        response = requestSpecification.get(TestConstants.adminsURL + "/login/self");
+        String eTag = response.getHeader("ETag");
+        UserOutputDTO userOutputDTO = response.getBody().as(UserOutputDTO.class);
+
+        // Login to admin (not owner) account
+        accessToken = this.loginToAccount(new UserInputDTO(adminUserNo2.getUserLogin(), passwordNotHashed), TestConstants.adminLoginURL);
+
+        // Prepare user update
+        String newAdminPassword = "SomeNewAdminPasswordNo1";
+
+        UserUpdateDTO userUpdateDTO = new UserUpdateDTO(userOutputDTO.getUserID(), userOutputDTO.getUserLogin(), newAdminPassword, userOutputDTO.isUserStatusActive());
+        requestSpecification = RestAssured.given();
+        requestSpecification.header("Authorization", "Bearer " + accessToken);
+        requestSpecification.header("If-Match", eTag);
+        requestSpecification.contentType(ContentType.JSON);
+        requestSpecification.body(userUpdateDTO);
+
+        response = requestSpecification.put(TestConstants.adminsURL + "/update");
+        validatableResponse = response.then();
+        validatableResponse.statusCode(403);
+    }
+
+    @Test
+    public void adminControllerUpdateAdminAsAuthenticatedAdminThatIsAccountOwnerTestPositive() throws Exception {
+        // Login with admin (owner) credentials
+        RequestSpecification requestSpecification = RestAssured.given();
+        requestSpecification.contentType(ContentType.JSON);
+        requestSpecification.accept(ContentType.JSON);
+        requestSpecification.body(new UserInputDTO(adminUserNo1.getUserLogin(), passwordNotHashed));
+
+        Response response = requestSpecification.post(TestConstants.adminLoginURL);
+        ValidatableResponse validatableResponse = response.then();
+
+        validatableResponse.statusCode(200);
+        String accessToken = response.getBody().asString();
+
+        // Get current user account by login
+        requestSpecification = RestAssured.given();
+        requestSpecification.header("Authorization", "Bearer " + accessToken);
+        requestSpecification.accept(ContentType.JSON);
+
+        response = requestSpecification.get(TestConstants.adminsURL + "/login/self");
+        String eTag = response.getHeader("ETag");
+        UserOutputDTO userOutputDTO = response.getBody().as(UserOutputDTO.class);
+
+        // Login to admin (account owner) account
+        accessToken = this.loginToAccount(new UserInputDTO(adminUserNo1.getUserLogin(), passwordNotHashed), TestConstants.adminLoginURL);
+
+        // Prepare user update
+        String adminPasswordBefore = adminUserNo1.getUserPassword();
+        String newAdminPassword = "SomeNewAdminPasswordNo1";
+
+        UserUpdateDTO userUpdateDTO = new UserUpdateDTO(userOutputDTO.getUserID(), userOutputDTO.getUserLogin(), newAdminPassword, userOutputDTO.isUserStatusActive());
+        requestSpecification = RestAssured.given();
+        requestSpecification.header("Authorization", "Bearer " + accessToken);
+        requestSpecification.header("If-Match", eTag);
+        requestSpecification.contentType(ContentType.JSON);
+        requestSpecification.body(userUpdateDTO);
+
+        response = requestSpecification.put(TestConstants.adminsURL + "/update");
+        assertTrue(response.asString().isEmpty());
+        validatableResponse = response.then();
+        validatableResponse.statusCode(204);
+
+        Admin foundAdmin = adminService.findByUUID(adminUserNo1.getUserID());
+
         String adminPasswordAfter = foundAdmin.getUserPassword();
 
-        assertEquals(newAdminLogin, adminLoginAfter);
-        assertEquals(newAdminPassword, adminPasswordAfter);
-        assertNotEquals(adminLoginBefore, adminLoginAfter);
-        assertNotEquals(adminPasswordBefore, adminPasswordAfter);
+        assertNotEquals(adminPasswordBefore, passwordEncoder.encode(adminPasswordAfter));
     }
 
     @Test
-    public void adminControllerUpdateAdminWithNullLoginTestNegative() throws Exception {
-        String newAdminLogin = null;
-        adminNo1.setUserLogin(newAdminLogin);
-        try (Jsonb jsonb = JsonbBuilder.create()) {
-            AdminPasswordDTO adminPasswordDTO = new AdminPasswordDTO(adminNo1.getUserID(), adminNo1.getUserLogin(), adminNo1.getUserPassword(), adminNo1.isUserStatusActive());
-            AdminPasswordDTO[] arr = new AdminPasswordDTO[1];
-            arr[0] = adminPasswordDTO;
-            String jsonPayload = jsonb.toJson(arr[0]);
-            logger.info("Json: " + jsonPayload);
+    public void adminControllerUpdateAdminAsAuthenticatedAdminThatIsAccountOwnerWithoutIfMatchTestNegative() throws Exception {
+        // Login with admin (owner) credentials
+        RequestSpecification requestSpecification = RestAssured.given();
+        requestSpecification.contentType(ContentType.JSON);
+        requestSpecification.accept(ContentType.JSON);
+        requestSpecification.body(new UserInputDTO(adminUserNo1.getUserLogin(), passwordNotHashed));
 
-            RequestSpecification requestSpecification = RestAssured.given();
-            requestSpecification.contentType(ContentType.JSON);
-            requestSpecification.body(jsonPayload);
+        Response response = requestSpecification.post(TestConstants.adminLoginURL);
+        ValidatableResponse validatableResponse = response.then();
 
-            Response response = requestSpecification.put(adminsBaseURL);
+        validatableResponse.statusCode(200);
+        String accessToken = response.getBody().asString();
 
-            assertNotNull(response.asString());
-            logger.info("Response: " + response.asString());
+        // Get current user account by login
+        requestSpecification = RestAssured.given();
+        requestSpecification.header("Authorization", "Bearer " + accessToken);
+        requestSpecification.accept(ContentType.JSON);
 
-            ValidatableResponse validatableResponse = response.then();
-            validatableResponse.statusCode(400);
-        }
+        response = requestSpecification.get(TestConstants.adminsURL + "/login/self");
+        UserOutputDTO userOutputDTO = response.getBody().as(UserOutputDTO.class);
+
+        // Login to admin (account owner) account
+        accessToken = this.loginToAccount(new UserInputDTO(adminUserNo1.getUserLogin(), passwordNotHashed), TestConstants.adminLoginURL);
+
+        // Prepare user update
+        String newAdminPassword = "SomeNewAdminPasswordNo1";
+
+        UserUpdateDTO userUpdateDTO = new UserUpdateDTO(userOutputDTO.getUserID(), userOutputDTO.getUserLogin(), newAdminPassword, userOutputDTO.isUserStatusActive());
+        requestSpecification = RestAssured.given();
+        requestSpecification.header("Authorization", "Bearer " + accessToken);
+        requestSpecification.contentType(ContentType.JSON);
+        requestSpecification.body(userUpdateDTO);
+
+        response = requestSpecification.put(TestConstants.adminsURL + "/update");
+        validatableResponse = response.then();
+        validatableResponse.statusCode(412);
     }
 
     @Test
-    public void adminControllerUpdateAdminWithEmptyLoginTestNegative() throws Exception {
-        String newAdminLogin = "";
-        adminNo1.setUserLogin(newAdminLogin);
-        try (Jsonb jsonb = JsonbBuilder.create()) {
-            AdminPasswordDTO adminPasswordDTO = new AdminPasswordDTO(adminNo1.getUserID(), adminNo1.getUserLogin(), adminNo1.getUserPassword(), adminNo1.isUserStatusActive());
-            AdminPasswordDTO[] arr = new AdminPasswordDTO[1];
-            arr[0] = adminPasswordDTO;
-            String jsonPayload = jsonb.toJson(arr[0]);
-            logger.info("Json: " + jsonPayload);
+    public void adminControllerUpdateAdminWithChangedIdentifierAsAuthenticatedAdminTestNegative() {
+        // Login with admin (owner) credentials
+        RequestSpecification requestSpecification = RestAssured.given();
+        requestSpecification.contentType(ContentType.JSON);
+        requestSpecification.accept(ContentType.JSON);
+        requestSpecification.body(new UserInputDTO(adminUserNo1.getUserLogin(), passwordNotHashed));
 
-            RequestSpecification requestSpecification = RestAssured.given();
-            requestSpecification.contentType(ContentType.JSON);
-            requestSpecification.body(jsonPayload);
+        Response response = requestSpecification.post(TestConstants.adminLoginURL);
+        ValidatableResponse validatableResponse = response.then();
 
-            Response response = requestSpecification.put(adminsBaseURL);
+        validatableResponse.statusCode(200);
+        String accessToken = response.getBody().asString();
 
-            assertNotNull(response.asString());
-            logger.info("Response: " + response.asString());
+        // Get current user account by login
+        requestSpecification = RestAssured.given();
+        requestSpecification.header("Authorization", "Bearer " + accessToken);
+        requestSpecification.accept(ContentType.JSON);
 
-            ValidatableResponse validatableResponse = response.then();
-            validatableResponse.statusCode(400);
-        }
+        response = requestSpecification.get(TestConstants.adminsURL + "/login/self");
+        String eTag = response.getHeader("ETag");
+        UserOutputDTO userOutputDTO = response.getBody().as(UserOutputDTO.class);
+
+        // Login to admin (account owner) account
+        accessToken = this.loginToAccount(new UserInputDTO(adminUserNo1.getUserLogin(), passwordNotHashed), TestConstants.adminLoginURL);
+
+        // Prepare user update
+        UUID newAdminID = UUID.randomUUID();
+
+        UserUpdateDTO userUpdateDTO = new UserUpdateDTO(newAdminID, userOutputDTO.getUserLogin(), adminUserNo1.getUserPassword(), userOutputDTO.isUserStatusActive());
+        requestSpecification = RestAssured.given();
+        requestSpecification.header("Authorization", "Bearer " + accessToken);
+        requestSpecification.header("If-Match", eTag);
+        requestSpecification.contentType(ContentType.JSON);
+        requestSpecification.body(userUpdateDTO);
+
+        response = requestSpecification.put(TestConstants.adminsURL + "/update");
+        validatableResponse = response.then();
+        validatableResponse.statusCode(400);
     }
 
     @Test
-    public void adminControllerUpdateAdminWithLoginTooShortTestNegative() throws Exception {
-        String newAdminLogin = "ddddfdd";
-        adminNo1.setUserLogin(newAdminLogin);
-        try (Jsonb jsonb = JsonbBuilder.create()) {
-            AdminPasswordDTO adminPasswordDTO = new AdminPasswordDTO(adminNo1.getUserID(), adminNo1.getUserLogin(), adminNo1.getUserPassword(), adminNo1.isUserStatusActive());
-            AdminPasswordDTO[] arr = new AdminPasswordDTO[1];
-            arr[0] = adminPasswordDTO;
-            String jsonPayload = jsonb.toJson(arr[0]);
-            logger.info("Json: " + jsonPayload);
+    public void adminControllerUpdateAdminWithChangedLoginAsAuthenticatedAdminTestNegative() {
+        // Login with admin (owner) credentials
+        RequestSpecification requestSpecification = RestAssured.given();
+        requestSpecification.contentType(ContentType.JSON);
+        requestSpecification.accept(ContentType.JSON);
+        requestSpecification.body(new UserInputDTO(adminUserNo1.getUserLogin(), passwordNotHashed));
 
-            RequestSpecification requestSpecification = RestAssured.given();
-            requestSpecification.contentType(ContentType.JSON);
-            requestSpecification.body(jsonPayload);
+        Response response = requestSpecification.post(TestConstants.adminLoginURL);
+        ValidatableResponse validatableResponse = response.then();
 
-            Response response = requestSpecification.put(adminsBaseURL);
+        validatableResponse.statusCode(200);
+        String accessToken = response.getBody().asString();
 
-            assertNotNull(response.asString());
-            logger.info("Response: " + response.asString());
+        // Get current user account by login
+        requestSpecification = RestAssured.given();
+        requestSpecification.header("Authorization", "Bearer " + accessToken);
+        requestSpecification.accept(ContentType.JSON);
 
-            ValidatableResponse validatableResponse = response.then();
-            validatableResponse.statusCode(400);
-        }
+        response = requestSpecification.get(TestConstants.adminsURL + "/login/self");
+        String eTag = response.getHeader("ETag");
+        UserOutputDTO userOutputDTO = response.getBody().as(UserOutputDTO.class);
+
+        // Login to admin (account owner) account
+        accessToken = this.loginToAccount(new UserInputDTO(adminUserNo1.getUserLogin(), passwordNotHashed), TestConstants.adminLoginURL);
+
+        // Prepare user update
+        String newAdminLogin = "SomeOtherAdminLogin";
+
+        UserUpdateDTO userUpdateDTO = new UserUpdateDTO(userOutputDTO.getUserID(), newAdminLogin, adminUserNo1.getUserPassword(), userOutputDTO.isUserStatusActive());
+        requestSpecification = RestAssured.given();
+        requestSpecification.header("Authorization", "Bearer " + accessToken);
+        requestSpecification.header("If-Match", eTag);
+        requestSpecification.contentType(ContentType.JSON);
+        requestSpecification.body(userUpdateDTO);
+
+        response = requestSpecification.put(TestConstants.adminsURL + "/update");
+        validatableResponse = response.then();
+        validatableResponse.statusCode(400);
     }
 
     @Test
-    public void adminControllerUpdateAdminWithLoginTooLongTestNegative() throws Exception {
-        String newAdminLogin = "ddddfddddfddddfddddfddddfddddfddddfddddfd";
-        adminNo1.setUserLogin(newAdminLogin);
-        try (Jsonb jsonb = JsonbBuilder.create()) {
-            AdminPasswordDTO adminPasswordDTO = new AdminPasswordDTO(adminNo1.getUserID(), adminNo1.getUserLogin(), adminNo1.getUserPassword(), adminNo1.isUserStatusActive());
-            AdminPasswordDTO[] arr = new AdminPasswordDTO[1];
-            arr[0] = adminPasswordDTO;
-            String jsonPayload = jsonb.toJson(arr[0]);
-            logger.info("Json: " + jsonPayload);
+    public void adminControllerUpdateAdminWithChangedStatusAsAuthenticatedAdminTestNegative() {
+        // Login with admin (owner) credentials
+        RequestSpecification requestSpecification = RestAssured.given();
+        requestSpecification.contentType(ContentType.JSON);
+        requestSpecification.accept(ContentType.JSON);
+        requestSpecification.body(new UserInputDTO(adminUserNo1.getUserLogin(), passwordNotHashed));
 
-            RequestSpecification requestSpecification = RestAssured.given();
-            requestSpecification.contentType(ContentType.JSON);
-            requestSpecification.body(jsonPayload);
+        Response response = requestSpecification.post(TestConstants.adminLoginURL);
+        ValidatableResponse validatableResponse = response.then();
 
-            Response response = requestSpecification.put(adminsBaseURL);
+        validatableResponse.statusCode(200);
+        String accessToken = response.getBody().asString();
 
-            assertNotNull(response.asString());
-            logger.info("Response: " + response.asString());
+        // Get current user account by login
+        requestSpecification = RestAssured.given();
+        requestSpecification.header("Authorization", "Bearer " + accessToken);
+        requestSpecification.accept(ContentType.JSON);
 
-            ValidatableResponse validatableResponse = response.then();
-            validatableResponse.statusCode(400);
-        }
+        response = requestSpecification.get(TestConstants.adminsURL + "/login/self");
+        String eTag = response.getHeader("ETag");
+        UserOutputDTO userOutputDTO = response.getBody().as(UserOutputDTO.class);
+
+        // Login to admin (account owner) account
+        accessToken = this.loginToAccount(new UserInputDTO(adminUserNo1.getUserLogin(), passwordNotHashed), TestConstants.adminLoginURL);
+
+        // Prepare user update
+        boolean newAdminStatusActive = false;
+
+        UserUpdateDTO userUpdateDTO = new UserUpdateDTO(userOutputDTO.getUserID(), userOutputDTO.getUserLogin(), adminUserNo1.getUserPassword(), newAdminStatusActive);
+        requestSpecification = RestAssured.given();
+        requestSpecification.header("Authorization", "Bearer " + accessToken);
+        requestSpecification.header("If-Match", eTag);
+        requestSpecification.contentType(ContentType.JSON);
+        requestSpecification.body(userUpdateDTO);
+
+        response = requestSpecification.put(TestConstants.adminsURL + "/update");
+        validatableResponse = response.then();
+        validatableResponse.statusCode(400);
     }
 
     @Test
-    public void adminControllerUpdateAdminWithLoginLengthEqualTo8TestPositive() throws Exception {
-        String adminLoginBefore = adminNo1.getUserLogin();
-        String newAdminLogin = "ddddfddd";
-        adminNo1.setUserLogin(newAdminLogin);
-        try (Jsonb jsonb = JsonbBuilder.create()) {
-            AdminPasswordDTO adminPasswordDTO = new AdminPasswordDTO(adminNo1.getUserID(), adminNo1.getUserLogin(), adminNo1.getUserPassword(), adminNo1.isUserStatusActive());
-            AdminPasswordDTO[] arr = new AdminPasswordDTO[1];
-            arr[0] = adminPasswordDTO;
-            String jsonPayload = jsonb.toJson(arr[0]);
-            logger.info("Json: " + jsonPayload);
+    public void adminControllerUpdateAdminWithNullPasswordAsAuthenticatedAdminTestNegative() throws Exception {
+        // Login with admin (owner) credentials
+        RequestSpecification requestSpecification = RestAssured.given();
+        requestSpecification.contentType(ContentType.JSON);
+        requestSpecification.accept(ContentType.JSON);
+        requestSpecification.body(new UserInputDTO(adminUserNo1.getUserLogin(), passwordNotHashed));
 
-            RequestSpecification requestSpecification = RestAssured.given();
-            requestSpecification.contentType(ContentType.JSON);
-            requestSpecification.body(jsonPayload);
+        Response response = requestSpecification.post(TestConstants.adminLoginURL);
+        ValidatableResponse validatableResponse = response.then();
 
-            Response response = requestSpecification.put(adminsBaseURL);
+        validatableResponse.statusCode(200);
+        String accessToken = response.getBody().asString();
 
-            assertTrue(response.asString().isEmpty());
+        // Get current user account by login
+        requestSpecification = RestAssured.given();
+        requestSpecification.header("Authorization", "Bearer " + accessToken);
+        requestSpecification.accept(ContentType.JSON);
 
-            ValidatableResponse validatableResponse = response.then();
-            validatableResponse.statusCode(204);
-        }
+        response = requestSpecification.get(TestConstants.adminsURL + "/login/self");
+        String eTag = response.getHeader("ETag");
+        UserOutputDTO userOutputDTO = response.getBody().as(UserOutputDTO.class);
 
-        Admin foundAdmin = adminService.findByUUID(adminNo1.getUserID());
-        String adminLoginAfter = foundAdmin.getUserLogin();
+        // Login to admin (account owner) account
+        accessToken = this.loginToAccount(new UserInputDTO(adminUserNo1.getUserLogin(), passwordNotHashed), TestConstants.adminLoginURL);
 
-        assertEquals(newAdminLogin, adminLoginAfter);
-        assertNotEquals(adminLoginBefore, adminLoginAfter);
-    }
-
-    @Test
-    public void adminControllerUpdateAdminWithLoginLengthEqualTo20TestPositive() throws Exception {
-        String adminLoginBefore = adminNo1.getUserLogin();
-        String newAdminLogin = "ddddfddddfddddfddddf";
-        adminNo1.setUserLogin(newAdminLogin);
-        try (Jsonb jsonb = JsonbBuilder.create()) {
-            AdminPasswordDTO adminPasswordDTO = new AdminPasswordDTO(adminNo1.getUserID(), adminNo1.getUserLogin(), adminNo1.getUserPassword(), adminNo1.isUserStatusActive());
-            AdminPasswordDTO[] arr = new AdminPasswordDTO[1];
-            arr[0] = adminPasswordDTO;
-            String jsonPayload = jsonb.toJson(arr[0]);
-            logger.info("Json: " + jsonPayload);
-
-            RequestSpecification requestSpecification = RestAssured.given();
-            requestSpecification.contentType(ContentType.JSON);
-            requestSpecification.body(jsonPayload);
-
-            Response response = requestSpecification.put(adminsBaseURL);
-
-            assertTrue(response.asString().isEmpty());
-
-            ValidatableResponse validatableResponse = response.then();
-            validatableResponse.statusCode(204);
-        }
-
-        Admin foundAdmin = adminService.findByUUID(adminNo1.getUserID());
-        String adminLoginAfter = foundAdmin.getUserLogin();
-
-        assertEquals(newAdminLogin, adminLoginAfter);
-        assertNotEquals(adminLoginBefore, adminLoginAfter);
-    }
-
-    @Test
-    public void adminControllerUpdateAdminWithLoginThatViolatesRegExTestNegative() throws Exception {
-        String newAdminLogin = "Some Invalid Login";
-        adminNo1.setUserLogin(newAdminLogin);
-        try (Jsonb jsonb = JsonbBuilder.create()) {
-            AdminPasswordDTO adminPasswordDTO = new AdminPasswordDTO(adminNo1.getUserID(), adminNo1.getUserLogin(), adminNo1.getUserPassword(), adminNo1.isUserStatusActive());
-            AdminPasswordDTO[] arr = new AdminPasswordDTO[1];
-            arr[0] = adminPasswordDTO;
-            String jsonPayload = jsonb.toJson(arr[0]);
-            logger.info("Json: " + jsonPayload);
-
-            RequestSpecification requestSpecification = RestAssured.given();
-            requestSpecification.contentType(ContentType.JSON);
-            requestSpecification.body(jsonPayload);
-
-            Response response = requestSpecification.put(adminsBaseURL);
-
-            assertNotNull(response.asString());
-            logger.info("Response: " + response.asString());
-
-            ValidatableResponse validatableResponse = response.then();
-            validatableResponse.statusCode(400);
-        }
-    }
-
-    @Test
-    public void adminControllerUpdateAdminWithNullPasswordTestNegative() throws Exception {
+        // Prepare user update
         String newAdminPassword = null;
-        adminNo1.setUserPassword(newAdminPassword);
-        try (Jsonb jsonb = JsonbBuilder.create()) {
-            AdminPasswordDTO adminPasswordDTO = new AdminPasswordDTO(adminNo1.getUserID(), adminNo1.getUserLogin(), adminNo1.getUserPassword(), adminNo1.isUserStatusActive());
-            AdminPasswordDTO[] arr = new AdminPasswordDTO[1];
-            arr[0] = adminPasswordDTO;
-            String jsonPayload = jsonb.toJson(arr[0]);
-            logger.info("Json: " + jsonPayload);
 
-            RequestSpecification requestSpecification = RestAssured.given();
-            requestSpecification.contentType(ContentType.JSON);
-            requestSpecification.body(jsonPayload);
+        UserUpdateDTO userUpdateDTO = new UserUpdateDTO(userOutputDTO.getUserID(), userOutputDTO.getUserLogin(), newAdminPassword, userOutputDTO.isUserStatusActive());
+        requestSpecification = RestAssured.given();
+        requestSpecification.header("Authorization", "Bearer " + accessToken);
+        requestSpecification.header("If-Match", eTag);
+        requestSpecification.contentType(ContentType.JSON);
+        requestSpecification.body(userUpdateDTO);
 
-            Response response = requestSpecification.put(adminsBaseURL);
-
-            assertNotNull(response.asString());
-            logger.info("Response: " + response.asString());
-
-            ValidatableResponse validatableResponse = response.then();
-            validatableResponse.statusCode(400);
-        }
+        response = requestSpecification.put(TestConstants.adminsURL + "/update");
+        validatableResponse = response.then();
+        validatableResponse.statusCode(403);
     }
 
     @Test
     public void adminControllerUpdateAdminWithEmptyPasswordTestNegative() throws Exception {
+        // Login with admin (owner) credentials
+        RequestSpecification requestSpecification = RestAssured.given();
+        requestSpecification.contentType(ContentType.JSON);
+        requestSpecification.accept(ContentType.JSON);
+        requestSpecification.body(new UserInputDTO(adminUserNo1.getUserLogin(), passwordNotHashed));
+
+        Response response = requestSpecification.post(TestConstants.adminLoginURL);
+        ValidatableResponse validatableResponse = response.then();
+
+        validatableResponse.statusCode(200);
+        String accessToken = response.getBody().asString();
+
+        // Get current user account by login
+        requestSpecification = RestAssured.given();
+        requestSpecification.header("Authorization", "Bearer " + accessToken);
+        requestSpecification.accept(ContentType.JSON);
+
+        response = requestSpecification.get(TestConstants.adminsURL + "/login/self");
+        String eTag = response.getHeader("ETag");
+        UserOutputDTO userOutputDTO = response.getBody().as(UserOutputDTO.class);
+
+        // Login to admin (account owner) account
+        accessToken = this.loginToAccount(new UserInputDTO(adminUserNo1.getUserLogin(), passwordNotHashed), TestConstants.adminLoginURL);
+
+        // Prepare user update
         String newAdminPassword = "";
-        adminNo1.setUserPassword(newAdminPassword);
-        try (Jsonb jsonb = JsonbBuilder.create()) {
-            AdminPasswordDTO adminPasswordDTO = new AdminPasswordDTO(adminNo1.getUserID(), adminNo1.getUserLogin(), adminNo1.getUserPassword(), adminNo1.isUserStatusActive());
-            AdminPasswordDTO[] arr = new AdminPasswordDTO[1];
-            arr[0] = adminPasswordDTO;
-            String jsonPayload = jsonb.toJson(arr[0]);
-            logger.info("Json: " + jsonPayload);
 
-            RequestSpecification requestSpecification = RestAssured.given();
-            requestSpecification.contentType(ContentType.JSON);
-            requestSpecification.body(jsonPayload);
+        UserUpdateDTO userUpdateDTO = new UserUpdateDTO(userOutputDTO.getUserID(), userOutputDTO.getUserLogin(), newAdminPassword, userOutputDTO.isUserStatusActive());
+        requestSpecification = RestAssured.given();
+        requestSpecification.header("Authorization", "Bearer " + accessToken);
+        requestSpecification.header("If-Match", eTag);
+        requestSpecification.contentType(ContentType.JSON);
+        requestSpecification.body(userUpdateDTO);
 
-            Response response = requestSpecification.put(adminsBaseURL);
-
-            assertNotNull(response.asString());
-            logger.info("Response: " + response.asString());
-
-            ValidatableResponse validatableResponse = response.then();
-            validatableResponse.statusCode(400);
-        }
-    }
-
-    @Test
-    public void adminControllerUpdateAdminWithPasswordTooShortTestNegative() throws Exception {
-        String newAdminPassword = "ddddfdd";
-        adminNo1.setUserPassword(newAdminPassword);
-        try (Jsonb jsonb = JsonbBuilder.create()) {
-            AdminPasswordDTO adminPasswordDTO = new AdminPasswordDTO(adminNo1.getUserID(), adminNo1.getUserLogin(), adminNo1.getUserPassword(), adminNo1.isUserStatusActive());
-            AdminPasswordDTO[] arr = new AdminPasswordDTO[1];
-            arr[0] = adminPasswordDTO;
-            String jsonPayload = jsonb.toJson(arr[0]);
-            logger.info("Json: " + jsonPayload);
-
-            RequestSpecification requestSpecification = RestAssured.given();
-            requestSpecification.contentType(ContentType.JSON);
-            requestSpecification.body(jsonPayload);
-
-            Response response = requestSpecification.put(adminsBaseURL);
-
-            assertNotNull(response.asString());
-            logger.info("Response: " + response.asString());
-
-            ValidatableResponse validatableResponse = response.then();
-            validatableResponse.statusCode(400);
-        }
-    }
-
-    @Test
-    public void adminControllerUpdateAdminWithPasswordTooLongTestNegative() throws Exception {
-        String newAdminPassword = "ddddfddddfddddfddddfddddfddddfddddfddddfd";
-        adminNo1.setUserPassword(newAdminPassword);
-        try (Jsonb jsonb = JsonbBuilder.create()) {
-            AdminPasswordDTO adminPasswordDTO = new AdminPasswordDTO(adminNo1.getUserID(), adminNo1.getUserLogin(), adminNo1.getUserPassword(), adminNo1.isUserStatusActive());
-            AdminPasswordDTO[] arr = new AdminPasswordDTO[1];
-            arr[0] = adminPasswordDTO;
-            String jsonPayload = jsonb.toJson(arr[0]);
-            logger.info("Json: " + jsonPayload);
-
-            RequestSpecification requestSpecification = RestAssured.given();
-            requestSpecification.contentType(ContentType.JSON);
-            requestSpecification.body(jsonPayload);
-
-            Response response = requestSpecification.put(adminsBaseURL);
-
-            assertNotNull(response.asString());
-            logger.info("Response: " + response.asString());
-
-            ValidatableResponse validatableResponse = response.then();
-            validatableResponse.statusCode(400);
-        }
-    }
-
-    @Test
-    public void adminControllerUpdateAdminWithPasswordLengthEqualTo8TestPositive() throws Exception {
-        String adminPasswordBefore = adminNo1.getUserPassword();
-        String newAdminPassword = "ddddfddd";
-        adminNo1.setUserPassword(newAdminPassword);
-        try (Jsonb jsonb = JsonbBuilder.create()) {
-            AdminPasswordDTO adminPasswordDTO = new AdminPasswordDTO(adminNo1.getUserID(), adminNo1.getUserLogin(), adminNo1.getUserPassword(), adminNo1.isUserStatusActive());
-            AdminPasswordDTO[] arr = new AdminPasswordDTO[1];
-            arr[0] = adminPasswordDTO;
-            String jsonPayload = jsonb.toJson(arr[0]);
-            logger.info("Json: " + jsonPayload);
-
-            RequestSpecification requestSpecification = RestAssured.given();
-            requestSpecification.contentType(ContentType.JSON);
-            requestSpecification.body(jsonPayload);
-
-            Response response = requestSpecification.put(adminsBaseURL);
-
-            assertTrue(response.asString().isEmpty());
-
-            ValidatableResponse validatableResponse = response.then();
-            validatableResponse.statusCode(204);
-        }
-
-        Admin foundAdmin = adminService.findByUUID(adminNo1.getUserID());
-        String adminPasswordAfter = foundAdmin.getUserPassword();
-
-        assertEquals(newAdminPassword, adminPasswordAfter);
-        assertNotEquals(adminPasswordBefore, adminPasswordAfter);
-    }
-
-    @Test
-    public void adminControllerUpdateAdminWithPasswordLengthEqualTo40TestPositive() throws Exception {
-        String adminPasswordBefore = adminNo1.getUserPassword();
-        String newAdminPassword = "ddddfddddfddddfddddfddddfddddfddddfddddf";
-        adminNo1.setUserPassword(newAdminPassword);
-        try (Jsonb jsonb = JsonbBuilder.create()) {
-            AdminPasswordDTO adminPasswordDTO = new AdminPasswordDTO(adminNo1.getUserID(), adminNo1.getUserLogin(), adminNo1.getUserPassword(), adminNo1.isUserStatusActive());
-            AdminPasswordDTO[] arr = new AdminPasswordDTO[1];
-            arr[0] = adminPasswordDTO;
-            String jsonPayload = jsonb.toJson(arr[0]);
-            logger.info("Json: " + jsonPayload);
-
-            RequestSpecification requestSpecification = RestAssured.given();
-            requestSpecification.contentType(ContentType.JSON);
-            requestSpecification.body(jsonPayload);
-
-            Response response = requestSpecification.put(adminsBaseURL);
-
-            logger.info(response.asString());
-
-            ValidatableResponse validatableResponse = response.then();
-            validatableResponse.statusCode(204);
-
-            assertTrue(response.asString().isEmpty());
-
-        }
-
-        Admin foundAdmin = adminService.findByUUID(adminNo1.getUserID());
-        String adminPasswordAfter = foundAdmin.getUserPassword();
-
-        assertEquals(newAdminPassword, adminPasswordAfter);
-        assertNotEquals(adminPasswordBefore, adminPasswordAfter);
-    }
-
-    @Test
-    public void adminControllerUpdateAdminWithPasswordThatViolatesRegExTestNegative() throws Exception {
-        String newAdminPassword = "Some Invalid Password";
-        adminNo1.setUserPassword(newAdminPassword);
-        try (Jsonb jsonb = JsonbBuilder.create()) {
-            AdminPasswordDTO adminPasswordDTO = new AdminPasswordDTO(adminNo1.getUserID(), adminNo1.getUserLogin(), adminNo1.getUserPassword(), adminNo1.isUserStatusActive());
-            AdminPasswordDTO[] arr = new AdminPasswordDTO[1];
-            arr[0] = adminPasswordDTO;
-            String jsonPayload = jsonb.toJson(arr[0]);
-            logger.info("Json: " + jsonPayload);
-
-            RequestSpecification requestSpecification = RestAssured.given();
-            requestSpecification.contentType(ContentType.JSON);
-            requestSpecification.body(jsonPayload);
-
-            Response response = requestSpecification.put(adminsBaseURL);
-
-            assertNotNull(response.asString());
-            logger.info("Response: " + response.asString());
-
-            ValidatableResponse validatableResponse = response.then();
-            validatableResponse.statusCode(400);
-        }
+        response = requestSpecification.put(TestConstants.adminsURL + "/update");
+        validatableResponse = response.then();
+        validatableResponse.statusCode(403);
     }
 
     // Activate tests
 
     @Test
-    public void adminControllerActivateAdminTestPositive() throws Exception {
-        UUID activatedAdminID = adminNo1.getUserID();
-        String path = adminsBaseURL + "/" + activatedAdminID + "/deactivate";
+    public void adminControllerActivateAdminAsUnauthenticatedUserTestNegative() throws Exception {
+        UUID activatedAdminID = adminUserNo1.getUserID();
+        String path = TestConstants.adminsURL + "/" + activatedAdminID + "/activate";
 
         RequestSpecification requestSpecification = RestAssured.given();
-
         Response response = requestSpecification.post(path);
+        logger.debug("Response: " + response.getBody().asString());
+        ValidatableResponse validatableResponse = response.then();
+        validatableResponse.statusCode(403);
+    }
 
+    @Test
+    public void adminControllerActivateAdminAsAuthenticatedClientTestNegative() throws Exception {
+        String accessToken = this.loginToAccount(new UserInputDTO(clientUser.getUserLogin(), passwordNotHashed), TestConstants.clientLoginURL);
+
+        UUID activatedAdminID = adminUserNo1.getUserID();
+        String path = TestConstants.adminsURL + "/" + activatedAdminID + "/activate";
+
+        RequestSpecification requestSpecification = RestAssured.given();
+        requestSpecification.header("Authorization", "Bearer " + accessToken);
+        Response response = requestSpecification.post(path);
+        logger.debug("Response: " + response.getBody().asString());
+        ValidatableResponse validatableResponse = response.then();
+        validatableResponse.statusCode(403);
+    }
+
+    @Test
+    public void adminControllerActivateAdminAsAuthenticatedStaffTestNegative() throws Exception {
+        String accessToken = this.loginToAccount(new UserInputDTO(staffUser.getUserLogin(), passwordNotHashed), TestConstants.staffLoginURL);
+
+        UUID activatedAdminID = adminUserNo1.getUserID();
+        String path = TestConstants.adminsURL + "/" + activatedAdminID + "/activate";
+
+        RequestSpecification requestSpecification = RestAssured.given();
+        requestSpecification.header("Authorization", "Bearer " + accessToken);
+        Response response = requestSpecification.post(path);
+        logger.debug("Response: " + response.getBody().asString());
+        ValidatableResponse validatableResponse = response.then();
+        validatableResponse.statusCode(403);
+    }
+
+    @Test
+    public void adminControllerActivateAdminAsAuthenticatedAdminTestPositive() throws Exception {
+        String accessToken = this.loginToAccount(new UserInputDTO(adminUserNo1.getUserLogin(), passwordNotHashed), TestConstants.adminLoginURL);
+
+        UUID activatedAdminID = adminUserNo1.getUserID();
+        String path = TestConstants.adminsURL + "/" + activatedAdminID + "/activate";
+
+        RequestSpecification requestSpecification = RestAssured.given();
+        requestSpecification.header("Authorization", "Bearer " + accessToken);
+        Response response = requestSpecification.post(path);
+        logger.debug("Response: " + response.getBody().asString());
         ValidatableResponse validatableResponse = response.then();
         validatableResponse.statusCode(204);
 
         Admin foundAdmin = adminService.findByUUID(activatedAdminID);
-        boolean adminStatusActiveBefore = foundAdmin.isUserStatusActive();
-
-        path = adminsBaseURL + "/" + activatedAdminID + "/activate";
-
-        requestSpecification = RestAssured.given();
-
-        response = requestSpecification.post(path);
-
-        validatableResponse = response.then();
-        validatableResponse.statusCode(204);
-
-        foundAdmin = adminService.findByUUID(activatedAdminID);
         boolean adminStatusActiveAfter = foundAdmin.isUserStatusActive();
 
         assertTrue(adminStatusActiveAfter);
-        assertFalse(adminStatusActiveBefore);
     }
 
     @Test
-    public void adminControllerActivateAdminThatIsNotInTheDatabaseTestNegative() {
+    public void adminControllerActivateAdminThatIsNotInTheDatabaseAsAuthenticatedAdminTestNegative() {
+        String accessToken = this.loginToAccount(new UserInputDTO(adminUserNo1.getUserLogin(), passwordNotHashed), TestConstants.adminLoginURL);
+
         UUID activatedAdminID = UUID.randomUUID();
-        String path = adminsBaseURL + "/" + activatedAdminID + "/activate";
+        String path = TestConstants.adminsURL + "/" + activatedAdminID + "/activate";
 
         RequestSpecification requestSpecification = RestAssured.given();
-
+        requestSpecification.header("Authorization", "Bearer " + accessToken);
         Response response = requestSpecification.post(path);
-
+        logger.debug("Response: " + response.getBody().asString());
         ValidatableResponse validatableResponse = response.then();
         validatableResponse.statusCode(400);
     }
@@ -1105,15 +968,59 @@ public class AdminControllerTest {
     // Deactivate tests
 
     @Test
-    public void adminControllerDeactivateAdminTestPositive() throws Exception {
-        boolean adminStatusActiveBefore = adminNo1.isUserStatusActive();
-        UUID deactivatedAdminID = adminNo1.getUserID();
-        String path = adminsBaseURL + "/" + deactivatedAdminID + "/deactivate";
+    public void adminControllerDeactivateAdminAsUnauthenticatedUserTestNegative() {
+        UUID deactivatedAdminID = adminUserNo1.getUserID();
+        String path = TestConstants.adminsURL + "/" + deactivatedAdminID + "/deactivate";
 
         RequestSpecification requestSpecification = RestAssured.given();
-
         Response response = requestSpecification.post(path);
+        logger.debug("Response: " + response.getBody().asString());
+        ValidatableResponse validatableResponse = response.then();
+        validatableResponse.statusCode(403);
+    }
 
+    @Test
+    public void adminControllerDeactivateAdminAsAuthenticatedClientTestNegative() {
+        String accessToken = this.loginToAccount(new UserInputDTO(clientUser.getUserLogin(), passwordNotHashed), TestConstants.clientLoginURL);
+
+        UUID deactivatedAdminID = adminUserNo1.getUserID();
+        String path = TestConstants.adminsURL + "/" + deactivatedAdminID + "/deactivate";
+
+        RequestSpecification requestSpecification = RestAssured.given();
+        requestSpecification.header("Authorization", "Bearer " + accessToken);
+        Response response = requestSpecification.post(path);
+        logger.debug("Response: " + response.getBody().asString());
+        ValidatableResponse validatableResponse = response.then();
+        validatableResponse.statusCode(403);
+    }
+
+    @Test
+    public void adminControllerDeactivateAdminAsAuthenticatedStaffTestNegative() {
+        String accessToken = this.loginToAccount(new UserInputDTO(staffUser.getUserLogin(), passwordNotHashed), TestConstants.staffLoginURL);
+
+        UUID deactivatedAdminID = adminUserNo1.getUserID();
+        String path = TestConstants.adminsURL + "/" + deactivatedAdminID + "/deactivate";
+
+        RequestSpecification requestSpecification = RestAssured.given();
+        requestSpecification.header("Authorization", "Bearer " + accessToken);
+        Response response = requestSpecification.post(path);
+        logger.debug("Response: " + response.getBody().asString());
+        ValidatableResponse validatableResponse = response.then();
+        validatableResponse.statusCode(403);
+    }
+
+    @Test
+    public void adminControllerDeactivateAdminAsAuthenticatedAdminTestPositive() throws Exception {
+        String accessToken = this.loginToAccount(new UserInputDTO(adminUserNo1.getUserLogin(), passwordNotHashed), TestConstants.adminLoginURL);
+
+        boolean adminStatusActiveBefore = adminUserNo1.isUserStatusActive();
+        UUID deactivatedAdminID = adminUserNo1.getUserID();
+        String path = TestConstants.adminsURL + "/" + deactivatedAdminID + "/deactivate";
+
+        RequestSpecification requestSpecification = RestAssured.given();
+        requestSpecification.header("Authorization", "Bearer " + accessToken);
+        Response response = requestSpecification.post(path);
+        logger.debug("Response: " + response.getBody().asString());
         ValidatableResponse validatableResponse = response.then();
         validatableResponse.statusCode(204);
 
@@ -1125,15 +1032,31 @@ public class AdminControllerTest {
     }
 
     @Test
-    public void adminControllerDeactivateAdminThatIsNotInTheDatabaseTestNegative() {
+    public void adminControllerDeactivateAdminThatIsNotInTheDatabaseAsAuthenticatedAdminTestNegative() {
+        String accessToken = this.loginToAccount(new UserInputDTO(adminUserNo1.getUserLogin(), passwordNotHashed), TestConstants.adminLoginURL);
+
         UUID deactivatedAdminID = UUID.randomUUID();
-        String path = adminsBaseURL + "/" + deactivatedAdminID + "/deactivate";
+        String path = TestConstants.adminsURL + "/" + deactivatedAdminID + "/deactivate";
 
         RequestSpecification requestSpecification = RestAssured.given();
-
+        requestSpecification.header("Authorization", "Bearer " + accessToken);
         Response response = requestSpecification.post(path);
-
+        logger.debug("Response: " + response.getBody().asString());
         ValidatableResponse validatableResponse = response.then();
         validatableResponse.statusCode(400);
+    }
+
+    private String loginToAccount(UserInputDTO userInputDTO, String loginURL) {
+        RequestSpecification requestSpecification = RestAssured.given();
+        requestSpecification.contentType(ContentType.JSON);
+        requestSpecification.accept(ContentType.JSON);
+        requestSpecification.body(new UserInputDTO(userInputDTO.getUserLogin(), userInputDTO.getUserPassword()));
+
+        Response response = requestSpecification.post(loginURL);
+        ValidatableResponse validatableResponse = response.then();
+
+        validatableResponse.statusCode(200);
+
+        return response.getBody().asString();
     }
 }

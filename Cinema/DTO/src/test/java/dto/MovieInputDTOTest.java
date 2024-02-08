@@ -3,7 +3,7 @@ package dto;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import pl.pas.gr3.dto.MovieInputDTO;
+import pl.pas.gr3.dto.input.MovieInputDTO;
 
 import static org.junit.jupiter.api.Assertions.*;
 

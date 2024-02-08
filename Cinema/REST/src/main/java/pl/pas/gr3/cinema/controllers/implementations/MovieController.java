@@ -4,13 +4,16 @@ import jakarta.validation.ConstraintViolation;
 import jakarta.validation.Validation;
 import jakarta.validation.Validator;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import pl.pas.gr3.cinema.exceptions.services.crud.movie.MovieServiceMovieNotFoundException;
-import pl.pas.gr3.dto.MovieDTO;
-import pl.pas.gr3.dto.MovieInputDTO;
-import pl.pas.gr3.dto.TicketDTO;
+import pl.pas.gr3.cinema.security.services.JWSService;
+import pl.pas.gr3.dto.output.MovieDTO;
+import pl.pas.gr3.dto.input.MovieInputDTO;
+import pl.pas.gr3.dto.output.TicketDTO;
 import pl.pas.gr3.cinema.exceptions.services.GeneralServiceException;
 import pl.pas.gr3.cinema.services.implementations.MovieService;
 import pl.pas.gr3.cinema.model.Movie;
@@ -31,12 +34,15 @@ public class MovieController implements MovieServiceInterface {
     private final static Validator validator = Validation.buildDefaultValidatorFactory().getValidator();
 
     private final MovieService movieService;
+    private final JWSService jwsService;
 
     @Autowired
-    public MovieController(MovieService movieService) {
+    public MovieController(MovieService movieService, JWSService jwsService) {
         this.movieService = movieService;
+        this.jwsService = jwsService;
     }
 
+    @PreAuthorize(value = "hasRole(T(pl.pas.gr3.cinema.model.users.Role).STAFF)")
     @PostMapping(consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
     @Override
     public ResponseEntity<?> create(@RequestBody MovieInputDTO movieInputDTO) {
@@ -56,6 +62,7 @@ public class MovieController implements MovieServiceInterface {
         }
     }
 
+    @PreAuthorize(value = "hasRole(T(pl.pas.gr3.cinema.model.users.Role).STAFF) or hasRole(T(pl.pas.gr3.cinema.model.users.Role).CLIENT)")
     @GetMapping(value = "/all", produces = MediaType.APPLICATION_JSON_VALUE)
     @Override
     public ResponseEntity<?> findAll() {
@@ -76,13 +83,14 @@ public class MovieController implements MovieServiceInterface {
         }
     }
 
+    @PreAuthorize(value = "hasRole(T(pl.pas.gr3.cinema.model.users.Role).STAFF) or hasRole(T(pl.pas.gr3.cinema.model.users.Role).CLIENT)")
     @GetMapping(value = "/{id}", produces = MediaType.APPLICATION_JSON_VALUE)
     @Override
     public ResponseEntity<?> findByUUID(@PathVariable("id") UUID movieID) {
         try {
             Movie movie = this.movieService.findByUUID(movieID);
             MovieDTO movieDTO = new MovieDTO(movie.getMovieID(), movie.getMovieTitle(), movie.getMovieBasePrice(), movie.getScrRoomNumber(), movie.getNumberOfAvailableSeats());
-            return ResponseEntity.ok().contentType(MediaType.APPLICATION_JSON).body(movieDTO);
+            return ResponseEntity.ok().header(HttpHeaders.ETAG, jwsService.generateSignatureForMovie(movie)).contentType(MediaType.APPLICATION_JSON).body(movieDTO);
         } catch (MovieServiceMovieNotFoundException exception) {
             return ResponseEntity.notFound().build();
         } catch (GeneralServiceException exception) {
@@ -90,6 +98,7 @@ public class MovieController implements MovieServiceInterface {
         }
     }
 
+    @PreAuthorize(value = "hasRole(T(pl.pas.gr3.cinema.model.users.Role).STAFF)")
     @GetMapping(value = "{id}/tickets", produces = MediaType.APPLICATION_JSON_VALUE)
     @Override
     public ResponseEntity<?> findAllTicketsForCertainMovie(@PathVariable("id") UUID movieID) {
@@ -106,9 +115,9 @@ public class MovieController implements MovieServiceInterface {
         }
     }
 
-    @PutMapping(consumes = MediaType.APPLICATION_JSON_VALUE)
-    @Override
-    public ResponseEntity<?> update(@RequestBody MovieDTO movieDTO) {
+    @PreAuthorize(value = "hasRole(T(pl.pas.gr3.cinema.model.users.Role).STAFF)")
+    @PutMapping(value = "/update", consumes = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity<?> update(@RequestHeader(value = HttpHeaders.IF_MATCH) String ifMatch, @RequestBody MovieDTO movieDTO) {
         try {
             Movie movie = new Movie(movieDTO.getMovieID(), movieDTO.getMovieTitle(), movieDTO.getMovieBasePrice(), movieDTO.getScrRoomNumber(), movieDTO.getNumberOfAvailableSeats());
 
@@ -118,14 +127,19 @@ public class MovieController implements MovieServiceInterface {
                 return ResponseEntity.badRequest().contentType(MediaType.APPLICATION_JSON).body(messages);
             }
 
-            this.movieService.update(movie);
-            return ResponseEntity.noContent().build();
+            if (jwsService.verifyMovieSignature(ifMatch.replace("\"", ""), movie)) {
+                this.movieService.update(movie);
+                return ResponseEntity.noContent().build();
+            } else {
+                return ResponseEntity.badRequest().contentType(MediaType.APPLICATION_JSON).body("Signature and given object does not match.");
+            }
         } catch (GeneralServiceException exception) {
             return ResponseEntity.badRequest().contentType(MediaType.APPLICATION_JSON).body(exception.getMessage());
         }
     }
 
-    @DeleteMapping(value = "/{id}")
+    @PreAuthorize(value = "hasRole(T(pl.pas.gr3.cinema.model.users.Role).STAFF)")
+    @DeleteMapping(value = "/{id}/delete")
     @Override
     public ResponseEntity<?> delete(@PathVariable("id") UUID movieID) {
         try {

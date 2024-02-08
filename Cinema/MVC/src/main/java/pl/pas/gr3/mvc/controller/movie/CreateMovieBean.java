@@ -7,7 +7,7 @@ import jakarta.inject.Named;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
-import pl.pas.gr3.dto.MovieInputDTO;
+import pl.pas.gr3.dto.input.MovieInputDTO;
 import pl.pas.gr3.mvc.exceptions.beans.movies.MovieCreateException;
 
 import java.io.Serializable;

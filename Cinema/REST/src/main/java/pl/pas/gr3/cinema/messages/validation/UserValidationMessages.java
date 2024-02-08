@@ -10,5 +10,5 @@ public class UserValidationMessages {
 
     public final static String NULL_PASSWORD = "No user password can be null.";
     public final static String PASSWORD_TOO_SHORT = "No user password can be shorter than 8 characters.";
-    public final static String PASSWORD_TOO_LONG = "No user password can be longer than 40 characters.";
+    public final static String PASSWORD_TOO_LONG = "No user password can be longer than 200 characters.";
 }

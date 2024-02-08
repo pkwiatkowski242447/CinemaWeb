@@ -3,7 +3,7 @@ package dto.users;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import pl.pas.gr3.dto.users.AdminPasswordDTO;
+import pl.pas.gr3.dto.update.AdminPasswordDTO;
 
 import java.util.UUID;
 

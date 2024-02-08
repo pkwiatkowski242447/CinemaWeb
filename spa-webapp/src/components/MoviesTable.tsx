@@ -1,6 +1,6 @@
 import React, {useEffect, useState} from 'react';
 import {Button, Form, Modal, Table} from 'react-bootstrap';
-import {api} from '../api/api.config';
+import {api, getAuthToken} from '../api/api.config';
 import {MovieType} from "../types/movieType.ts";
 import {useFormik} from 'formik';
 import * as Yup from 'yup';
@@ -54,11 +54,14 @@ const MoviesTable: React.FC<MoviesTableProps> = () => {
         }
     };
     const deleteMovie = async (movieId: string) => {
-        const endpoint = `/movies/${movieId}`;
-        console.log(endpoint)
+        const endpoint = `/movies/${movieId}/delete`;
+
+        const config = {
+            headers: {Authorization: `Bearer ${getAuthToken()}`}
+        };
+
         try {
-            const response = await api.delete(endpoint);
-            console.log(response.data)
+            const response = await api.delete(endpoint, config);
             fetchData();
         } catch (error) {
             console.error('Error deleting movie:', error);
@@ -119,31 +122,42 @@ const MoviesTable: React.FC<MoviesTableProps> = () => {
 
     const formikEdit = useFormik({
         initialValues: {
-            title: selectedMovie?.movieTitle || '',
-            basePrice: selectedMovie?.movieBasePrice || 0,
-            scrRoomNumber: selectedMovie?.scrRoomNumber || 0,
-            availableSeats: selectedMovie?.numberOfAvailableSeats || 0,
+            title: editedTitle || 'AAAAAAAA',
+            basePrice: editedBasePrice || 0,
+            scrRoomNumber: editedScrRoomNumber || 0,
+            availableSeats: editedAvailableSeats || 0,
         },
 
         validationSchema,
         onSubmit: async (values) => {
             if (confirmSave) {
-                const endpoint = '/movies';
+                const endpoint = '/movies/update';
+
+                const test = await api.get(`/movies/${selectedMovie?.movieId}`)
+                const etag = test.headers.etag;
+
+                console.log(etag)
 
                 const movieToSend = {
-                    "movie-id": selectedMovie.movieId,
+                    'movie-id': selectedMovie.movieId,
                     'movie-title': values.title,
                     'movie-base-price': values.basePrice,
                     'scr-room-number': values.scrRoomNumber,
                     'number-of-available-seats': values.availableSeats,
                 };
 
+                console.log(movieToSend)
+
                 try {
-                    await api.put(endpoint, movieToSend);
+                    await api.put(endpoint, movieToSend, {
+                        headers: {
+                            'If-Match': etag,
+                        },
+                    });
                     fetchData();
                     handleCloseEditModal();
                     setConfirmSave(false);
-                    formik.resetForm();
+                    formikEdit.resetForm();
                 } catch (error) {
                     console.error('Error editing movie:', error);
                 }
@@ -156,7 +170,6 @@ const MoviesTable: React.FC<MoviesTableProps> = () => {
         try {
             const response = await api.get(`/movies/all`);
             const data = await response.data
-
             const transformedMovies = data.map((movie: any) => {
                 return {
                     movieId: movie["movie-id"],

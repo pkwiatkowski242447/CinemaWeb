@@ -9,9 +9,14 @@ import org.apache.commons.lang3.builder.EqualsBuilder;
 import org.apache.commons.lang3.builder.HashCodeBuilder;
 import org.bson.codecs.pojo.annotations.BsonDiscriminator;
 import org.bson.codecs.pojo.annotations.BsonProperty;
+import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.security.core.userdetails.UserDetails;
 import pl.pas.gr3.cinema.consts.model.UserConstants;
 import pl.pas.gr3.cinema.messages.validation.UserValidationMessages;
 
+import java.util.Collection;
+import java.util.List;
 import java.util.UUID;
 
 @Getter @Setter
@@ -37,6 +42,9 @@ public abstract class User {
 
     @BsonProperty(UserConstants.USER_STATUS_ACTIVE)
     protected boolean userStatusActive;
+
+    @Setter(AccessLevel.NONE)
+    protected Role userRole = null;
 
     // Other methods
 

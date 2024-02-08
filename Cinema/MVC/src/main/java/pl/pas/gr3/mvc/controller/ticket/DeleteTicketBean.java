@@ -7,7 +7,7 @@ import jakarta.inject.Named;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
-import pl.pas.gr3.dto.TicketDTO;
+import pl.pas.gr3.dto.output.TicketDTO;
 import pl.pas.gr3.mvc.exceptions.beans.tickets.TicketDeleteException;
 
 import java.io.Serializable;

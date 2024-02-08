@@ -60,7 +60,7 @@ public class UserRepository extends MongoRepository implements UserRepositoryInt
                                             "description": "String containing users password to the cinema web app.",
                                             "bsonType": "string",
                                             "minLength": 8,
-                                            "maxLength": 40,
+                                            "maxLength": 200,
                                             "pattern": "^[^\s]*$"
                                         }
                                         "user_status_active": {
@@ -108,17 +108,17 @@ public class UserRepository extends MongoRepository implements UserRepositoryInt
         UUID staffIDNo2 = UUID.fromString("3d8ef63c-f99d-445c-85d0-4b14e68fc5a1");
         UUID staffIDNo3 = UUID.fromString("86e394dd-e192-4390-b4e4-76029c879857");
 
-        Client clientNo1 = new Client(clientIDNo1, "NewClientLogin1", "password");
-        Client clientNo2 = new Client(clientIDNo2, "NewClientLogin2", "password");
-        Client clientNo3 = new Client(clientIDNo3, "NewClientLogin3", "password");
+        Client clientNo1 = new Client(clientIDNo1, "NewClientLogin1", "$2a$10$DbYLnx7YVVEtyJUOd7dFP.qUPAswrfNu6RVU0vB/Ti8us8AqaoKzS");
+        Client clientNo2 = new Client(clientIDNo2, "NewClientLogin2", "$2a$10$DbYLnx7YVVEtyJUOd7dFP.qUPAswrfNu6RVU0vB/Ti8us8AqaoKzS");
+        Client clientNo3 = new Client(clientIDNo3, "NewClientLogin3", "$2a$10$DbYLnx7YVVEtyJUOd7dFP.qUPAswrfNu6RVU0vB/Ti8us8AqaoKzS");
 
-        Admin adminNo1 = new Admin(adminIDNo1, "NewAdminLogin1", "password");
-        Admin adminNo2 = new Admin(adminIDNo2, "NewAdminLogin2", "password");
-        Admin adminNo3 = new Admin(adminIDNo3, "NewAdminLogin3", "password");
+        Admin adminNo1 = new Admin(adminIDNo1, "NewAdminLogin1", "$2a$10$DbYLnx7YVVEtyJUOd7dFP.qUPAswrfNu6RVU0vB/Ti8us8AqaoKzS");
+        Admin adminNo2 = new Admin(adminIDNo2, "NewAdminLogin2", "$2a$10$DbYLnx7YVVEtyJUOd7dFP.qUPAswrfNu6RVU0vB/Ti8us8AqaoKzS");
+        Admin adminNo3 = new Admin(adminIDNo3, "NewAdminLogin3", "$2a$10$DbYLnx7YVVEtyJUOd7dFP.qUPAswrfNu6RVU0vB/Ti8us8AqaoKzS");
 
-        Staff staffNo1 = new Staff(staffIDNo1, "NewStaffLogin1", "password");
-        Staff staffNo2 = new Staff(staffIDNo2, "NewStaffLogin2", "password");
-        Staff staffNo3 = new Staff(staffIDNo3, "NewStaffLogin3", "password");
+        Staff staffNo1 = new Staff(staffIDNo1, "NewStaffLogin1", "$2a$10$DbYLnx7YVVEtyJUOd7dFP.qUPAswrfNu6RVU0vB/Ti8us8AqaoKzS");
+        Staff staffNo2 = new Staff(staffIDNo2, "NewStaffLogin2", "$2a$10$DbYLnx7YVVEtyJUOd7dFP.qUPAswrfNu6RVU0vB/Ti8us8AqaoKzS");
+        Staff staffNo3 = new Staff(staffIDNo3, "NewStaffLogin3", "$2a$10$DbYLnx7YVVEtyJUOd7dFP.qUPAswrfNu6RVU0vB/Ti8us8AqaoKzS");
 
         List<User> listOfClients = List.of(clientNo1, clientNo2, clientNo3, adminNo1, adminNo2, adminNo3, staffNo1, staffNo2, staffNo3);
         for (User user : listOfClients) {
@@ -238,6 +238,21 @@ public class UserRepository extends MongoRepository implements UserRepositoryInt
             throw new UserRepositoryReadException(exception.getMessage(), exception);
         }
         return client;
+    }
+
+    public User findByLogin(String userLogin) throws UserRepositoryReadException {
+        User user;
+        try {
+            Bson filter = Filters.eq(UserConstants.USER_LOGIN, userLogin);
+            user = getClientCollection().find(filter).first();
+            if (user != null) {
+                return user;
+            } else {
+                throw new UserNullReferenceException(MongoRepositoryMessages.USER_DOC_OBJECT_NOT_FOUND);
+            }
+        } catch (MongoException | UserNullReferenceException exception) {
+            throw new UserRepositoryReadException(exception.getMessage(), exception);
+        }
     }
 
     // Find users by UUID

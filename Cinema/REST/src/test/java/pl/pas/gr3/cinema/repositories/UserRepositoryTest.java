@@ -192,55 +192,6 @@ public class UserRepositoryTest {
         assertThrows(UserRepositoryCreateException.class, () -> userRepositoryForTests.createClient(clientLogin, "SomePassword"));
     }
 
-    @Test
-    public void userRepositoryCreateClientWithNullPasswordTestNegative() {
-        assertThrows(UserRepositoryCreateException.class, () -> userRepositoryForTests.createClient("SomeLogin", null));
-    }
-
-    @Test
-    public void userRepositoryCreateClientWithEmptyPasswordTestNegative() {
-        String clientPassword = "";
-        assertThrows(UserRepositoryCreateException.class, () -> userRepositoryForTests.createClient("SomeLogin", clientPassword));
-    }
-
-    @Test
-    public void userRepositoryCreateClientWithPasswordTooShortTestNegative() {
-        String clientPassword = "dddf";
-        assertThrows(UserRepositoryCreateException.class, () -> userRepositoryForTests.createClient("SomeLogin", clientPassword));
-    }
-
-    @Test
-    public void userRepositoryCreateClientWithPasswordTooLongTestNegative() {
-        String clientPassword = "ddddfddddfddddfddddfddddfddddfddddfddddfd";
-        assertThrows(UserRepositoryCreateException.class, () -> userRepositoryForTests.createClient("SomeLogin", clientPassword));
-    }
-
-    @Test
-    public void userRepositoryCreateClientWithPasswordLengthEqualTo8TestNegative() throws UserRepositoryException {
-        String clientPassword = "dddfdddf";
-        Client client = userRepositoryForTests.createClient("SomeLogin", clientPassword);
-        assertNotNull(client);
-        Client foundClient = userRepositoryForTests.findClientByUUID(client.getUserID());
-        assertNotNull(foundClient);
-        assertEquals(client, foundClient);
-    }
-
-    @Test
-    public void userRepositoryCreateClientWithPasswordLengthEqualTo40TestNegative() throws UserRepositoryException {
-        String clientPassword = "dddfdddfdddfdddfdddfdddfdddfdddfdddfdddf";
-        Client client = userRepositoryForTests.createClient("SomeLogin", clientPassword);
-        assertNotNull(client);
-        Client foundClient = userRepositoryForTests.findClientByUUID(client.getUserID());
-        assertNotNull(foundClient);
-        assertEquals(client, foundClient);
-    }
-
-    @Test
-    public void userRepositoryCreateClientWithPasswordThatViolatesRegExTestNegative() {
-        String clientPassword = "Some Password";
-        assertThrows(UserRepositoryCreateException.class, () -> userRepositoryForTests.createClient("SomeLogin", clientPassword));
-    }
-
     // Admin create tests
 
     @Test
@@ -306,55 +257,6 @@ public class UserRepositoryTest {
         assertThrows(UserRepositoryCreateException.class, () -> userRepositoryForTests.createAdmin(adminLogin, "SomePassword"));
     }
 
-    @Test
-    public void userRepositoryCreateAdminWithNullPasswordTestNegative() {
-        assertThrows(UserRepositoryCreateException.class, () -> userRepositoryForTests.createAdmin("SomeLogin", null));
-    }
-
-    @Test
-    public void userRepositoryCreateAdminWithEmptyPasswordTestNegative() {
-        String adminPassword = "";
-        assertThrows(UserRepositoryCreateException.class, () -> userRepositoryForTests.createAdmin("SomeLogin", adminPassword));
-    }
-
-    @Test
-    public void userRepositoryCreateAdminWithPasswordTooShortTestNegative() {
-        String adminPassword = "dddf";
-        assertThrows(UserRepositoryCreateException.class, () -> userRepositoryForTests.createAdmin("SomeLogin", adminPassword));
-    }
-
-    @Test
-    public void userRepositoryCreateAdminWithPasswordTooLongTestNegative() {
-        String adminPassword = "ddddfddddfddddfddddfddddfddddfddddfddddfd";
-        assertThrows(UserRepositoryCreateException.class, () -> userRepositoryForTests.createAdmin("SomeLogin", adminPassword));
-    }
-
-    @Test
-    public void userRepositoryCreateAdminWithPasswordLengthEqualTo8TestNegative() throws UserRepositoryException {
-        String adminPassword = "dddfdddf";
-        Admin admin = userRepositoryForTests.createAdmin("SomeLogin", adminPassword);
-        assertNotNull(admin);
-        Admin foundAdmin = userRepositoryForTests.findAdminByUUID(admin.getUserID());
-        assertNotNull(foundAdmin);
-        assertEquals(admin, foundAdmin);
-    }
-
-    @Test
-    public void userRepositoryCreateAdminWithPasswordLengthEqualTo40TestNegative() throws UserRepositoryException {
-        String adminPassword = "dddfdddfdddfdddfdddfdddfdddfdddfdddfdddf";
-        Admin admin = userRepositoryForTests.createAdmin("SomeLogin", adminPassword);
-        assertNotNull(admin);
-        Admin foundAdmin = userRepositoryForTests.findAdminByUUID(admin.getUserID());
-        assertNotNull(foundAdmin);
-        assertEquals(admin, foundAdmin);
-    }
-
-    @Test
-    public void userRepositoryCreateAdminWithPasswordThatViolatesRegExTestNegative() {
-        String adminPassword = "Some Password";
-        assertThrows(UserRepositoryCreateException.class, () -> userRepositoryForTests.createAdmin("SomeLogin", adminPassword));
-    }
-
     // Staff create tests
 
     @Test
@@ -418,55 +320,6 @@ public class UserRepositoryTest {
     public void userRepositoryCreateStaffWithLoginThatViolatesRegExTestNegative() {
         String staffLogin = "Some Login";
         assertThrows(UserRepositoryCreateException.class, () -> userRepositoryForTests.createStaff(staffLogin, "SomePassword"));
-    }
-
-    @Test
-    public void userRepositoryCreateStaffWithNullPasswordTestNegative() {
-        assertThrows(UserRepositoryCreateException.class, () -> userRepositoryForTests.createStaff("SomeLogin", null));
-    }
-
-    @Test
-    public void userRepositoryCreateStaffWithEmptyPasswordTestNegative() {
-        String staffPassword = "";
-        assertThrows(UserRepositoryCreateException.class, () -> userRepositoryForTests.createStaff("SomeLogin", staffPassword));
-    }
-
-    @Test
-    public void userRepositoryCreateStaffWithPasswordTooShortTestNegative() {
-        String staffPassword = "dddf";
-        assertThrows(UserRepositoryCreateException.class, () -> userRepositoryForTests.createStaff("SomeLogin", staffPassword));
-    }
-
-    @Test
-    public void userRepositoryCreateStaffWithPasswordTooLongTestNegative() {
-        String staffPassword = "ddddfddddfddddfddddfddddfddddfddddfddddfd";
-        assertThrows(UserRepositoryCreateException.class, () -> userRepositoryForTests.createStaff("SomeLogin", staffPassword));
-    }
-
-    @Test
-    public void userRepositoryCreateStaffWithPasswordLengthEqualTo8TestNegative() throws UserRepositoryException {
-        String staffPassword = "dddfdddf";
-        Staff staff = userRepositoryForTests.createStaff("SomeLogin", staffPassword);
-        assertNotNull(staff);
-        Staff foundStaff = userRepositoryForTests.findStaffByUUID(staff.getUserID());
-        assertNotNull(foundStaff);
-        assertEquals(staff, foundStaff);
-    }
-
-    @Test
-    public void userRepositoryCreateStaffWithPasswordLengthEqualTo40TestNegative() throws UserRepositoryException {
-        String staffPassword = "dddfdddfdddfdddfdddfdddfdddfdddfdddfdddf";
-        Staff staff = userRepositoryForTests.createStaff("SomeLogin", staffPassword);
-        assertNotNull(staff);
-        Staff foundStaff = userRepositoryForTests.findStaffByUUID(staff.getUserID());
-        assertNotNull(foundStaff);
-        assertEquals(staff, foundStaff);
-    }
-
-    @Test
-    public void userRepositoryCreateStaffWithPasswordThatViolatesRegExTestNegative() {
-        String staffPassword = "Some Password";
-        assertThrows(UserRepositoryCreateException.class, () -> userRepositoryForTests.createStaff("SomeLogin", staffPassword));
     }
 
     // Find client by ID tests
@@ -846,66 +699,6 @@ public class UserRepositoryTest {
         assertThrows(UserRepositoryUpdateException.class, () -> userRepositoryForTests.updateClient(clientNo1));
     }
 
-    @Test
-    public void userRepositoryUpdateClientWithNullPasswordTestNegative() {
-        clientNo1.setUserPassword(null);
-        assertThrows(UserRepositoryUpdateException.class, () -> userRepositoryForTests.updateClient(clientNo1));
-    }
-
-    @Test
-    public void userRepositoryUpdateClientWithEmptyPasswordTestNegative() {
-        String newPassword = "";
-        clientNo1.setUserPassword(newPassword);
-        assertThrows(UserRepositoryUpdateException.class, () -> userRepositoryForTests.updateClient(clientNo1));
-    }
-
-    @Test
-    public void userRepositoryUpdateClientWithPasswordTooShortTestNegative() {
-        String newPassword = "dddf";
-        clientNo1.setUserPassword(newPassword);
-        assertThrows(UserRepositoryUpdateException.class, () -> userRepositoryForTests.updateClient(clientNo1));
-    }
-
-    @Test
-    public void userRepositoryUpdateClientWithPasswordTooLongTestNegative() {
-        String newPassword = "ddddfddddfddddfddddfddddfddddfddddfddddfd";
-        clientNo1.setUserPassword(newPassword);
-        assertThrows(UserRepositoryUpdateException.class, () -> userRepositoryForTests.updateClient(clientNo1));
-    }
-
-    @Test
-    public void userRepositoryUpdateClientWithPasswordLengthEqualTo8TestNegative() throws UserRepositoryException {
-        String newPassword = "dddfdddf";
-        String passwordBefore = clientNo1.getUserPassword();
-        clientNo1.setUserPassword(newPassword);
-        userRepositoryForTests.updateClient(clientNo1);
-        Client foundClient = userRepositoryForTests.findClientByUUID(clientNo1.getUserID());
-        String passwordAfter = foundClient.getUserPassword();
-        assertNotNull(passwordAfter);
-        assertEquals(newPassword, passwordAfter);
-        assertNotEquals(passwordBefore, passwordAfter);
-    }
-
-    @Test
-    public void userRepositoryUpdateClientWithPasswordLengthEqualTo40TestNegative() throws UserRepositoryException {
-        String newPassword = "dddfdddfdddfdddfdddfdddfdddfdddfdddfdddf";
-        String passwordBefore = clientNo1.getUserPassword();
-        clientNo1.setUserPassword(newPassword);
-        userRepositoryForTests.updateClient(clientNo1);
-        Client foundClient = userRepositoryForTests.findClientByUUID(clientNo1.getUserID());
-        String passwordAfter = foundClient.getUserPassword();
-        assertNotNull(passwordAfter);
-        assertEquals(newPassword, passwordAfter);
-        assertNotEquals(passwordBefore, passwordAfter);
-    }
-
-    @Test
-    public void userRepositoryUpdateClientWithPasswordThatViolatesRegExTestNegative() {
-        String clientPassword = "Some Password";
-        clientNo1.setUserPassword(clientPassword);
-        assertThrows(UserRepositoryUpdateException.class, () -> userRepositoryForTests.updateClient(clientNo1));
-    }
-
     // Update admin tests
 
     @Test
@@ -995,66 +788,6 @@ public class UserRepositoryTest {
         assertThrows(UserRepositoryUpdateException.class, () -> userRepositoryForTests.updateAdmin(adminNo1));
     }
 
-    @Test
-    public void userRepositoryUpdateAdminWithNullPasswordTestNegative() {
-        adminNo1.setUserPassword(null);
-        assertThrows(UserRepositoryUpdateException.class, () -> userRepositoryForTests.updateAdmin(adminNo1));
-    }
-
-    @Test
-    public void userRepositoryUpdateAdminWithEmptyPasswordTestNegative() {
-        String newPassword = "";
-        adminNo1.setUserPassword(newPassword);
-        assertThrows(UserRepositoryUpdateException.class, () -> userRepositoryForTests.updateAdmin(adminNo1));
-    }
-
-    @Test
-    public void userRepositoryUpdateAdminWithPasswordTooShortTestNegative() {
-        String newPassword = "dddf";
-        adminNo1.setUserPassword(newPassword);
-        assertThrows(UserRepositoryUpdateException.class, () -> userRepositoryForTests.updateAdmin(adminNo1));
-    }
-
-    @Test
-    public void userRepositoryUpdateAdminWithPasswordTooLongTestNegative() {
-        String newPassword = "ddddfddddfddddfddddfddddfddddfddddfddddfd";
-        adminNo1.setUserPassword(newPassword);
-        assertThrows(UserRepositoryUpdateException.class, () -> userRepositoryForTests.updateAdmin(adminNo1));
-    }
-
-    @Test
-    public void userRepositoryUpdateAdminWithPasswordLengthEqualTo8TestNegative() throws UserRepositoryException {
-        String newPassword = "dddfdddf";
-        String passwordBefore = adminNo1.getUserPassword();
-        adminNo1.setUserPassword(newPassword);
-        userRepositoryForTests.updateAdmin(adminNo1);
-        Admin foundAdmin = userRepositoryForTests.findAdminByUUID(adminNo1.getUserID());
-        String passwordAfter = foundAdmin.getUserPassword();
-        assertNotNull(passwordAfter);
-        assertEquals(newPassword, passwordAfter);
-        assertNotEquals(passwordBefore, passwordAfter);
-    }
-
-    @Test
-    public void userRepositoryUpdateAdminWithPasswordLengthEqualTo40TestNegative() throws UserRepositoryException {
-        String newPassword = "dddfdddfdddfdddfdddfdddfdddfdddfdddfdddf";
-        String passwordBefore = adminNo1.getUserPassword();
-        adminNo1.setUserPassword(newPassword);
-        userRepositoryForTests.updateAdmin(adminNo1);
-        Admin foundAdmin = userRepositoryForTests.findAdminByUUID(adminNo1.getUserID());
-        String passwordAfter = foundAdmin.getUserPassword();
-        assertNotNull(passwordAfter);
-        assertEquals(newPassword, passwordAfter);
-        assertNotEquals(passwordBefore, passwordAfter);
-    }
-
-    @Test
-    public void userRepositoryUpdateAdminWithPasswordThatViolatesRegExTestNegative() {
-        String clientPassword = "Some Password";
-        clientNo1.setUserPassword(clientPassword);
-        assertThrows(UserRepositoryUpdateException.class, () -> userRepositoryForTests.updateClient(clientNo1));
-    }
-
     // Staff update tests
 
     @Test
@@ -1141,66 +874,6 @@ public class UserRepositoryTest {
     public void userRepositoryUpdateStaffWithLoginThatViolatesRegExTestNegative() {
         String clientLogin = "Some Login";
         staffNo1.setUserLogin(clientLogin);
-        assertThrows(UserRepositoryUpdateException.class, () -> userRepositoryForTests.updateStaff(staffNo1));
-    }
-
-    @Test
-    public void userRepositoryUpdateStaffWithNullPasswordTestNegative() {
-        staffNo1.setUserPassword(null);
-        assertThrows(UserRepositoryUpdateException.class, () -> userRepositoryForTests.updateStaff(staffNo1));
-    }
-
-    @Test
-    public void userRepositoryUpdateStaffWithEmptyPasswordTestNegative() {
-        String newPassword = "";
-        staffNo1.setUserPassword(newPassword);
-        assertThrows(UserRepositoryUpdateException.class, () -> userRepositoryForTests.updateStaff(staffNo1));
-    }
-
-    @Test
-    public void userRepositoryUpdateStaffWithPasswordTooShortTestNegative() {
-        String newPassword = "dddf";
-        staffNo1.setUserPassword(newPassword);
-        assertThrows(UserRepositoryUpdateException.class, () -> userRepositoryForTests.updateStaff(staffNo1));
-    }
-
-    @Test
-    public void userRepositoryUpdateStaffWithPasswordTooLongTestNegative() {
-        String newPassword = "ddddfddddfddddfddddfddddfddddfddddfddddfd";
-        staffNo1.setUserPassword(newPassword);
-        assertThrows(UserRepositoryUpdateException.class, () -> userRepositoryForTests.updateStaff(staffNo1));
-    }
-
-    @Test
-    public void userRepositoryUpdateStaffWithPasswordLengthEqualTo8TestNegative() throws UserRepositoryException {
-        String newPassword = "dddfdddf";
-        String passwordBefore = staffNo1.getUserPassword();
-        staffNo1.setUserPassword(newPassword);
-        userRepositoryForTests.updateStaff(staffNo1);
-        Staff foundStaff = userRepositoryForTests.findStaffByUUID(staffNo1.getUserID());
-        String passwordAfter = foundStaff.getUserPassword();
-        assertNotNull(passwordAfter);
-        assertEquals(newPassword, passwordAfter);
-        assertNotEquals(passwordBefore, passwordAfter);
-    }
-
-    @Test
-    public void userRepositoryUpdateStaffWithPasswordLengthEqualTo40TestNegative() throws UserRepositoryException {
-        String newPassword = "dddfdddfdddfdddfdddfdddfdddfdddfdddfdddf";
-        String passwordBefore = staffNo1.getUserPassword();
-        staffNo1.setUserPassword(newPassword);
-        userRepositoryForTests.updateStaff(staffNo1);
-        Staff foundStaff = userRepositoryForTests.findStaffByUUID(staffNo1.getUserID());
-        String passwordAfter = foundStaff.getUserPassword();
-        assertNotNull(passwordAfter);
-        assertEquals(newPassword, passwordAfter);
-        assertNotEquals(passwordBefore, passwordAfter);
-    }
-
-    @Test
-    public void userRepositoryUpdateStaffWithPasswordThatViolatesRegExTestNegative() {
-        String clientPassword = "Some Password";
-        staffNo1.setUserPassword(clientPassword);
         assertThrows(UserRepositoryUpdateException.class, () -> userRepositoryForTests.updateStaff(staffNo1));
     }
 
