@@ -255,7 +255,6 @@ const UsersTable: React.FC<TableProps> = ({role}) => {
                 </Modal.Body>
             </Modal>
         </div>
-
     );
 };
 

@@ -31,6 +31,7 @@ import java.util.UUID;
 
 @RestController
 @RequestMapping("/api/v1/staffs")
+@CrossOrigin(origins = "http://localhost:3000", allowedHeaders = "*")
 public class StaffController implements UserServiceInterface<Staff> {
 
     private final static Validator validator = Validation.buildDefaultValidatorFactory().getValidator();

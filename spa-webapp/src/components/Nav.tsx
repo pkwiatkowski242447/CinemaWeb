@@ -9,7 +9,6 @@ import {logoutUser} from "../api/logout.ts";
 import {useUserContext} from "../context/userContext.tsx";
 import {AccountTypeEnum} from "../types/accountType.ts";
 
-
 type MenuItem = {
     to: string;
     icon: IconType;

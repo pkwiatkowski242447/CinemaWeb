@@ -52,7 +52,6 @@ const router = createBrowserRouter([
         children: UserRoutes,
     },
 
-
 ] satisfies RouteObject[]);
 
 ReactDOM.createRoot(document.getElementById("root")!).render(

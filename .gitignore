@@ -41,3 +41,6 @@ target/
 
 # Other
 mvnw*
+
+# NodeJS excludes
+node_modules

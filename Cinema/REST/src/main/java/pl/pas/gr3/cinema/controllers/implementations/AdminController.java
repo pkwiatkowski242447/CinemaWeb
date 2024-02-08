@@ -27,6 +27,7 @@ import java.util.*;
 
 @RestController
 @RequestMapping("/api/v1/admins")
+@CrossOrigin(origins = "http://localhost:3000", allowedHeaders = "*")
 public class AdminController implements UserServiceInterface<Admin> {
 
     private final Validator validator = Validation.buildDefaultValidatorFactory().getValidator();
