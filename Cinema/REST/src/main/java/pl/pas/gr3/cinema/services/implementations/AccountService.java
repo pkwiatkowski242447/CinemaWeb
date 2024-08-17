@@ -1,12 +1,9 @@
 package pl.pas.gr3.cinema.services.implementations;
 
-import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 import pl.pas.gr3.cinema.aspects.logging.LoggerInterceptor;
-import pl.pas.gr3.cinema.exceptions.ApplicationInputOutputException;
 import pl.pas.gr3.cinema.model.UserFile;
 import pl.pas.gr3.cinema.model.users.Account;
 import pl.pas.gr3.cinema.model.users.Admin;
@@ -14,33 +11,15 @@ import pl.pas.gr3.cinema.model.users.Client;
 import pl.pas.gr3.cinema.model.users.Staff;
 import pl.pas.gr3.cinema.repositories.AccountRepository;
 import pl.pas.gr3.cinema.services.interfaces.IAccountService;
-import pl.pas.gr3.cinema.utils.I18n;
-
-import java.io.File;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.time.Instant;
+import pl.pas.gr3.cinema.services.interfaces.IFileSystemService;
 
 @Service
 @RequiredArgsConstructor
 @LoggerInterceptor
 public class AccountService implements IAccountService {
 
-    @Value("${avatar.files.directory}")
-    private String avatarsDirectory;
-
     private final AccountRepository accountRepository;
-
-    // Lifecycle methods
-
-    @PostConstruct
-    private void initializeServerState() {
-        File avatarsDir = new File(avatarsDirectory);
-        if (!avatarsDir.exists() && !avatarsDir.mkdirs()) {
-            throw new ApplicationInputOutputException(
-                    I18n.APPLICATION_COMPONENT_INITIALIZATION_EXCEPTION);
-        }
-    }
+    private final IFileSystemService fileSystemService;
 
     // Create methods
 
@@ -76,28 +55,10 @@ public class AccountService implements IAccountService {
         Account account = new Account(login, password, firstName, lastName, email, phoneNumber, language);
 
         if (avatar != null) {
-            String fileName = this.performFileWrite(avatar);
-            UserFile avatarFile = new UserFile(fileName, avatar.getOriginalFilename(), avatar.getContentType());
+            UserFile avatarFile = this.fileSystemService.performFileWrite(avatar);
             account.setUserFile(avatarFile);
         }
 
         return account;
-    }
-
-    private String performFileWrite(MultipartFile avatar) {
-        String fileName = this.avatarsDirectory + Instant.now();
-        File createdFile = new File(fileName);
-
-        try {
-            if (createdFile.createNewFile()) {
-                try (FileOutputStream fos = new FileOutputStream(fileName)) {
-                    fos.write(avatar.getBytes());
-                }
-            }
-        } catch (IOException exception) {
-            throw new ApplicationInputOutputException();
-        }
-
-        return fileName;
     }
 }

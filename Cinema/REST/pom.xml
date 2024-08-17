@@ -279,6 +279,8 @@
                 <init.mode>always</init.mode>
                 <initialize-datasource>true</initialize-datasource>
 
+                <windows.file.path>${project.basedir}/CinemaFiles</windows.file.path>
+
                 <active.profile>dev</active.profile>
             </properties>
         </profile>
@@ -306,6 +308,8 @@
                 <init.mode>never</init.mode>
                 <initialize-datasource>false</initialize-datasource>
 
+                <windows.file.path>${project.basedir}/CinemaFiles</windows.file.path>
+
                 <active.profile>prod</active.profile>
             </properties>
         </profile>
@@ -332,6 +336,8 @@
                 <hibernate.dialect>org.hibernate.dialect.PostgreSQLDialect</hibernate.dialect>
                 <init.mode>always</init.mode>
                 <initialize-datasource>true</initialize-datasource>
+
+                <windows.file.path>${project.basedir}/CinemaFiles</windows.file.path>
 
                 <active.profile>test</active.profile>
             </properties>

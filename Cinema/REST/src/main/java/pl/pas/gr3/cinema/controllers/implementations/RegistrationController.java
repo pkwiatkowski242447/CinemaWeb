@@ -5,6 +5,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.multipart.MultipartFile;
 import pl.pas.gr3.cinema.aspects.logging.LoggerInterceptor;
 import pl.pas.gr3.cinema.common.dto.input.AccountRegisterDTO;
 import pl.pas.gr3.cinema.controllers.interfaces.IRegistrationController;
@@ -25,7 +26,8 @@ public class RegistrationController implements IRegistrationController {
     private final PasswordEncoder passwordEncoder;
 
     @Override
-    public ResponseEntity<?> registerClient(AccountRegisterDTO registerDTO) {
+    public ResponseEntity<?> registerClient(AccountRegisterDTO registerDTO,
+                                            MultipartFile avatar) {
         Account clientAccount = this.accountService.createClientAccount(registerDTO.login(),
                 passwordEncoder.encode(registerDTO.password()),
                 registerDTO.firstName(),
@@ -33,13 +35,14 @@ public class RegistrationController implements IRegistrationController {
                 registerDTO.email(),
                 registerDTO.phoneNumber(),
                 registerDTO.language(),
-                registerDTO.avatar());
+                avatar);
 
         return ResponseEntity.created(URI.create(accountCreatedUrl + clientAccount.getId())).build();
     }
 
     @Override
-    public ResponseEntity<?> registerStaff(AccountRegisterDTO registerDTO) {
+    public ResponseEntity<?> registerStaff(AccountRegisterDTO registerDTO,
+                                           MultipartFile avatar) {
         Account staffAccount = this.accountService.createStaffAccount(registerDTO.login(),
                 passwordEncoder.encode(registerDTO.password()),
                 registerDTO.firstName(),
@@ -47,13 +50,14 @@ public class RegistrationController implements IRegistrationController {
                 registerDTO.email(),
                 registerDTO.phoneNumber(),
                 registerDTO.language(),
-                registerDTO.avatar());
+                avatar);
 
         return ResponseEntity.created(URI.create(accountCreatedUrl + staffAccount.getId())).build();
     }
 
     @Override
-    public ResponseEntity<?> registerAdmin(AccountRegisterDTO registerDTO) {
+    public ResponseEntity<?> registerAdmin(AccountRegisterDTO registerDTO,
+                                           MultipartFile avatar) {
         Account adminAccount = this.accountService.createAdminAccount(registerDTO.login(),
                 passwordEncoder.encode(registerDTO.password()),
                 registerDTO.firstName(),
@@ -61,7 +65,7 @@ public class RegistrationController implements IRegistrationController {
                 registerDTO.email(),
                 registerDTO.phoneNumber(),
                 registerDTO.language(),
-                registerDTO.avatar());
+                avatar);
 
         return ResponseEntity.created(URI.create(accountCreatedUrl + adminAccount.getId())).build();
     }
