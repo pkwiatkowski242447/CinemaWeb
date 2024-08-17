@@ -4,10 +4,9 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.boot.web.servlet.FilterRegistrationBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.stereotype.Service;
 import pl.pas.gr3.cinema.security.filters.ObjectUpdateFilter;
 import pl.pas.gr3.cinema.security.filters.UserUpdateFilter;
-import pl.pas.gr3.cinema.security.services.JWSService;
+import pl.pas.gr3.cinema.utils.providers.JWSService;
 
 import java.util.List;
 

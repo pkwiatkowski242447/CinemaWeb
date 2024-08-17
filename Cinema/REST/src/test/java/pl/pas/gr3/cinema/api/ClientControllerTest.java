@@ -19,7 +19,6 @@ import pl.pas.gr3.cinema.exceptions.repositories.UserRepositoryException;
 import pl.pas.gr3.cinema.model.users.Admin;
 import pl.pas.gr3.cinema.model.users.Staff;
 import pl.pas.gr3.cinema.repositories.implementations.UserRepository;
-import pl.pas.gr3.cinema.services.implementations.ClientService;
 import pl.pas.gr3.cinema.model.users.Client;
 import pl.pas.gr3.dto.auth.UserInputDTO;
 import pl.pas.gr3.dto.auth.UserOutputDTO;

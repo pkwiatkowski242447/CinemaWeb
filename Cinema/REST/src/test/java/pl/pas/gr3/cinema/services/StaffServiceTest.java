@@ -5,7 +5,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import pl.pas.gr3.cinema.exceptions.services.crud.staff.*;
 import pl.pas.gr3.cinema.repositories.implementations.UserRepository;
-import pl.pas.gr3.cinema.services.implementations.StaffService;
 import pl.pas.gr3.cinema.model.users.Staff;
 
 import java.util.List;

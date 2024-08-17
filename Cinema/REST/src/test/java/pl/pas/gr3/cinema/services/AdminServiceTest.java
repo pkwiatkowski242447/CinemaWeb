@@ -7,7 +7,6 @@ import pl.pas.gr3.cinema.exceptions.services.GeneralAdminServiceException;
 import pl.pas.gr3.cinema.exceptions.services.crud.admin.*;
 import pl.pas.gr3.cinema.model.users.Admin;
 import pl.pas.gr3.cinema.repositories.implementations.UserRepository;
-import pl.pas.gr3.cinema.services.implementations.AdminService;
 
 import java.util.List;
 import java.util.UUID;

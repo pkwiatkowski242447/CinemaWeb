@@ -1,63 +1,39 @@
 package pl.pas.gr3.cinema.model;
 
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.Table;
 import jakarta.validation.constraints.*;
-import lombok.Data;
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 import org.apache.commons.lang3.builder.EqualsBuilder;
 import org.apache.commons.lang3.builder.HashCodeBuilder;
 import org.apache.commons.lang3.builder.ToStringBuilder;
-import org.bson.codecs.pojo.annotations.BsonCreator;
-import org.bson.codecs.pojo.annotations.BsonProperty;
-import pl.pas.gr3.cinema.consts.model.MovieConstants;
-import pl.pas.gr3.cinema.messages.validation.MovieValidationMessages;
+import pl.pas.gr3.cinema.utils.constants.DatabaseConstants;
+import pl.pas.gr3.cinema.utils.messages.MovieConstants;
 
-import java.util.UUID;
+@Entity
+@Table(name = DatabaseConstants.MOVIES_TABLE)
+@Getter @Setter
+@NoArgsConstructor
+@AllArgsConstructor
+public class Movie extends AbstractEntity {
 
-@Data
-public class Movie {
+    @NotBlank(message = MovieConstants.MOVIE_TITLE_BLANK)
+    @Size(min = MovieConstants.MOVIE_TITLE_MIN_LENGTH, message = MovieConstants.MOVIE_TITLE_TOO_SHORT)
+    @Size(max = MovieConstants.MOVIE_TITLE_MAX_LENGTH, message = MovieConstants.MOVIE_TITLE_TOO_LONG)
+    @Column(name = DatabaseConstants.MOVIES_TITLE_COLUMN, nullable = false, length = 128)
+    private String title;
 
-    @BsonProperty(MovieConstants.GENERAL_IDENTIFIER)
-    @NotNull(message = MovieValidationMessages.NULL_IDENTIFIER)
-    private final UUID movieID;
-
-    @BsonProperty(MovieConstants.MOVIE_TITLE)
-    @NotNull(message = MovieValidationMessages.NULL_MOVIE_TITLE)
-    @Size(min = MovieConstants.MOVIE_TITLE_MIN_LENGTH, message = MovieValidationMessages.MOVIE_TITLE_TOO_SHORT)
-    @Size(max = MovieConstants.MOVIE_TITLE_MAX_LENGTH, message = MovieValidationMessages.MOVIE_TITLE_TOO_LONG)
-    private String movieTitle;
-
-    @BsonProperty(MovieConstants.MOVIE_BASE_PRICE)
-    @Min(value = MovieConstants.MOVIE_BASE_PRICE_MIN_VALUE, message = MovieValidationMessages.MOVIE_BASE_PRICE_TOO_LOW)
-    @Max(value = MovieConstants.MOVIE_BASE_PRICE_MAX_VALUE, message = MovieValidationMessages.MOVIE_BASE_PRICE_TOO_HIGH)
-    private double movieBasePrice;
-
-    @BsonProperty(MovieConstants.SCREENING_ROOM_NUMBER)
-    @Min(value = MovieConstants.SCREENING_ROOM_NUMBER_MIN_VALUE, message = MovieValidationMessages.SCREENING_ROOM_NUMBER_TOO_LOW)
-    @Max(value = MovieConstants.SCREENING_ROOM_NUMBER_MAX_VALUE, message = MovieValidationMessages.SCREENING_ROOM_NUMBER_TOO_HIGH)
-    private int scrRoomNumber;
-
-    @BsonProperty(MovieConstants.NUMBER_OF_AVAILABLE_SEATS)
-    @Min(value = MovieConstants.NUMBER_OF_AVAILABLE_SEATS_MIN_VALUE, message = MovieValidationMessages.NUMBER_OF_AVAILABLE_SEATS_NEGATIVE)
-    @Max(value = MovieConstants.NUMBER_OF_AVAILABLE_SEATS_MAX_VALUE, message = MovieValidationMessages.NUMBER_OF_AVAILABLE_SEATS_ABOVE_LIMIT)
-    private int numberOfAvailableSeats;
-
-    // Constructors
-
-    @BsonCreator
-    public Movie(@BsonProperty(MovieConstants.GENERAL_IDENTIFIER) UUID movieID,
-                 @BsonProperty(MovieConstants.MOVIE_TITLE) String movieTitle,
-                 @BsonProperty(MovieConstants.MOVIE_BASE_PRICE) double movieBasePrice,
-                 @BsonProperty(MovieConstants.SCREENING_ROOM_NUMBER) int scrRoomNumber,
-                 @BsonProperty(MovieConstants.NUMBER_OF_AVAILABLE_SEATS) int numberOfAvailableSeats) {
-        this.movieID = movieID;
-        this.movieTitle = movieTitle;
-        this.movieBasePrice = movieBasePrice;
-        this.scrRoomNumber = scrRoomNumber;
-        this.numberOfAvailableSeats = numberOfAvailableSeats;
-    }
+    @NotBlank(message = MovieConstants.MOVIE_DESCRIPTION_BLANK)
+    @Size(min = MovieConstants.MOVIE_DESCRIPTION_MIN_LENGTH, message = MovieConstants.MOVIE_DESCRIPTION_TOO_SHORT)
+    @Size(max = MovieConstants.MOVIE_DESCRIPTION_MAX_LENGTH, message = MovieConstants.MOVIE_DESCRIPTION_TOO_LONG)
+    @Column(name = DatabaseConstants.MOVIES_DESCRIPTION_COLUMN, nullable = false, length = 512)
+    private String description;
 
     // Other methods
-
-    // Equals method
 
     @Override
     public boolean equals(Object o) {
@@ -68,36 +44,23 @@ public class Movie {
         Movie movie = (Movie) o;
 
         return new EqualsBuilder()
-                .append(movieID, movie.movieID)
-                .append(movieTitle, movie.movieTitle)
-                .append(movieBasePrice, movie.movieBasePrice)
-                .append(scrRoomNumber, movie.scrRoomNumber)
+                .append(title, movie.title)
+                .append(description, movie.description)
                 .isEquals();
     }
-
-    // HashCode method
 
     @Override
     public int hashCode() {
         return new HashCodeBuilder(17, 37)
-                .append(movieID)
-                .append(movieTitle)
-                .append(movieBasePrice)
-                .append(scrRoomNumber)
+                .append(title)
+                .append(description)
                 .toHashCode();
     }
-
-
-    // ToString method
 
     @Override
     public String toString() {
         return new ToStringBuilder(this)
-                .append("Movie ID: ", movieID)
-                .append("Movie title: ", movieTitle)
-                .append("Movie base price: ", movieBasePrice)
-                .append("Screening room number: ", scrRoomNumber)
-                .append("Number of available seats: ", numberOfAvailableSeats)
+                .append(super.toString())
                 .toString();
     }
 }

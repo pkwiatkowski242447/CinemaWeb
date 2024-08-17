@@ -21,7 +21,6 @@ import pl.pas.gr3.cinema.model.users.Staff;
 import pl.pas.gr3.dto.auth.UserInputDTO;
 import pl.pas.gr3.dto.auth.UserOutputDTO;
 import pl.pas.gr3.dto.auth.UserUpdateDTO;
-import pl.pas.gr3.cinema.services.implementations.AdminService;
 import pl.pas.gr3.cinema.model.users.Admin;
 import pl.pas.gr3.cinema.repositories.implementations.UserRepository;
 

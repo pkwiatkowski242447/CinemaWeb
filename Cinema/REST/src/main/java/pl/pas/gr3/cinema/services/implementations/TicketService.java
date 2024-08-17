@@ -1,77 +1,18 @@
 package pl.pas.gr3.cinema.services.implementations;
 
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
-import pl.pas.gr3.cinema.exceptions.repositories.crud.ticket.TicketRepositoryTicketNotFoundException;
-import pl.pas.gr3.cinema.exceptions.services.crud.ticket.*;
-import pl.pas.gr3.cinema.exceptions.repositories.TicketRepositoryException;
-import pl.pas.gr3.cinema.services.interfaces.TicketServiceInterface;
-import pl.pas.gr3.cinema.model.Ticket;
-import pl.pas.gr3.cinema.repositories.implementations.TicketRepository;
-
-import java.time.LocalDateTime;
-import java.time.format.DateTimeParseException;
-import java.util.List;
-import java.util.UUID;
+import pl.pas.gr3.cinema.aspects.logging.LoggerInterceptor;
+import pl.pas.gr3.cinema.repositories.AccountRepository;
+import pl.pas.gr3.cinema.repositories.ShowingRepository;
+import pl.pas.gr3.cinema.repositories.TicketRepository;
 
 @Service
-public class TicketService implements TicketServiceInterface {
+@RequiredArgsConstructor
+@LoggerInterceptor
+public class TicketService {
 
-    private TicketRepository ticketRepository;
-
-    public TicketService() {
-    }
-
-    @Autowired
-    public TicketService(TicketRepository ticketRepository) {
-        this.ticketRepository = ticketRepository;
-    }
-
-    @Override
-    public Ticket create(String movieTime, UUID clientID, UUID movieID) throws TicketServiceCreateException {
-        try {
-            LocalDateTime movieTimeParsed = LocalDateTime.parse(movieTime);
-            return this.ticketRepository.create(movieTimeParsed, clientID, movieID);
-        } catch (TicketRepositoryException | DateTimeParseException exception) {
-            throw new TicketServiceCreateException(exception.getMessage(), exception);
-        }
-    }
-
-    @Override
-    public Ticket findByUUID(UUID ticketID) throws TicketServiceReadException {
-        try {
-            return this.ticketRepository.findByUUID(ticketID);
-        } catch (TicketRepositoryTicketNotFoundException exception) {
-            throw new TicketServiceTicketNotFoundException(exception.getMessage(), exception);
-        } catch (TicketRepositoryException exception) {
-            throw new TicketServiceReadException(exception.getMessage(), exception);
-        }
-    }
-
-    @Override
-    public List<Ticket> findAll() throws TicketServiceReadException {
-        try {
-            return this.ticketRepository.findAll();
-        } catch (TicketRepositoryException exception) {
-            throw new TicketServiceReadException(exception.getMessage(), exception);
-        }
-    }
-
-    @Override
-    public void update(Ticket ticket) throws TicketServiceUpdateException {
-        try {
-            this.ticketRepository.update(ticket);
-        } catch (TicketRepositoryException exception) {
-            throw new TicketServiceUpdateException(exception.getMessage(), exception);
-        }
-    }
-
-    @Override
-    public void delete(UUID ticketID) throws TicketServiceDeleteException {
-        try {
-            this.ticketRepository.delete(ticketID);
-        } catch (TicketRepositoryException exception) {
-            throw new TicketServiceDeleteException(exception.getMessage(), exception);
-        }
-    }
+    private final TicketRepository ticketRepository;
+    private final ShowingRepository showingRepository;
+    private final AccountRepository accountRepository;
 }

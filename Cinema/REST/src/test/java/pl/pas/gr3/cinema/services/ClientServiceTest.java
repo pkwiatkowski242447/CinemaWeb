@@ -4,7 +4,6 @@ import org.junit.jupiter.api.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import pl.pas.gr3.cinema.exceptions.services.crud.client.*;
-import pl.pas.gr3.cinema.services.implementations.ClientService;
 import pl.pas.gr3.cinema.model.users.Client;
 import pl.pas.gr3.cinema.repositories.implementations.UserRepository;
 

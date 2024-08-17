@@ -44,3 +44,9 @@ mvnw*
 
 # NodeJS excludes
 node_modules
+
+### OTHER ###
+
+key.properties
+pg_data
+postgresql

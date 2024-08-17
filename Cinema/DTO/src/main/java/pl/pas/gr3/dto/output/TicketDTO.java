@@ -2,8 +2,6 @@ package pl.pas.gr3.dto.output;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import jakarta.json.bind.annotation.JsonbCreator;
-import jakarta.json.bind.annotation.JsonbProperty;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
@@ -16,32 +14,26 @@ import java.util.UUID;
 public class TicketDTO {
 
     @JsonProperty("ticket-id")
-    @JsonbProperty("ticket-id")
     private UUID ticketID;
 
     @JsonProperty("movie-time")
-    @JsonbProperty("movie-time")
     private LocalDateTime movieTime;
 
     @JsonProperty("ticket-final-price")
-    @JsonbProperty("ticket-final-price")
     private double ticketFinalPrice;
 
     @JsonProperty("client-id")
-    @JsonbProperty("client-id")
     private UUID clientID;
 
     @JsonProperty("movie-id")
-    @JsonbProperty("movie-id")
     private UUID movieID;
 
     @JsonCreator
-    @JsonbCreator
-    public TicketDTO(@JsonProperty("ticket-id") @JsonbProperty("ticket-id") UUID ticketID,
-                     @JsonProperty("movie-time") @JsonbProperty("movie-time") LocalDateTime movieTime,
-                     @JsonProperty("ticket-final-price") @JsonbProperty("ticket-final-price") double ticketFinalPrice,
-                     @JsonProperty("client-id") @JsonbProperty("client-id") UUID clientID,
-                     @JsonProperty("movie-id") @JsonbProperty("movie-id") UUID movieID) {
+    public TicketDTO(@JsonProperty("ticket-id") UUID ticketID,
+                     @JsonProperty("movie-time") LocalDateTime movieTime,
+                     @JsonProperty("ticket-final-price") double ticketFinalPrice,
+                     @JsonProperty("client-id") UUID clientID,
+                     @JsonProperty("movie-id") UUID movieID) {
         this.ticketID = ticketID;
         this.movieTime = movieTime;
         this.ticketFinalPrice = ticketFinalPrice;

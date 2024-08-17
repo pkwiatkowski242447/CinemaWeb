@@ -27,7 +27,6 @@ import pl.pas.gr3.dto.input.MovieInputDTO;
 import pl.pas.gr3.cinema.exceptions.services.crud.movie.MovieServiceCreateException;
 import pl.pas.gr3.cinema.exceptions.services.crud.movie.MovieServiceDeleteException;
 import pl.pas.gr3.cinema.exceptions.services.crud.movie.MovieServiceReadException;
-import pl.pas.gr3.cinema.services.implementations.MovieService;
 import pl.pas.gr3.cinema.model.Movie;
 import pl.pas.gr3.cinema.repositories.implementations.MovieRepository;
 

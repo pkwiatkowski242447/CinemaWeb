@@ -1,6 +1,7 @@
 package pl.pas.gr3.cinema.security.config;
 
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpHeaders;
@@ -21,10 +22,13 @@ import java.util.List;
 import pl.pas.gr3.cinema.security.filters.JWTAuthenticationFilter;
 
 @Configuration
-@EnableWebSecurity
 @RequiredArgsConstructor
+@EnableWebSecurity
 @EnableMethodSecurity
 public class SecurityConfig {
+
+    @Value("${front-end-application-url}")
+    private String frontEndApplicationUrl;
 
     private final AuthenticationProvider authenticationProvider;
     private final JWTAuthenticationFilter jwtAuthenticationFilter;
@@ -37,15 +41,13 @@ public class SecurityConfig {
                 .sessionManagement(sessionManagement -> sessionManagement.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authenticationProvider(authenticationProvider)
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
-                .authorizeHttpRequests((requests) -> requests
-                        .requestMatchers("/api/v1/auth/login/**", "/api/v1/auth/register/client").permitAll()
-                        .requestMatchers("/**").authenticated());
+                .authorizeHttpRequests((requests) -> requests.requestMatchers("/**").permitAll());
 
         return httpSecurity.build();
     }
 
     @Bean
-    private static CorsConfigurationSource corsConfigurationSource() {
+    public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration corsConfiguration = new CorsConfiguration();
         corsConfiguration.setAllowCredentials(true);
         corsConfiguration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE"));
@@ -54,10 +56,9 @@ public class SecurityConfig {
                 HttpHeaders.CONTENT_TYPE,
                 HttpHeaders.IF_MATCH,
                 HttpHeaders.ACCEPT));
-        corsConfiguration.setAllowedOriginPatterns(List.of("https://localhost:3000"));
-        corsConfiguration.addExposedHeader("Access-Token");
-        corsConfiguration.addExposedHeader("Uid");
-        corsConfiguration.addExposedHeader("ETag");
+        corsConfiguration.setAllowedOriginPatterns(List.of(frontEndApplicationUrl));
+        corsConfiguration.addExposedHeader(HttpHeaders.ETAG);
+        corsConfiguration.addExposedHeader(HttpHeaders.LOCATION);
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", corsConfiguration);
         return source;
