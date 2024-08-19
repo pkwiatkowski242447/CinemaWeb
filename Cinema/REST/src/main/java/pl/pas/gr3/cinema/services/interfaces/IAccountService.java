@@ -13,4 +13,8 @@ public interface IAccountService {
                                String email, String phoneNumber, String language, MultipartFile avatar);
     Account createAdminAccount(String login, String password, String firstName, String lastName,
                                String email, String phoneNumber, String language, MultipartFile avatar);
+
+    // Read methods
+
+    Account findByLogin(String login);
 }

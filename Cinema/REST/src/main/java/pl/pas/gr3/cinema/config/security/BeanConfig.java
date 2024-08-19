@@ -1,9 +1,8 @@
-package pl.pas.gr3.cinema.security.config;
+package pl.pas.gr3.cinema.config.security;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.context.annotation.PropertySource;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.AuthenticationProvider;
 import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
@@ -11,24 +10,21 @@ import org.springframework.security.config.annotation.authentication.configurati
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetailsService;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import pl.pas.gr3.cinema.exceptions.account.AccountNotFoundException;
 import pl.pas.gr3.cinema.model.users.AccessLevel;
 import pl.pas.gr3.cinema.model.users.Account;
 import pl.pas.gr3.cinema.repositories.AccountRepository;
+import pl.pas.gr3.cinema.utils.I18n;
 
 import java.util.ArrayList;
 import java.util.List;
 
 @Configuration
 @RequiredArgsConstructor
-@PropertySource(value = {
-        "classpath:properties/consts.properties",
-        "classpath:properties/key.properties",
-        "classpath:properties/urls.properties"
-})
-public class ApplicationConfig {
+public class BeanConfig {
 
     private final AccountRepository accountRepository;
 
@@ -36,9 +32,7 @@ public class ApplicationConfig {
     public UserDetailsService userDetailsService() {
         return username -> {
             Account account = accountRepository.findByLogin(username)
-                    .orElse(null);
-
-            if (account == null) return null;
+                    .orElseThrow(() -> new UsernameNotFoundException(I18n.ACCOUNT_NOT_FOUND_EXCEPTION));
 
             List<GrantedAuthority> listOfAuthorities = new ArrayList<>();
             for (AccessLevel accessLevel : account.getAccessLevels()) {
@@ -69,7 +63,8 @@ public class ApplicationConfig {
     }
 
     @Bean
-    public AuthenticationManager authenticationManager(AuthenticationConfiguration authenticationConfiguration) throws Exception {
+    public AuthenticationManager authenticationManager(
+            AuthenticationConfiguration authenticationConfiguration) throws Exception {
         return authenticationConfiguration.getAuthenticationManager();
     }
 }

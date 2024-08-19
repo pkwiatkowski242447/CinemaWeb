@@ -5,6 +5,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.Resource;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 import pl.pas.gr3.cinema.aspects.logging.LoggerInterceptor;
 import pl.pas.gr3.cinema.exceptions.ApplicationInputOutputException;
@@ -19,6 +21,7 @@ import java.time.Instant;
 @Service
 @LoggerInterceptor
 @RequiredArgsConstructor
+@Transactional(propagation = Propagation.NOT_SUPPORTED)
 public class FileSystemService implements IFileSystemService {
 
     @Value("${file.path}")

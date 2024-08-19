@@ -1,4 +1,4 @@
-package pl.pas.gr3.cinema.security.config;
+package pl.pas.gr3.cinema.config.security;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
@@ -18,8 +18,6 @@ import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
 import java.util.List;
-
-import pl.pas.gr3.cinema.security.filters.JWTAuthenticationFilter;
 
 @Configuration
 @RequiredArgsConstructor

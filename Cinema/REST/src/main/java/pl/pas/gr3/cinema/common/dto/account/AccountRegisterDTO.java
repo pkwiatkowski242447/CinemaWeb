@@ -1,4 +1,4 @@
-package pl.pas.gr3.cinema.common.dto.input;
+package pl.pas.gr3.cinema.common.dto.account;
 
 public record AccountRegisterDTO(
         String login,
