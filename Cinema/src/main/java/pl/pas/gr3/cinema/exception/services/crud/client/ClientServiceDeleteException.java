@@ -1,0 +1,9 @@
+package pl.pas.gr3.cinema.exception.services.crud.client;
+
+import pl.pas.gr3.cinema.exception.services.GeneralClientServiceException;
+
+public class ClientServiceDeleteException extends GeneralClientServiceException {
+    public ClientServiceDeleteException(String message, Throwable cause) {
+        super(message, cause);
+    }
+}

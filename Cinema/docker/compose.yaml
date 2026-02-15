@@ -1,22 +1,22 @@
-version: '3.8'
-
 services:
-
   mongo_1:
-    build: .
-    image: mongopascustom:6.0.2
-    container_name: mongodbnode1
-    hostname: mongodbnode1
+    build:
+      context: .
+      dockerfile: mongo.Dockerfile
+    image: custom_mongo:latest
+    command: ["--config", "/etc/mongo/mongod.conf", "--port", "27020"]
+    container_name: mongo_node1
+    hostname: mongo_node1
     volumes:
       - mongo1_data:/data/db
+    user: "999:999"
     networks:
       - mongonet
     ports:
       - "27020:27020"
     environment:
-      - MONGO_INITDB_ROOT_USERNAME=admin
-      - MONGO_INITDB_ROOT_PASSWORD=adminpassword
-    command: --config /etc/mongod.conf --port 27020
+      MONGO_INITDB_ROOT_USERNAME: admin
+      MONGO_INITDB_ROOT_PASSWORD: P@ssw0rd!
     healthcheck:
       test: ["CMD", "mongosh", "--port", "27020", "--eval", "db.adminCommand('ping')"]
       interval: 10s
@@ -24,20 +24,22 @@ services:
       retries: 5
 
   mongo_2:
-    build: .
-    image: mongopascustom:6.0.2
-    container_name: mongodbnode2
-    hostname: mongodbnode2
+    image: custom_mongo:latest
+    command: ["--config", "/etc/mongo/mongod.conf", "--port", "27021"]
+    depends_on:
+      - mongo_1
+    container_name: mongo_node2
+    hostname: mongo_node2
     volumes:
       - mongo2_data:/data/db
+    user: "999:999"
     networks:
       - mongonet
     ports:
       - "27021:27021"
     environment:
-      - MONGO_INITDB_ROOT_USERNAME=admin
-      - MONGO_INITDB_ROOT_PASSWORD=adminpassword
-    command: --config /etc/mongod.conf --port 27021
+      MONGO_INITDB_ROOT_USERNAME: admin
+      MONGO_INITDB_ROOT_PASSWORD: P@ssw0rd!
     healthcheck:
       test: [ "CMD", "mongosh", "--port", "27021", "--eval", "db.adminCommand('ping')" ]
       interval: 10s
@@ -45,31 +47,33 @@ services:
       retries: 5
 
   mongo_3:
-    build: .
-    image: mongopascustom:6.0.2
-    container_name: mongodbnode3
-    hostname: mongodbnode3
+    image: custom_mongo:latest
+    command: ["--config", "/etc/mongo/mongod.conf", "--port", "27022"]
+    depends_on:
+      - mongo_1
+    container_name: mongo_node3
+    hostname: mongo_node3
     volumes:
       - mongo3_data:/data/db
+    user: "999:999"
     networks:
       - mongonet
     ports:
       - "27022:27022"
     environment:
-      - MONGO_INITDB_ROOT_USERNAME=admin
-      - MONGO_INITDB_ROOT_PASSWORD=adminpassword
-    command: --config /etc/mongod.conf --port 27022
+      MONGO_INITDB_ROOT_USERNAME: admin
+      MONGO_INITDB_ROOT_PASSWORD: P@ssw0rd!
     healthcheck:
       test: [ "CMD", "mongosh", "--port", "27022", "--eval", "db.adminCommand('ping')" ]
       interval: 10s
       timeout: 2s
       retries: 5
 
-  mongoinit:
+  mongo_init:
     build: .
-    image: mongopascustom:6.0.2
-    hostname: mongodbinit
-    container_name: mongodbinit
+    image: custom_mongo:latest
+    hostname: mongo_init
+    container_name: mongo_init
     networks:
       - mongonet
     depends_on:
@@ -80,15 +84,15 @@ services:
       mongo_3:
         condition: service_healthy
     command: >
-      mongosh --host mongodbnode1:27020 --username admin --password adminpassword --authenticationDatabase admin --eval
+      mongosh --host mongo_node1:27020 --username admin --password P@ssw0rd! --authenticationDatabase admin --eval
       '
       rs.initiate(
         {
           "_id": "pasReplicaSet",
           "members": [
-            { _id: 0, host : "mongodbnode1:27020" },
-            { _id: 1, host : "mongodbnode2:27021" },
-            { _id: 2, host : "mongodbnode3:27022" }
+            { _id: 0, host : "mongo_node1:27020" },
+            { _id: 1, host : "mongo_node2:27021" },
+            { _id: 2, host : "mongo_node3:27022" }
           ]
         }
       );
@@ -103,4 +107,5 @@ volumes:
     driver: local
 
 networks:
-  mongonet: {}
+  mongonet:
+    driver: bridge
