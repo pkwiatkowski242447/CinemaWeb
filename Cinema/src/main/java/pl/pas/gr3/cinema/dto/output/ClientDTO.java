@@ -16,23 +16,23 @@ public class ClientDTO {
 
     @JsonProperty("id")
     @JsonbProperty("id")
-    protected UUID clientID;
+    protected UUID id;
 
     @JsonProperty("login")
     @JsonbProperty("login")
-    protected String clientLogin;
+    protected String login;
 
     @JsonProperty("status-active")
     @JsonbProperty("status-active")
-    protected boolean clientStatusActive;
+    protected boolean active;
 
     @JsonCreator
     @JsonbCreator
-    public ClientDTO(@JsonProperty("id") @JsonbProperty("id") UUID clientID,
-                     @JsonProperty("login") @JsonbProperty("login") String clientLogin,
-                     @JsonProperty("status-active") @JsonbProperty("status-active") boolean clientStatusActive) {
-        this.clientID = clientID;
-        this.clientLogin = clientLogin;
-        this.clientStatusActive = clientStatusActive;
+    public ClientDTO(@JsonProperty("id") @JsonbProperty("id") UUID id,
+                     @JsonProperty("login") @JsonbProperty("login") String login,
+                     @JsonProperty("status-active") @JsonbProperty("status-active") boolean active) {
+        this.id = id;
+        this.login = login;
+        this.active = active;
     }
 }

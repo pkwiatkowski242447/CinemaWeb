@@ -3,7 +3,9 @@ package pl.pas.gr3.cinema.model;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import pl.pas.gr3.cinema.model.users.Client;
+import pl.pas.gr3.cinema.entity.Movie;
+import pl.pas.gr3.cinema.entity.Ticket;
+import pl.pas.gr3.cinema.entity.account.Client;
 
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
@@ -11,7 +13,7 @@ import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-public class TicketTest {
+class TicketTest {
 
     private static UUID ticketIDNo1;
     private static UUID ticketIDNo2;
@@ -36,7 +38,7 @@ public class TicketTest {
     private Ticket ticketNo3;
 
     @BeforeAll
-    public static void initializeVariables() {
+    static void initializeVariables() {
         ticketIDNo1 = UUID.randomUUID();
         ticketIDNo2 = UUID.randomUUID();
 
@@ -59,48 +61,48 @@ public class TicketTest {
     }
 
     @BeforeEach
-    public void initializeTickets()  {
-        ticketNo1 = new Ticket(ticketIDNo1, movieTimeNo1, movieNo1.getMovieBasePrice(), clientNo1.getUserID(), movieNo1.getMovieID());
-        ticketNo2 = new Ticket(ticketIDNo2, movieTimeNo2, movieNo1.getMovieBasePrice(), clientNo2.getUserID(), movieNo2.getMovieID());
-        ticketNo3 = new Ticket(ticketNo1.getTicketID(),
+    void initializeTickets()  {
+        ticketNo1 = new Ticket(ticketIDNo1, movieTimeNo1, movieNo1.getBasePrice(), clientNo1.getId(), movieNo1.getId());
+        ticketNo2 = new Ticket(ticketIDNo2, movieTimeNo2, movieNo1.getBasePrice(), clientNo2.getId(), movieNo2.getId());
+        ticketNo3 = new Ticket(ticketNo1.getId(),
                 ticketNo1.getMovieTime(),
-                ticketNo1.getTicketPrice(),
-                ticketNo1.getUserID(),
-                ticketNo1.getMovieID());
+                ticketNo1.getPrice(),
+                ticketNo1.getUserId(),
+                ticketNo1.getMovieId());
     }
 
     @Test
-    public void ticketModelLayerConstructorAndGettersTestPositive() {
-        Ticket testTicketNo1 = new Ticket(ticketIDNo1, movieTimeNo1, movieNo1.getMovieBasePrice(), clientNo1.getUserID(), movieNo1.getMovieID());
+    void ticketModelLayerConstructorAndGettersTestPositive() {
+        Ticket testTicketNo1 = new Ticket(ticketIDNo1, movieTimeNo1, movieNo1.getBasePrice(), clientNo1.getId(), movieNo1.getId());
         assertNotNull(testTicketNo1);
-        assertEquals(ticketIDNo1, testTicketNo1.getTicketID());
+        assertEquals(ticketIDNo1, testTicketNo1.getId());
         assertEquals(movieTimeNo1, testTicketNo1.getMovieTime());
-        assertEquals(clientNo1.getUserID(), testTicketNo1.getUserID());
-        assertEquals(movieNo1.getMovieID(), testTicketNo1.getMovieID());
-        assertEquals(testTicketNo1.getTicketPrice(), movieBasePriceNo1);
+        assertEquals(clientNo1.getId(), testTicketNo1.getUserId());
+        assertEquals(movieNo1.getId(), testTicketNo1.getMovieId());
+        assertEquals(testTicketNo1.getPrice(), movieBasePriceNo1);
 
-        Ticket testTicketNo2 = new Ticket(ticketIDNo2, movieTimeNo2, movieNo2.getMovieBasePrice(), clientNo2.getUserID(), movieNo2.getMovieID());
+        Ticket testTicketNo2 = new Ticket(ticketIDNo2, movieTimeNo2, movieNo2.getBasePrice(), clientNo2.getId(), movieNo2.getId());
         assertNotNull(testTicketNo2);
-        assertEquals(ticketIDNo2, testTicketNo2.getTicketID());
+        assertEquals(ticketIDNo2, testTicketNo2.getId());
         assertEquals(movieTimeNo2, testTicketNo2.getMovieTime());
-        assertEquals(clientNo2.getUserID(), testTicketNo2.getUserID());
-        assertEquals(movieNo2.getMovieID(), testTicketNo2.getMovieID());
-        assertEquals(testTicketNo2.getTicketPrice(), movieBasePriceNo2);
+        assertEquals(clientNo2.getId(), testTicketNo2.getUserId());
+        assertEquals(movieNo2.getId(), testTicketNo2.getMovieId());
+        assertEquals(testTicketNo2.getPrice(), movieBasePriceNo2);
     }
 
     @Test
-    public void ticketDataLayerConstructorAndGettersTestPositive() {
-        Ticket testTicket = new Ticket(ticketIDNo1, movieTimeNo1, ticketFinalPriceNo1, clientNo1.getUserID(), movieNo1.getMovieID());
+    void ticketDataLayerConstructorAndGettersTestPositive() {
+        Ticket testTicket = new Ticket(ticketIDNo1, movieTimeNo1, ticketFinalPriceNo1, clientNo1.getId(), movieNo1.getId());
         assertNotNull(testTicket);
-        assertEquals(ticketIDNo1, testTicket.getTicketID());
+        assertEquals(ticketIDNo1, testTicket.getId());
         assertEquals(movieTimeNo1, testTicket.getMovieTime());
-        assertEquals(ticketFinalPriceNo1, testTicket.getTicketPrice());
-        assertEquals(clientNo1.getUserID(), testTicket.getUserID());
-        assertEquals(movieNo1.getMovieID(), testTicket.getMovieID());
+        assertEquals(ticketFinalPriceNo1, testTicket.getPrice());
+        assertEquals(clientNo1.getId(), testTicket.getUserId());
+        assertEquals(movieNo1.getId(), testTicket.getMovieId());
     }
 
     @Test
-    public void ticketMovieTimeSetterTestPositive() {
+    void ticketMovieTimeSetterTestPositive() {
         LocalDateTime movieTimeBefore = ticketNo1.getMovieTime();
         assertNotNull(movieTimeBefore);
         LocalDateTime newMovieTime = LocalDateTime.now().truncatedTo(ChronoUnit.SECONDS).plusDays(4).plusHours(1);
@@ -113,37 +115,37 @@ public class TicketTest {
     }
 
     @Test
-    public void ticketEqualsMethodWithItselfTestPositive() {
+    void ticketEqualsMethodWithItselfTestPositive() {
         boolean equalsResult = ticketNo1.equals(ticketNo1);
         assertTrue(equalsResult);
     }
 
     @Test
-    public void ticketEqualsMethodWithNullTestNegative() {
+    void ticketEqualsMethodWithNullTestNegative() {
         boolean equalsResult = ticketNo1.equals(null);
         assertFalse(equalsResult);
     }
 
     @Test
-    public void ticketEqualsMethodWithObjectOfDifferentClassTestNegative() {
+    void ticketEqualsMethodWithObjectOfDifferentClassTestNegative() {
         boolean equalsResult = ticketNo1.equals(new Object());
         assertFalse(equalsResult);
     }
 
     @Test
-    public void ticketEqualsMethodWithObjectOfTheSameClassButDifferentTestNegative() {
+    void ticketEqualsMethodWithObjectOfTheSameClassButDifferentTestNegative() {
         boolean equalsResult = ticketNo1.equals(ticketNo2);
         assertFalse(equalsResult);
     }
 
     @Test
-    public void ticketEqualsMethodWithObjectOfTheSameClassAndTheSameTestPositive() {
+    void ticketEqualsMethodWithObjectOfTheSameClassAndTheSameTestPositive() {
         boolean equalsResult = ticketNo1.equals(ticketNo3);
         assertTrue(equalsResult);
     }
 
     @Test
-    public void ticketHashCodeTestPositive() {
+    void ticketHashCodeTestPositive() {
         int hashCodeFromTicketNo1 = ticketNo1.hashCode();
         int hashCodeFromTicketNo3 = ticketNo3.hashCode();
         assertEquals(hashCodeFromTicketNo1, hashCodeFromTicketNo3);
@@ -151,14 +153,14 @@ public class TicketTest {
     }
 
     @Test
-    public void ticketHashCodeTestNegative() {
+    void ticketHashCodeTestNegative() {
         int hashCodeFromTicketNo1 = ticketNo1.hashCode();
         int hashCodeFromTicketNo2 = ticketNo2.hashCode();
         assertNotEquals(hashCodeFromTicketNo1, hashCodeFromTicketNo2);
     }
 
     @Test
-    public void ticketToStringTestPositive() {
+    void ticketToStringTestPositive() {
         String ticketToStringResult = ticketNo1.toString();
         assertNotNull(ticketToStringResult);
         assertFalse(ticketToStringResult.isEmpty());

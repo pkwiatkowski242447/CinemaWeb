@@ -13,5 +13,5 @@ import java.util.UUID;
 public class TicketSelfInputDTO {
 
     private String movieTime;
-    private UUID movieID;
+    private UUID movieId;
 }

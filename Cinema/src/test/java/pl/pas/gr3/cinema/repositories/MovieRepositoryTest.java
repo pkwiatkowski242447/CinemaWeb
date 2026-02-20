@@ -1,84 +1,84 @@
 package pl.pas.gr3.cinema.repositories;
 
-import org.junit.jupiter.api.*;
-import pl.pas.gr3.cinema.exception.repositories.*;
-import pl.pas.gr3.cinema.exception.repositories.crud.movie.*;
-import pl.pas.gr3.cinema.model.Movie;
-import pl.pas.gr3.cinema.repositories.impl.MovieRepository;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import pl.pas.gr3.cinema.entity.Movie;
+import pl.pas.gr3.cinema.repository.impl.MovieRepositoryImpl;
 
 import java.util.List;
 import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-public class MovieRepositoryTest {
+class MovieRepositoryTest {
 
-    private final static String databaseName = "test";
+    private static final String DATABASE_NAME = "test";
 
-    private static MovieRepository movieRepositoryForTests;
+    private static MovieRepositoryImpl movieRepositoryForTests;
 
     private Movie movieNo1;
     private Movie movieNo2;
     private Movie movieNo3;
 
     @BeforeAll
-    public static void init() {
-        movieRepositoryForTests = new MovieRepository(databaseName);
+    static void init() {
+        movieRepositoryForTests = new MovieRepositoryImpl(DATABASE_NAME);
     }
 
     @BeforeEach
-    public void addExampleMovies() {
+    void addExampleMovies() {
         try {
             movieNo1 = movieRepositoryForTests.create("ExampleTitleNo1", 10.50, 1, 30);
             movieNo2 = movieRepositoryForTests.create("ExampleTitleNo2", 23.75, 2, 45);
             movieNo3 = movieRepositoryForTests.create("ExampleTitleNo3", 40.25, 3, 60);
-        } catch (MovieRepositoryException exception) {
+        } catch (Exception exception) {
             throw new RuntimeException("Could not initialize test database while adding movies to it.", exception);
         }
     }
 
     @AfterEach
-    public void removeExampleMovies() {
+    void removeExampleMovies() {
         try {
             List<Movie> listOfAllMovies = movieRepositoryForTests.findAll();
-            for (Movie movie : listOfAllMovies) {
-                movieRepositoryForTests.delete(movie.getMovieID());
-            }
-        } catch (MovieRepositoryException exception) {
+            listOfAllMovies.forEach(movie -> movieRepositoryForTests.delete(movie.getId()));
+        } catch (Exception exception) {
             throw new RuntimeException("Could not remove all movies from the test database after movie repository tests.", exception);
         }
     }
 
     @AfterAll
-    public static void destroy() {
+    static void destroy() {
         movieRepositoryForTests.close();
     }
 
     @Test
-    public void movieRepositoryConstructorTest() {
-        MovieRepository testMovieRepository = new MovieRepository(databaseName);
+    void movieRepositoryConstructorTest() {
+        MovieRepositoryImpl testMovieRepository = new MovieRepositoryImpl(DATABASE_NAME);
         assertNotNull(testMovieRepository);
         testMovieRepository.close();
     }
 
     @Test
-    public void movieRepositoryCreateMovieTestPositive() throws MovieRepositoryException {
+    void movieRepositoryCreateMovieTestPositive() throws MovieRepositoryException {
         Movie movie = movieRepositoryForTests.create("OtherMovieTitleNo1", 40.75, 10, 90);
         assertNotNull(movie);
-        Movie foundMovie = movieRepositoryForTests.findByUUID(movie.getMovieID());
+        Movie foundMovie = movieRepositoryForTests.findByUUID(movie.getId());
         assertNotNull(foundMovie);
         assertEquals(movie, foundMovie);
     }
 
     @Test
-    public void movieRepositoryCreateMovieWithNullMovieTitleTestNegative() {
+    void movieRepositoryCreateMovieWithNullMovieTitleTestNegative() {
         assertThrows(MovieRepositoryCreateException.class, () -> {
            Movie movie = movieRepositoryForTests.create(null, 50.00, 10, 90);
         });
     }
 
     @Test
-    public void movieRepositoryCreateMovieWithEmptyMovieTitleTestNegative() {
+    void movieRepositoryCreateMovieWithEmptyMovieTitleTestNegative() {
         String movieTitle = "";
         assertThrows(MovieRepositoryCreateException.class, () -> {
             Movie movie = movieRepositoryForTests.create(movieTitle, 50.00, 10, 90);
@@ -86,7 +86,7 @@ public class MovieRepositoryTest {
     }
 
     @Test
-    public void movieRepositoryCreateMovieWithMovieTitleTooLongTestNegative() {
+    void movieRepositoryCreateMovieWithMovieTitleTooLongTestNegative() {
         String movieTitle = "ddddfddddfddddfddddfddddfddddfddddfddddfddddfddddfddddfddddfddddfddddfddddfddddfddddfddddfddddfddddfddddfddddfddddfddddfddddfddddfddddfddddfddddfddddf1";
         assertThrows(MovieRepositoryCreateException.class, () -> {
             Movie movie = movieRepositoryForTests.create(movieTitle, 50.00, 10, 90);
@@ -94,7 +94,7 @@ public class MovieRepositoryTest {
     }
 
     @Test
-    public void movieRepositoryCreateMovieWithNegativeMovieBasePriceTestNegative() {
+    void movieRepositoryCreateMovieWithNegativeMovieBasePriceTestNegative() {
         double movieBasePrice = -10.00;
         assertThrows(MovieRepositoryCreateException.class, () -> {
             Movie movie = movieRepositoryForTests.create("SomeMovieTitle", movieBasePrice, 10, 90);
@@ -102,7 +102,7 @@ public class MovieRepositoryTest {
     }
 
     @Test
-    public void movieRepositoryCreateMovieWithMovieBasePriceTooHighTestNegative() {
+    void movieRepositoryCreateMovieWithMovieBasePriceTooHighTestNegative() {
         double movieBasePrice = 150.00;
         assertThrows(MovieRepositoryCreateException.class, () -> {
             Movie movie = movieRepositoryForTests.create("SomeMovieTitle", movieBasePrice, 10, 90);
@@ -110,27 +110,27 @@ public class MovieRepositoryTest {
     }
 
     @Test
-    public void movieRepositoryCreateMovieWithMovieBasePriceEqualTo0TestPositive() throws MovieRepositoryException {
+    void movieRepositoryCreateMovieWithMovieBasePriceEqualTo0TestPositive() throws MovieRepositoryException {
         double movieBasePrice = 0.00;
         Movie movie = movieRepositoryForTests.create("SomeMovieTitle", movieBasePrice, 10, 90);
         assertNotNull(movie);
-        Movie foundMovie = movieRepositoryForTests.findByUUID(movie.getMovieID());
+        Movie foundMovie = movieRepositoryForTests.findByUUID(movie.getId());
         assertNotNull(foundMovie);
         assertEquals(movie, foundMovie);
     }
 
     @Test
-    public void movieRepositoryCreateMovieWithMovieBasePriceEqualTo100TestPositive() throws MovieRepositoryException {
+    void movieRepositoryCreateMovieWithMovieBasePriceEqualTo100TestPositive() throws MovieRepositoryException {
         double movieBasePrice = 100.00;
         Movie movie = movieRepositoryForTests.create("SomeMovieTitle", movieBasePrice, 10, 90);
         assertNotNull(movie);
-        Movie foundMovie = movieRepositoryForTests.findByUUID(movie.getMovieID());
+        Movie foundMovie = movieRepositoryForTests.findByUUID(movie.getId());
         assertNotNull(foundMovie);
         assertEquals(movie, foundMovie);
     }
 
     @Test
-    public void movieRepositoryCreateMovieWithScreeningRoomNumberNegativeTestNegative() {
+    void movieRepositoryCreateMovieWithScreeningRoomNumberNegativeTestNegative() {
         int scrRoomNumber = -1;
         assertThrows(MovieRepositoryCreateException.class, () -> {
             Movie movie = movieRepositoryForTests.create("SomeMovieTitle", 50, scrRoomNumber, 90);
@@ -138,7 +138,7 @@ public class MovieRepositoryTest {
     }
 
     @Test
-    public void movieRepositoryCreateMovieWithScreeningRoomNumberTooHighTestNegative() {
+    void movieRepositoryCreateMovieWithScreeningRoomNumberTooHighTestNegative() {
         int scrRoomNumber = 100;
         assertThrows(MovieRepositoryCreateException.class, () -> {
             Movie movie = movieRepositoryForTests.create("SomeMovieTitle", 50, scrRoomNumber, 90);
@@ -146,7 +146,7 @@ public class MovieRepositoryTest {
     }
 
     @Test
-    public void movieRepositoryCreateMovieWithScreeningRoomNumberEqualTo0TestNegative() {
+    void movieRepositoryCreateMovieWithScreeningRoomNumberEqualTo0TestNegative() {
         int scrRoomNumber = 0;
         assertThrows(MovieRepositoryCreateException.class, () -> {
             Movie movie = movieRepositoryForTests.create("SomeMovieTitle", 50, scrRoomNumber, 90);
@@ -154,27 +154,27 @@ public class MovieRepositoryTest {
     }
 
     @Test
-    public void movieRepositoryCreateMovieWithScreeningRoomNumberEqualTo1TestPositive() throws MovieRepositoryException {
+    void movieRepositoryCreateMovieWithScreeningRoomNumberEqualTo1TestPositive() throws MovieRepositoryException {
         int scrRoomNumber = 1;
         Movie movie = movieRepositoryForTests.create("SomeMovieTitle", 50.00, scrRoomNumber, 90);
         assertNotNull(movie);
-        Movie foundMovie = movieRepositoryForTests.findByUUID(movie.getMovieID());
+        Movie foundMovie = movieRepositoryForTests.findByUUID(movie.getId());
         assertNotNull(foundMovie);
         assertEquals(movie, foundMovie);
     }
 
     @Test
-    public void movieRepositoryCreateMovieWithScreeningRoomNumberEqualTo30TestPositive() throws MovieRepositoryException {
+    void movieRepositoryCreateMovieWithScreeningRoomNumberEqualTo30TestPositive() throws MovieRepositoryException {
         int scrRoomNumber = 30;
         Movie movie = movieRepositoryForTests.create("SomeMovieTitle", 50.00, scrRoomNumber, 90);
         assertNotNull(movie);
-        Movie foundMovie = movieRepositoryForTests.findByUUID(movie.getMovieID());
+        Movie foundMovie = movieRepositoryForTests.findByUUID(movie.getId());
         assertNotNull(foundMovie);
         assertEquals(movie, foundMovie);
     }
 
     @Test
-    public void movieRepositoryCreateMovieWithNumberOfAvailableSeatsNegativeTestNegative() {
+    void movieRepositoryCreateMovieWithNumberOfAvailableSeatsNegativeTestNegative() {
         int numberOfAvailableSeats = -1;
         assertThrows(MovieRepositoryCreateException.class, () -> {
             Movie movie = movieRepositoryForTests.create("SomeMovieTitle", 50, 1, numberOfAvailableSeats);
@@ -182,7 +182,7 @@ public class MovieRepositoryTest {
     }
 
     @Test
-    public void movieRepositoryCreateMovieWithNumberOfAvailableSeatsTooHighTestNegative() {
+    void movieRepositoryCreateMovieWithNumberOfAvailableSeatsTooHighTestNegative() {
         int numberOfAvailableSeats = 121;
         assertThrows(MovieRepositoryCreateException.class, () -> {
             Movie movie = movieRepositoryForTests.create("SomeMovieTitle", 50, 1, numberOfAvailableSeats);
@@ -190,41 +190,41 @@ public class MovieRepositoryTest {
     }
 
     @Test
-    public void movieRepositoryCreateMovieWithNumberOfAvailableSeatsEqualTo1TestPositive() throws MovieRepositoryException {
+    void movieRepositoryCreateMovieWithNumberOfAvailableSeatsEqualTo1TestPositive() throws MovieRepositoryException {
         int numberOfAvailableSeats = 0;
         Movie movie = movieRepositoryForTests.create("SomeMovieTitle", 50.00, 1, numberOfAvailableSeats);
         assertNotNull(movie);
-        Movie foundMovie = movieRepositoryForTests.findByUUID(movie.getMovieID());
+        Movie foundMovie = movieRepositoryForTests.findByUUID(movie.getId());
         assertNotNull(foundMovie);
         assertEquals(movie, foundMovie);
     }
 
     @Test
-    public void movieRepositoryCreateMovieWithNumberOfAvailableSeatsEqualTo120TestPositive() throws MovieRepositoryException {
+    void movieRepositoryCreateMovieWithNumberOfAvailableSeatsEqualTo120TestPositive() throws MovieRepositoryException {
         int numberOfAvailableSeats = 120;
         Movie movie = movieRepositoryForTests.create("SomeMovieTitle", 50.00, 1, numberOfAvailableSeats);
         assertNotNull(movie);
-        Movie foundMovie = movieRepositoryForTests.findByUUID(movie.getMovieID());
+        Movie foundMovie = movieRepositoryForTests.findByUUID(movie.getId());
         assertNotNull(foundMovie);
         assertEquals(movie, foundMovie);
     }
 
     @Test
-    public void movieRepositoryFindMovieTestPositive() throws MovieRepositoryException {
-        Movie foundMovie = movieRepositoryForTests.findByUUID(movieNo1.getMovieID());
+    void movieRepositoryFindMovieTestPositive() throws MovieRepositoryException {
+        Movie foundMovie = movieRepositoryForTests.findByUUID(movieNo1.getId());
         assertNotNull(foundMovie);
         assertEquals(movieNo1, foundMovie);
     }
 
     @Test
-    public void movieRepositoryFindMovieThatIsNotInTheDatabaseTestNegative() {
+    void movieRepositoryFindMovieThatIsNotInTheDatabaseTestNegative() {
         Movie movie = new Movie(UUID.randomUUID(), "SomeMovieTitle", 50.00, 10, 90);
         assertNotNull(movie);
-        assertThrows(MovieRepositoryMovieNotFoundException.class, () -> movieRepositoryForTests.findByUUID(movie.getMovieID()));
+        assertThrows(MovieRepositoryMovieNotFoundException.class, () -> movieRepositoryForTests.findByUUID(movie.getId()));
     }
 
     @Test
-    public void movieRepositoryFindAllMoviesTestPositive() throws MovieRepositoryException {
+    void movieRepositoryFindAllMoviesTestPositive() throws MovieRepositoryException {
         List<Movie> listOfAllMovies = movieRepositoryForTests.findAll();
         assertNotNull(listOfAllMovies);
         assertFalse(listOfAllMovies.isEmpty());
@@ -232,156 +232,156 @@ public class MovieRepositoryTest {
     }
 
     @Test
-    public void movieRepositoryUpdateMovieTestPositive() throws MovieRepositoryException {
-        String movieTitleBefore = movieNo1.getMovieTitle();
+    void movieRepositoryUpdateMovieTestPositive() throws MovieRepositoryException {
+        String movieTitleBefore = movieNo1.getTitle();
         String newMovieTitle = "Pulp Fiction";
-        movieNo1.setMovieTitle(newMovieTitle);
+        movieNo1.setTitle(newMovieTitle);
         movieRepositoryForTests.update(movieNo1);
-        String movieTitleAfter = movieNo1.getMovieTitle();
+        String movieTitleAfter = movieNo1.getTitle();
         assertNotNull(movieTitleAfter);
         assertEquals(newMovieTitle, movieTitleAfter);
         assertNotEquals(movieTitleBefore, movieTitleAfter);
     }
 
     @Test
-    public void movieRepositoryUpdateMovieThatIsNotInTheDatabaseTestNegative() {
+    void movieRepositoryUpdateMovieThatIsNotInTheDatabaseTestNegative() {
         Movie movie = new Movie(UUID.randomUUID(), "SomeMovieTitle", 50.00, 10, 90);
         assertThrows(MovieRepositoryUpdateException.class, () -> movieRepositoryForTests.update(movie));
     }
 
     @Test
-    public void movieRepositoryUpdateMovieWithNullMovieTitleTestNegative() {
-        movieNo1.setMovieTitle(null);
+    void movieRepositoryUpdateMovieWithNullMovieTitleTestNegative() {
+        movieNo1.setTitle(null);
         assertThrows(MovieRepositoryUpdateException.class, () -> movieRepositoryForTests.update(movieNo1));
     }
 
     @Test
-    public void movieRepositoryUpdateMovieWithEmptyMovieTitleTestNegative() {
+    void movieRepositoryUpdateMovieWithEmptyMovieTitleTestNegative() {
         String newMovieTitle = "";
-        movieNo1.setMovieTitle(newMovieTitle);
+        movieNo1.setTitle(newMovieTitle);
         assertThrows(MovieRepositoryUpdateException.class, () -> movieRepositoryForTests.update(movieNo1));
     }
 
     @Test
-    public void movieRepositoryUpdateMovieWithMovieTitleTooLongTestNegative() {
+    void movieRepositoryUpdateMovieWithMovieTitleTooLongTestNegative() {
         String newMovieTitle = "ddddfddddfddddfddddfddddfddddfddddfddddfddddfddddfddddfddddfddddfddddfddddfddddfddddfddddfddddfddddfddddfddddfddddfddddfddddfddddfddddfddddfddddfddddf1";
-        movieNo1.setMovieTitle(newMovieTitle);
+        movieNo1.setTitle(newMovieTitle);
         assertThrows(MovieRepositoryUpdateException.class, () -> movieRepositoryForTests.update(movieNo1));
     }
 
     @Test
-    public void movieRepositoryUpdateMovieWithMovieBasePriceNegativeTestNegative() {
+    void movieRepositoryUpdateMovieWithMovieBasePriceNegativeTestNegative() {
         double newMovieBasePrice = -10.00;
-        movieNo1.setMovieBasePrice(newMovieBasePrice);
+        movieNo1.setBasePrice(newMovieBasePrice);
         assertThrows(MovieRepositoryUpdateException.class, () -> movieRepositoryForTests.update(movieNo1));
     }
 
     @Test
-    public void movieRepositoryUpdateMovieWithMovieBasePriceTooHighTestNegative() {
+    void movieRepositoryUpdateMovieWithMovieBasePriceTooHighTestNegative() {
         double newMovieBasePrice = 110;
-        movieNo1.setMovieBasePrice(newMovieBasePrice);
+        movieNo1.setBasePrice(newMovieBasePrice);
         assertThrows(MovieRepositoryUpdateException.class, () -> movieRepositoryForTests.update(movieNo1));
     }
 
     @Test
-    public void movieRepositoryUpdateMovieWithMovieBasePriceEqualTo0HighTestNegative() throws MovieRepositoryException {
+    void movieRepositoryUpdateMovieWithMovieBasePriceEqualTo0HighTestNegative() throws MovieRepositoryException {
         double newMovieBasePrice = 0.00;
-        movieNo1.setMovieBasePrice(newMovieBasePrice);
+        movieNo1.setBasePrice(newMovieBasePrice);
         movieRepositoryForTests.update(movieNo1);
-        Movie foundMovie = movieRepositoryForTests.findByUUID(movieNo1.getMovieID());
+        Movie foundMovie = movieRepositoryForTests.findByUUID(movieNo1.getId());
         assertNotNull(foundMovie);
-        assertEquals(newMovieBasePrice, foundMovie.getMovieBasePrice());
+        assertEquals(newMovieBasePrice, foundMovie.getBasePrice());
     }
 
     @Test
-    public void movieRepositoryUpdateMovieWithMovieBasePriceEqualTo100HighTestNegative() throws MovieRepositoryException {
+    void movieRepositoryUpdateMovieWithMovieBasePriceEqualTo100HighTestNegative() throws MovieRepositoryException {
         double newMovieBasePrice = 100.00;
-        movieNo1.setMovieBasePrice(newMovieBasePrice);
+        movieNo1.setBasePrice(newMovieBasePrice);
         movieRepositoryForTests.update(movieNo1);
-        Movie foundMovie = movieRepositoryForTests.findByUUID(movieNo1.getMovieID());
+        Movie foundMovie = movieRepositoryForTests.findByUUID(movieNo1.getId());
         assertNotNull(foundMovie);
-        assertEquals(newMovieBasePrice, foundMovie.getMovieBasePrice());
+        assertEquals(newMovieBasePrice, foundMovie.getBasePrice());
     }
 
     @Test
-    public void movieRepositoryUpdateMovieWithScreeningRoomNumberNegativeTestNegative() {
+    void movieRepositoryUpdateMovieWithScreeningRoomNumberNegativeTestNegative() {
         int scrRoomNumber = -1;
         movieNo1.setScrRoomNumber(scrRoomNumber);
         assertThrows(MovieRepositoryUpdateException.class, () -> movieRepositoryForTests.update(movieNo1));
     }
 
     @Test
-    public void movieRepositoryUpdateMovieWithScreeningRoomNumberTooHighTestNegative() {
+    void movieRepositoryUpdateMovieWithScreeningRoomNumberTooHighTestNegative() {
         int scrRoomNumber = 151;
         movieNo1.setScrRoomNumber(scrRoomNumber);
         assertThrows(MovieRepositoryUpdateException.class, () -> movieRepositoryForTests.update(movieNo1));
     }
 
     @Test
-    public void movieRepositoryUpdateMovieWithScreeningRoomNumberEqualTo0TestNegative() {
+    void movieRepositoryUpdateMovieWithScreeningRoomNumberEqualTo0TestNegative() {
         int scrRoomNumber = 0;
         movieNo1.setScrRoomNumber(scrRoomNumber);
         assertThrows(MovieRepositoryUpdateException.class, () -> movieRepositoryForTests.update(movieNo1));
     }
 
     @Test
-    public void movieRepositoryUpdateMovieWithScreeningRoomNumberEqualTo1HighTestNegative() throws MovieRepositoryException {
+    void movieRepositoryUpdateMovieWithScreeningRoomNumberEqualTo1HighTestNegative() throws MovieRepositoryException {
         int scrRoomNumber = 1;
         movieNo1.setScrRoomNumber(scrRoomNumber);
         movieRepositoryForTests.update(movieNo1);
-        Movie foundMovie = movieRepositoryForTests.findByUUID(movieNo1.getMovieID());
+        Movie foundMovie = movieRepositoryForTests.findByUUID(movieNo1.getId());
         assertNotNull(foundMovie);
         assertEquals(scrRoomNumber, foundMovie.getScrRoomNumber());
     }
 
     @Test
-    public void movieRepositoryUpdateMovieWithScreeningRoomNumberEqualTo30HighTestNegative() throws MovieRepositoryException {
+    void movieRepositoryUpdateMovieWithScreeningRoomNumberEqualTo30HighTestNegative() throws MovieRepositoryException {
         int scrRoomNumber = 30;
         movieNo1.setScrRoomNumber(scrRoomNumber);
         movieRepositoryForTests.update(movieNo1);
-        Movie foundMovie = movieRepositoryForTests.findByUUID(movieNo1.getMovieID());
+        Movie foundMovie = movieRepositoryForTests.findByUUID(movieNo1.getId());
         assertNotNull(foundMovie);
         assertEquals(scrRoomNumber, foundMovie.getScrRoomNumber());
     }
 
     @Test
-    public void movieRepositoryUpdateMovieWithNumberOfAvailableSeatsNegativeTestNegative() {
+    void movieRepositoryUpdateMovieWithNumberOfAvailableSeatsNegativeTestNegative() {
         int numberOfAvailableSeats = -1;
-        movieNo1.setNumberOfAvailableSeats(numberOfAvailableSeats);
+        movieNo1.setAvailableSeats(numberOfAvailableSeats);
         assertThrows(MovieRepositoryUpdateException.class, () -> movieRepositoryForTests.update(movieNo1));
     }
 
     @Test
-    public void movieRepositoryUpdateMovieWithNumberOfAvailableSeatsTooHighTestNegative() {
+    void movieRepositoryUpdateMovieWithNumberOfAvailableSeatsTooHighTestNegative() {
         int numberOfAvailableSeats = 151;
-        movieNo1.setNumberOfAvailableSeats(numberOfAvailableSeats);
+        movieNo1.setAvailableSeats(numberOfAvailableSeats);
         assertThrows(MovieRepositoryUpdateException.class, () -> movieRepositoryForTests.update(movieNo1));
     }
 
     @Test
-    public void movieRepositoryUpdateMovieWithNumberOfAvailableSeatsEqualTo0HighTestPositive() throws MovieRepositoryException {
+    void movieRepositoryUpdateMovieWithNumberOfAvailableSeatsEqualTo0HighTestPositive() throws MovieRepositoryException {
         int numberOfAvailableSeats = 0;
-        movieNo1.setNumberOfAvailableSeats(numberOfAvailableSeats);
+        movieNo1.setAvailableSeats(numberOfAvailableSeats);
         movieRepositoryForTests.update(movieNo1);
-        Movie foundMovie = movieRepositoryForTests.findByUUID(movieNo1.getMovieID());
+        Movie foundMovie = movieRepositoryForTests.findByUUID(movieNo1.getId());
         assertNotNull(foundMovie);
-        assertEquals(numberOfAvailableSeats, foundMovie.getNumberOfAvailableSeats());
+        assertEquals(numberOfAvailableSeats, foundMovie.getAvailableSeats());
     }
 
     @Test
-    public void movieRepositoryUpdateMovieWithNumberOfAvailableSeatsEqualTo150HighTestNegative() throws MovieRepositoryException {
+    void movieRepositoryUpdateMovieWithNumberOfAvailableSeatsEqualTo150HighTestNegative() throws MovieRepositoryException {
         int numberOfAvailableSeats = 30;
-        movieNo1.setNumberOfAvailableSeats(numberOfAvailableSeats);
+        movieNo1.setAvailableSeats(numberOfAvailableSeats);
         movieRepositoryForTests.update(movieNo1);
-        Movie foundMovie = movieRepositoryForTests.findByUUID(movieNo1.getMovieID());
+        Movie foundMovie = movieRepositoryForTests.findByUUID(movieNo1.getId());
         assertNotNull(foundMovie);
-        assertEquals(numberOfAvailableSeats, foundMovie.getNumberOfAvailableSeats());
+        assertEquals(numberOfAvailableSeats, foundMovie.getAvailableSeats());
     }
 
     @Test
-    public void movieRepositoryDeleteMovieTestPositive() throws MovieRepositoryException {
+    void movieRepositoryDeleteMovieTestPositive() throws MovieRepositoryException {
         int numberOfMoviesBefore = movieRepositoryForTests.findAll().size();
-        UUID removedMovieUUID = movieNo1.getMovieID();
+        UUID removedMovieUUID = movieNo1.getId();
         movieRepositoryForTests.delete(removedMovieUUID);
         int numberOfMoviesAfter = movieRepositoryForTests.findAll().size();
         assertNotEquals(numberOfMoviesBefore, numberOfMoviesAfter);
@@ -391,8 +391,8 @@ public class MovieRepositoryTest {
     }
 
     @Test
-    public void movieRepositoryDeleteMovieThatIsNotInTheDatabaseTestNegative() {
+    void movieRepositoryDeleteMovieThatIsNotInTheDatabaseTestNegative() {
         Movie movie = new Movie(UUID.randomUUID(), "SomeMovieTitle", 50.00, 10, 90);
-        assertThrows(MovieRepositoryDeleteException.class, () -> movieRepositoryForTests.delete(movie.getMovieID()));
+        assertThrows(MovieRepositoryDeleteException.class, () -> movieRepositoryForTests.delete(movie.getId()));
     }
 }

@@ -16,23 +16,23 @@ public class AdminDTO {
 
     @JsonProperty("id")
     @JsonbProperty("id")
-    protected UUID adminID;
+    protected UUID id;
 
     @JsonProperty("login")
     @JsonbProperty("login")
-    protected String adminLogin;
+    protected String login;
 
     @JsonProperty("status-active")
     @JsonbProperty("status-active")
-    protected boolean adminStatusActive;
+    protected boolean active;
 
     @JsonCreator
     @JsonbCreator
-    public AdminDTO(@JsonProperty("id") @JsonbProperty("id") UUID adminID,
-                    @JsonProperty("login") @JsonbProperty("login") String adminLogin,
-                    @JsonProperty("status-active") @JsonbProperty("status-active") boolean adminStatusActive) {
-        this.adminID = adminID;
-        this.adminLogin = adminLogin;
-        this.adminStatusActive = adminStatusActive;
+    public AdminDTO(@JsonProperty("id") @JsonbProperty("id") UUID id,
+                    @JsonProperty("login") @JsonbProperty("login") String login,
+                    @JsonProperty("status-active") @JsonbProperty("status-active") boolean active) {
+        this.id = id;
+        this.login = login;
+        this.active = active;
     }
 }

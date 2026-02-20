@@ -17,15 +17,15 @@ public class ClientPasswordDTO extends ClientDTO {
 
     @JsonProperty("password")
     @JsonbProperty("password")
-    private String clientPassword;
+    private String password;
 
     @JsonCreator
     @JsonbCreator
-    public ClientPasswordDTO(@JsonProperty("id") @JsonbProperty("id") UUID clientID,
-                             @JsonProperty("login") @JsonbProperty("login") String clientLogin,
-                             @JsonProperty("password") @JsonbProperty("password") String clientPassword,
-                             @JsonProperty("status-active") @JsonbProperty("status-active") boolean clientStatusActive) {
-        super(clientID, clientLogin, clientStatusActive);
-        this.clientPassword = clientPassword;
+    public ClientPasswordDTO(@JsonProperty("id") @JsonbProperty("id") UUID id,
+                             @JsonProperty("login") @JsonbProperty("login") String login,
+                             @JsonProperty("password") @JsonbProperty("password") String password,
+                             @JsonProperty("status-active") @JsonbProperty("status-active") boolean active) {
+        super(id, login, active);
+        this.password = password;
     }
 }

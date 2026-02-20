@@ -17,15 +17,15 @@ public class AdminPasswordDTO extends AdminDTO {
 
     @JsonProperty("password")
     @JsonbProperty("password")
-    private String adminPassword;
+    private String password;
 
     @JsonCreator
     @JsonbCreator
-    public AdminPasswordDTO(@JsonProperty("id") @JsonbProperty("id") UUID adminID,
-                            @JsonProperty("login") @JsonbProperty("login") String adminLogin,
-                            @JsonProperty("password") @JsonbProperty("password") String adminPassword,
-                            @JsonProperty("status-active") @JsonbProperty("status-active") boolean adminStatusActive) {
-        super(adminID, adminLogin, adminStatusActive);
-        this.adminPassword = adminPassword;
+    public AdminPasswordDTO(@JsonProperty("id") @JsonbProperty("id") UUID id,
+                            @JsonProperty("login") @JsonbProperty("login") String login,
+                            @JsonProperty("password") @JsonbProperty("password") String password,
+                            @JsonProperty("status-active") @JsonbProperty("status-active") boolean active) {
+        super(id, login, active);
+        this.password = password;
     }
 }

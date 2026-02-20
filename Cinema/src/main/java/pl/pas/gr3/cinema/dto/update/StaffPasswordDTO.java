@@ -17,15 +17,15 @@ public class StaffPasswordDTO extends StaffDTO {
 
     @JsonProperty("password")
     @JsonbProperty("password")
-    private String staffPassword;
+    private String password;
 
     @JsonCreator
     @JsonbCreator
-    public StaffPasswordDTO(@JsonProperty("id") @JsonbProperty("id") UUID staffID,
-                            @JsonProperty("login") @JsonbProperty("login") String staffLogin,
-                            @JsonProperty("password") @JsonbProperty("password") String staffPassword,
-                            @JsonProperty("status-active") @JsonbProperty("status-active") boolean staffStatusActive) {
-        super(staffID, staffLogin, staffStatusActive);
-        this.staffPassword = staffPassword;
+    public StaffPasswordDTO(@JsonProperty("id") @JsonbProperty("id") UUID id,
+                            @JsonProperty("login") @JsonbProperty("login") String login,
+                            @JsonProperty("password") @JsonbProperty("password") String password,
+                            @JsonProperty("status-active") @JsonbProperty("status-active") boolean active) {
+        super(id, login, active);
+        this.password = password;
     }
 }

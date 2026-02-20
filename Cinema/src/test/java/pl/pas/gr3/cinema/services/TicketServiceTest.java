@@ -1,30 +1,24 @@
 package pl.pas.gr3.cinema.services;
 
-import org.junit.jupiter.api.*;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import pl.pas.gr3.cinema.exception.services.crud.admin.AdminServiceCreateException;
-import pl.pas.gr3.cinema.exception.services.crud.admin.AdminServiceDeleteException;
-import pl.pas.gr3.cinema.exception.services.crud.admin.AdminServiceReadException;
-import pl.pas.gr3.cinema.exception.services.crud.client.ClientServiceCreateException;
-import pl.pas.gr3.cinema.exception.services.crud.client.ClientServiceDeleteException;
-import pl.pas.gr3.cinema.exception.services.crud.client.ClientServiceReadException;
-import pl.pas.gr3.cinema.exception.services.crud.movie.MovieServiceCreateException;
-import pl.pas.gr3.cinema.exception.services.crud.movie.MovieServiceDeleteException;
-import pl.pas.gr3.cinema.exception.services.crud.movie.MovieServiceReadException;
-import pl.pas.gr3.cinema.exception.services.crud.staff.StaffServiceCreateException;
-import pl.pas.gr3.cinema.exception.services.crud.staff.StaffServiceDeleteException;
-import pl.pas.gr3.cinema.exception.services.crud.staff.StaffServiceReadException;
-import pl.pas.gr3.cinema.exception.services.crud.ticket.*;
-import pl.pas.gr3.cinema.model.Movie;
-import pl.pas.gr3.cinema.model.Ticket;
-import pl.pas.gr3.cinema.model.users.Admin;
-import pl.pas.gr3.cinema.model.users.Client;
-import pl.pas.gr3.cinema.model.users.Staff;
-import pl.pas.gr3.cinema.repositories.impl.UserRepository;
-import pl.pas.gr3.cinema.repositories.impl.MovieRepository;
-import pl.pas.gr3.cinema.repositories.impl.TicketRepository;
-import pl.pas.gr3.cinema.services.impl.*;
+import lombok.extern.slf4j.Slf4j;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import pl.pas.gr3.cinema.entity.Movie;
+import pl.pas.gr3.cinema.entity.Ticket;
+import pl.pas.gr3.cinema.entity.account.Admin;
+import pl.pas.gr3.cinema.entity.account.Client;
+import pl.pas.gr3.cinema.entity.account.Staff;
+import pl.pas.gr3.cinema.repository.impl.AccountRepositoryImpl;
+import pl.pas.gr3.cinema.repository.impl.MovieRepositoryImpl;
+import pl.pas.gr3.cinema.repository.impl.TicketRepositoryImpl;
+import pl.pas.gr3.cinema.service.impl.AdminServiceImpl;
+import pl.pas.gr3.cinema.service.impl.ClientServiceImpl;
+import pl.pas.gr3.cinema.service.impl.MovieServiceImpl;
+import pl.pas.gr3.cinema.service.impl.StaffServiceImpl;
+import pl.pas.gr3.cinema.service.impl.TicketServiceImpl;
 
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
@@ -33,19 +27,20 @@ import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-public class TicketServiceTest {
+@Slf4j
+class TicketServiceTest {
 
-    private static final String databaseName = "test";
-    private static final Logger logger = LoggerFactory.getLogger(TicketServiceTest.class);
-    private static UserRepository userRepository;
-    private static MovieRepository movieRepository;
-    private static TicketRepository ticketRepository;
+    private static final String DATABASE_NAME = "test";
 
-    private static ClientService clientService;
-    private static AdminService adminService;
-    private static StaffService staffService;
-    private static MovieService movieService;
-    private static TicketService ticketService;
+    private static AccountRepositoryImpl accountRepository;
+    private static MovieRepositoryImpl movieRepository;
+    private static TicketRepositoryImpl ticketRepository;
+
+    private static ClientServiceImpl clientService;
+    private static AdminServiceImpl adminService;
+    private static StaffServiceImpl staffService;
+    private static MovieServiceImpl movieService;
+    private static TicketServiceImpl ticketService;
 
     private Client clientNo1;
     private Client clientNo2;
@@ -70,185 +65,136 @@ public class TicketServiceTest {
     private LocalDateTime movieTimeNo2;
 
     @BeforeAll
-    public static void initialize() {
-        userRepository = new UserRepository(databaseName);
-        movieRepository = new MovieRepository(databaseName);
-        ticketRepository = new TicketRepository(databaseName);
+    static void initialize() {
+        accountRepository = new AccountRepositoryImpl(DATABASE_NAME);
+        movieRepository = new MovieRepositoryImpl(DATABASE_NAME);
+        ticketRepository = new TicketRepositoryImpl(DATABASE_NAME);
 
-        clientService = new ClientService(userRepository);
-        adminService = new AdminService(userRepository);
-        staffService = new StaffService(userRepository);
-        movieService = new MovieService(movieRepository);
-        ticketService = new TicketService(ticketRepository);
+        clientService = new ClientServiceImpl(accountRepository);
+        adminService = new AdminServiceImpl(accountRepository);
+        staffService = new StaffServiceImpl(accountRepository);
+        movieService = new MovieServiceImpl(movieRepository);
+        ticketService = new TicketServiceImpl(ticketRepository);
     }
 
     @BeforeEach
-    public void initializeSampleData() {
+    void initializeSampleData() {
         try {
             clientNo1 = clientService.create("UniqueClientLoginNo1", "UniqueClientPasswordNo1");
             clientNo2 = clientService.create("UniqueClientLoginNo2", "UniqueClientPasswordNo2");
-        } catch (ClientServiceCreateException exception) {
-            logger.error(exception.getMessage());
-        }
 
-        try {
             adminNo1 = adminService.create("UniqueAdminLoginNo1", "UniqueAdminPasswordNo1");
             adminNo2 = adminService.create("UniqueAdminLoginNo2", "UniqueAdminPasswordNo2");
-        } catch (AdminServiceCreateException exception) {
-            logger.error(exception.getMessage());
-        }
 
-        try {
             staffNo1 = staffService.create("UniqueStaffLoginNo1", "UniqueStaffPasswordNo1");
             staffNo2 = staffService.create("UniqueStaffLoginNo2", "UniqueStaffPasswordNo2");
-        } catch (StaffServiceCreateException exception) {
-            logger.error(exception.getMessage());
-        }
 
-        try {
             movieNo1 = movieService.create("UniqueMovieTitleNo1", 45.00, 1, 60);
             movieNo2 = movieService.create("UniqueMovieTitleNo2", 35.50, 2, 40);
-        } catch (MovieServiceCreateException exception) {
-            logger.error(exception.getMessage());
-        }
 
-        movieTimeNo1 = LocalDateTime.now().plusHours(3).plusDays(2).truncatedTo(ChronoUnit.SECONDS);
-        movieTimeNo2 = LocalDateTime.now().plusHours(8).plusDays(5).truncatedTo(ChronoUnit.SECONDS);
+            movieTimeNo1 = LocalDateTime.now().plusHours(3).plusDays(2).truncatedTo(ChronoUnit.SECONDS);
+            movieTimeNo2 = LocalDateTime.now().plusHours(8).plusDays(5).truncatedTo(ChronoUnit.SECONDS);
 
-        try {
-            ticketNo1 = ticketService.create(movieTimeNo1.toString(), clientNo1.getUserID(), movieNo1.getMovieID());
-            ticketNo2 = ticketService.create(movieTimeNo2.toString(), clientNo1.getUserID(), movieNo2.getMovieID());
+            ticketNo1 = ticketService.create(movieTimeNo1.toString(), clientNo1.getId(), movieNo1.getId());
+            ticketNo2 = ticketService.create(movieTimeNo2.toString(), clientNo1.getId(), movieNo2.getId());
 
-            ticketNo3 = ticketService.create(movieTimeNo1.toString(), adminNo1.getUserID(), movieNo1.getMovieID());
-            ticketNo4 = ticketService.create(movieTimeNo2.toString(), adminNo1.getUserID(), movieNo2.getMovieID());
+            ticketNo3 = ticketService.create(movieTimeNo1.toString(), adminNo1.getId(), movieNo1.getId());
+            ticketNo4 = ticketService.create(movieTimeNo2.toString(), adminNo1.getId(), movieNo2.getId());
 
-            ticketNo5 = ticketService.create(movieTimeNo1.toString(), staffNo1.getUserID(), movieNo1.getMovieID());
-            ticketNo6 = ticketService.create(movieTimeNo2.toString(), staffNo1.getUserID(), movieNo2.getMovieID());
-        } catch (TicketServiceCreateException exception) {
-            logger.error(exception.getMessage());
+            ticketNo5 = ticketService.create(movieTimeNo1.toString(), staffNo1.getId(), movieNo1.getId());
+            ticketNo6 = ticketService.create(movieTimeNo2.toString(), staffNo1.getId(), movieNo2.getId());
+        } catch (Exception exception) {
+            log.error(exception.getMessage());
         }
     }
 
     @AfterEach
-    public void destroySampleData() {
-
+    void destroySampleData() {
         try {
-            List<Ticket> listOfTickets = ticketService.findAll();
-            for (Ticket ticket : listOfTickets) {
-                ticketService.delete(ticket.getTicketID());
-            }
-        } catch (TicketServiceDeleteException | TicketServiceReadException exception) {
-            logger.error(exception.getMessage());
-        }
+            List<Ticket> tickets = ticketService.findAll();
+            tickets.forEach(ticket -> ticketService.delete(ticket.getId()));
 
-        try {
-            List<Movie> listOfMovies = movieService.findAll();
-            for (Movie movie : listOfMovies) {
-                movieService.delete(movie.getMovieID());
-            }
-        } catch (MovieServiceDeleteException | MovieServiceReadException exception) {
-            logger.error(exception.getMessage());
-        }
+            List<Movie> movies = movieService.findAll();
+            movies.forEach(movie -> movieService.delete(movie.getId()));
 
-        try {
-            List<Client> listOfClient = clientService.findAll();
-            for (Client client : listOfClient) {
-                clientService.delete(client.getUserID());
-            }
-        } catch (ClientServiceDeleteException | ClientServiceReadException exception) {
-            logger.error(exception.getMessage());
-        }
+            List<Client> clients = clientService.findAll();
+            clients.forEach(client -> clientService.delete(client.getId()));
 
-        try {
-            List<Admin> listOfAdmins = adminService.findAll();
-            for (Admin admin : listOfAdmins) {
-                adminService.delete(admin.getUserID());
-            }
-        } catch (AdminServiceDeleteException | AdminServiceReadException exception) {
-            logger.error(exception.getMessage());
-        }
+            List<Admin> admins = adminService.findAll();
+            admins.forEach(admin -> adminService.delete(admin.getId()));
 
-        try {
-            List<Staff> listOfStaffs = staffService.findAll();
-            for (Staff staff : listOfStaffs) {
-                staffService.delete(staff.getUserID());
-            }
-        } catch (StaffServiceDeleteException | StaffServiceReadException exception) {
-            logger.error(exception.getMessage());
+            List<Staff> staffs = staffService.findAll();
+            staffs.forEach(staff -> staffService.delete(staff.getId()));
+        } catch (Exception exception) {
+            log.error(exception.getMessage());
         }
     }
 
     @AfterAll
-    public static void destroy() {
-        userRepository.close();
+    static void destroy() {
+        accountRepository.close();
         movieRepository.close();
         ticketRepository.close();
     }
 
     // Constructor tests
-    
-    @Test
-    public void ticketServiceNoArgsConstructorTestPositive() {
-        TicketService testTicketService = new TicketService();
-        assertNotNull(testTicketService);
-    }
 
     @Test
-    public void ticketServiceAllArgsConstructorTestPositive() {
-        TicketService testTicketService = new TicketService(ticketRepository);
+    void ticketServiceAllArgsConstructorTestPositive() {
+        TicketServiceImpl testTicketService = new TicketServiceImpl(ticketRepository);
         assertNotNull(testTicketService);
     }
     
     // Create tests
 
     @Test
-    public void ticketServiceCreateTicketNormalTestPositive() throws TicketServiceCreateException {
-        Ticket ticket = ticketService.create(movieTimeNo1.toString(), clientNo1.getUserID(), movieNo1.getMovieID());
+    void ticketServiceCreateTicketNormalTestPositive() throws TicketServiceCreateException {
+        Ticket ticket = ticketService.create(movieTimeNo1.toString(), clientNo1.getId(), movieNo1.getId());
         assertNotNull(ticket);
         assertEquals(movieTimeNo1, ticket.getMovieTime());
-        assertEquals(clientNo1.getUserID(), ticket.getUserID());
-        assertEquals(movieNo1.getMovieID(), ticket.getMovieID());
-        assertEquals(movieNo1.getMovieBasePrice(), ticket.getTicketPrice());
+        assertEquals(clientNo1.getId(), ticket.getUserId());
+        assertEquals(movieNo1.getId(), ticket.getMovieId());
+        assertEquals(movieNo1.getBasePrice(), ticket.getPrice());
     }
 
     @Test
-    public void ticketServiceCreateTicketReducedTestPositive() throws TicketServiceCreateException {
-        Ticket ticket = ticketService.create(movieTimeNo1.toString(), clientNo1.getUserID(), movieNo1.getMovieID());
+    void ticketServiceCreateTicketReducedTestPositive() throws TicketServiceCreateException {
+        Ticket ticket = ticketService.create(movieTimeNo1.toString(), clientNo1.getId(), movieNo1.getId());
         assertNotNull(ticket);
         assertEquals(movieTimeNo1, ticket.getMovieTime());
-        assertEquals(clientNo1.getUserID(), ticket.getUserID());
-        assertEquals(movieNo1.getMovieID(), ticket.getMovieID());
-        assertEquals(movieNo1.getMovieBasePrice(), ticket.getTicketPrice());
+        assertEquals(clientNo1.getId(), ticket.getUserId());
+        assertEquals(movieNo1.getId(), ticket.getMovieId());
+        assertEquals(movieNo1.getBasePrice(), ticket.getPrice());
     }
 
     @Test
-    public void ticketServiceCreateTicketWithNullClientTestNegative() {
-        assertThrows(TicketServiceCreateException.class, () -> ticketService.create(movieTimeNo1.toString(), null, movieNo1.getMovieID()));
+    void ticketServiceCreateTicketWithNullClientTestNegative() {
+        assertThrows(TicketServiceCreateException.class, () -> ticketService.create(movieTimeNo1.toString(), null, movieNo1.getId()));
     }
 
     @Test
-    public void ticketServiceCreateTicketWithNullMovieTestNegative() {
-        assertThrows(TicketServiceCreateException.class, () -> ticketService.create(movieTimeNo1.toString(), clientNo1.getUserID(), null));
+    void ticketServiceCreateTicketWithNullMovieTestNegative() {
+        assertThrows(TicketServiceCreateException.class, () -> ticketService.create(movieTimeNo1.toString(), clientNo1.getId(), null));
     }
 
     // Read tests
 
     @Test
-    public void ticketServiceFindTicketByIDTestPositive() throws TicketServiceReadException {
-        Ticket ticket = ticketService.findByUUID(ticketNo1.getTicketID());
+    void ticketServiceFindTicketByIDTestPositive() throws TicketServiceReadException {
+        Ticket ticket = ticketService.findByUUID(ticketNo1.getId());
         assertNotNull(ticket);
         assertEquals(ticketNo1, ticket);
     }
 
     @Test
-    public void ticketServiceFindTicketByIDThatIsNotInTheDatabaseTestPositive() {
-        Ticket ticket = new Ticket(UUID.randomUUID(), movieTimeNo1, movieNo1.getMovieBasePrice(), clientNo1.getUserID(), movieNo1.getMovieID());
+    void ticketServiceFindTicketByIDThatIsNotInTheDatabaseTestPositive() {
+        Ticket ticket = new Ticket(UUID.randomUUID(), movieTimeNo1, movieNo1.getBasePrice(), clientNo1.getId(), movieNo1.getId());
         assertNotNull(ticket);
-        assertThrows(TicketServiceTicketNotFoundException.class, () -> ticketService.findByUUID(ticket.getTicketID()));
+        assertThrows(TicketServiceTicketNotFoundException.class, () -> ticketService.findByUUID(ticket.getId()));
     }
 
     @Test
-    public void ticketServiceFindAllTicketsTestPositive() throws TicketServiceReadException {
+    void ticketServiceFindAllTicketsTestPositive() throws TicketServiceReadException {
         List<Ticket> listOfTickets = ticketService.findAll();
         assertNotNull(listOfTickets);
         assertFalse(listOfTickets.isEmpty());
@@ -258,17 +204,17 @@ public class TicketServiceTest {
     // Update tests
 
     @Test
-    public void ticketServiceUpdateTicketTestPositive() throws TicketServiceUpdateException, TicketServiceReadException {
+    void ticketServiceUpdateTicketTestPositive() throws TicketServiceUpdateException, TicketServiceReadException {
         LocalDateTime newMovieTime = LocalDateTime.now().plusDays(4).plusHours(12).plusMinutes(30).truncatedTo(ChronoUnit.SECONDS);
         ticketNo1.setMovieTime(newMovieTime);
         ticketService.update(ticketNo1);
-        Ticket foundTicket = ticketService.findByUUID(ticketNo1.getTicketID());
+        Ticket foundTicket = ticketService.findByUUID(ticketNo1.getId());
         assertEquals(newMovieTime, foundTicket.getMovieTime());
     }
 
     @Test
-    public void ticketServiceUpdateTicketThatIsNotInTheDatabaseTestNegative() {
-        Ticket ticket = new Ticket(UUID.randomUUID(), movieTimeNo1, movieNo1.getMovieBasePrice(), clientNo1.getUserID(), movieNo1.getMovieID());
+    void ticketServiceUpdateTicketThatIsNotInTheDatabaseTestNegative() {
+        Ticket ticket = new Ticket(UUID.randomUUID(), movieTimeNo1, movieNo1.getBasePrice(), clientNo1.getId(), movieNo1.getId());
         assertNotNull(ticket);
         assertThrows(TicketServiceUpdateException.class, () -> ticketService.update(ticket));
     }
@@ -276,8 +222,8 @@ public class TicketServiceTest {
     // Delete tests
 
     @Test
-    public void ticketServiceDeleteTicketTestPositive() throws TicketServiceReadException, TicketServiceDeleteException {
-        UUID removedTicketUUID = ticketNo1.getTicketID();
+    void ticketServiceDeleteTicketTestPositive() throws TicketServiceReadException, TicketServiceDeleteException {
+        UUID removedTicketUUID = ticketNo1.getId();
         Ticket foundTicket = ticketService.findByUUID(removedTicketUUID);
         assertNotNull(foundTicket);
         assertEquals(ticketNo1, foundTicket);
@@ -286,78 +232,78 @@ public class TicketServiceTest {
     }
 
     @Test
-    public void ticketServiceDeleteTicketThatIsNotInTheDatabaseTestNegative() {
-        Ticket ticket = new Ticket(UUID.randomUUID(), movieTimeNo1, movieNo1.getMovieBasePrice(), clientNo1.getUserID(), movieNo1.getMovieID());
+    void ticketServiceDeleteTicketThatIsNotInTheDatabaseTestNegative() {
+        Ticket ticket = new Ticket(UUID.randomUUID(), movieTimeNo1, movieNo1.getBasePrice(), clientNo1.getId(), movieNo1.getId());
         assertNotNull(ticket);
-        assertThrows(TicketServiceDeleteException.class, () -> ticketService.delete(ticket.getTicketID()));
+        assertThrows(TicketServiceDeleteException.class, () -> ticketService.delete(ticket.getId()));
     }
 
     // Other tests
 
     @Test
-    public void movieServiceDeleteMovieThatIsUsedInTicketTestNegative() {
-        assertThrows(MovieServiceDeleteException.class, () -> movieService.delete(movieNo1.getMovieID()));
+    void movieServiceDeleteMovieThatIsUsedInTicketTestNegative() {
+        assertThrows(MovieServiceDeleteException.class, () -> movieService.delete(movieNo1.getId()));
     }
 
     @Test
-    public void movieServiceGetAllTicketForCertainMovieTestPositive() {
-        List<Ticket> listOfTicketsForMovieNo1 = movieService.getListOfTicketsForCertainMovie(movieNo1.getMovieID());
+    void movieServiceGetAllTicketForCertainMovieTestPositive() {
+        List<Ticket> listOfTicketsForMovieNo1 = movieService.getListOfTicketsForCertainMovie(movieNo1.getId());
         assertNotNull(listOfTicketsForMovieNo1);
         assertFalse(listOfTicketsForMovieNo1.isEmpty());
         assertEquals(3, listOfTicketsForMovieNo1.size());
     }
 
     @Test
-    public void clientServiceGetAllTicketForCertainClientTestPositive() throws ClientServiceReadException {
-        List<Ticket> listOfTicketsForClientNo1 = clientService.getTicketsForClient(clientNo1.getUserID());
+    void clientServiceGetAllTicketForCertainClientTestPositive() throws ClientServiceReadException {
+        List<Ticket> listOfTicketsForClientNo1 = clientService.getTicketsForClient(clientNo1.getId());
         assertNotNull(listOfTicketsForClientNo1);
         assertFalse(listOfTicketsForClientNo1.isEmpty());
         assertEquals(2, listOfTicketsForClientNo1.size());
     }
 
     @Test
-    public void clientServiceGetAllTicketForCertainClientButUsingAdminIDTestPositive() {
-        assertThrows(ClientServiceReadException.class, () -> clientService.getTicketsForClient(adminNo1.getUserID()));
+    void clientServiceGetAllTicketForCertainClientButUsingAdminIDTestPositive() {
+        assertThrows(ClientServiceReadException.class, () -> clientService.getTicketsForClient(adminNo1.getId()));
     }
 
     @Test
-    public void clientServiceGetAllTicketForCertainClientButUsingStaffIDTestPositive() {
-        assertThrows(ClientServiceReadException.class, () -> clientService.getTicketsForClient(staffNo1.getUserID()));
+    void clientServiceGetAllTicketForCertainClientButUsingStaffIDTestPositive() {
+        assertThrows(ClientServiceReadException.class, () -> clientService.getTicketsForClient(staffNo1.getId()));
     }
 
     @Test
-    public void adminServiceGetAllTicketForCertainAdminTestPositive() throws AdminServiceReadException {
-        List<Ticket> listOfTicketsForAdminNo1 = adminService.getTicketsForClient(adminNo1.getUserID());
+    void adminServiceGetAllTicketForCertainAdminTestPositive() throws AdminServiceReadException {
+        List<Ticket> listOfTicketsForAdminNo1 = adminService.getTicketsForClient(adminNo1.getId());
         assertNotNull(listOfTicketsForAdminNo1);
         assertFalse(listOfTicketsForAdminNo1.isEmpty());
         assertEquals(2, listOfTicketsForAdminNo1.size());
     }
 
     @Test
-    public void adminServiceGetAllTicketForCertainAdminButUsingClientIDTestPositive() {
-        assertThrows(AdminServiceReadException.class, () -> adminService.getTicketsForClient(clientNo1.getUserID()));
+    void adminServiceGetAllTicketForCertainAdminButUsingClientIDTestPositive() {
+        assertThrows(AdminServiceReadException.class, () -> adminService.getTicketsForClient(clientNo1.getId()));
     }
 
     @Test
-    public void adminServiceGetAllTicketForCertainAdminButUsingStaffIDTestPositive() {
-        assertThrows(AdminServiceReadException.class, () -> adminService.getTicketsForClient(staffNo1.getUserID()));
+    void adminServiceGetAllTicketForCertainAdminButUsingStaffIDTestPositive() {
+        assertThrows(AdminServiceReadException.class, () -> adminService.getTicketsForClient(staffNo1.getId()));
     }
 
     @Test
-    public void staffServiceGetAllTicketForCertainStaffTestPositive() throws StaffServiceReadException {
-        List<Ticket> listOfTicketsForStaffNo1 = staffService.getTicketsForClient(staffNo1.getUserID());
+    void staffServiceGetAllTicketForCertainStaffTestPositive() throws StaffServiceReadException {
+        List<Ticket> listOfTicketsForStaffNo1 = staffService.getTicketsForClient(staffNo1.getId());
         assertNotNull(listOfTicketsForStaffNo1);
         assertFalse(listOfTicketsForStaffNo1.isEmpty());
         assertEquals(2, listOfTicketsForStaffNo1.size());
     }
 
     @Test
-    public void staffServiceGetAllTicketForCertainAdminButUsingClientIDTestPositive() {
-        assertThrows(StaffServiceReadException.class, () -> staffService.getTicketsForClient(clientNo1.getUserID()));
+    void staffServiceGetAllTicketForCertainAdminButUsingClientIDTestPositive() {
+        assertThrows(StaffServiceReadException.class, () -> staffService.getTicketsForClient(clientNo1.getId()));
     }
 
     @Test
-    public void staffServiceGetAllTicketForCertainStaffButUsingAdminIDTestPositive() {
-        assertThrows(StaffServiceReadException.class, () -> staffService.getTicketsForClient(adminNo1.getUserID()));
+    void staffServiceGetAllTicketForCertainStaffButUsingAdminIDTestPositive() {
+        assertThrows(StaffServiceReadException.class, () -> staffService.getTicketsForClient(adminNo1.getId()));
     }
 }

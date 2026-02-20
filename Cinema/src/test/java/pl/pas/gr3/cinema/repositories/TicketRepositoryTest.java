@@ -1,17 +1,17 @@
 package pl.pas.gr3.cinema.repositories;
 
-import org.junit.jupiter.api.*;
-import pl.pas.gr3.cinema.exception.repositories.*;
-import pl.pas.gr3.cinema.exception.repositories.crud.user.UserRepositoryReadException;
-import pl.pas.gr3.cinema.exception.repositories.crud.movie.MovieRepositoryDeleteException;
-import pl.pas.gr3.cinema.exception.repositories.crud.ticket.*;
-import pl.pas.gr3.cinema.model.Movie;
-import pl.pas.gr3.cinema.model.Ticket;
-import pl.pas.gr3.cinema.model.users.Admin;
-import pl.pas.gr3.cinema.model.users.Client;
-import pl.pas.gr3.cinema.repositories.impl.UserRepository;
-import pl.pas.gr3.cinema.repositories.impl.MovieRepository;
-import pl.pas.gr3.cinema.repositories.impl.TicketRepository;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import pl.pas.gr3.cinema.entity.Movie;
+import pl.pas.gr3.cinema.entity.Ticket;
+import pl.pas.gr3.cinema.entity.account.Admin;
+import pl.pas.gr3.cinema.entity.account.Client;
+import pl.pas.gr3.cinema.repository.impl.AccountRepositoryImpl;
+import pl.pas.gr3.cinema.repository.impl.MovieRepositoryImpl;
+import pl.pas.gr3.cinema.repository.impl.TicketRepositoryImpl;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -19,13 +19,13 @@ import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-public class TicketRepositoryTest {
+class TicketRepositoryTest {
 
-    private final static String databaseName = "test";
+    private static final String DATABASE_NAME = "test";
 
-    private static TicketRepository ticketRepositoryForTests;
-    private static UserRepository userRepositoryForTests;
-    private static MovieRepository movieRepositoryForTests;
+    private static TicketRepositoryImpl ticketRepositoryForTests;
+    private static AccountRepositoryImpl accountRepositoryForTests;
+    private static MovieRepositoryImpl movieRepositoryForTests;
 
     private Client clientNo1;
     private Client clientNo2;
@@ -37,128 +37,113 @@ public class TicketRepositoryTest {
     private Ticket ticketNo2;
 
     @BeforeAll
-    public static void init() {
-        ticketRepositoryForTests = new TicketRepository(databaseName);
-        userRepositoryForTests = new UserRepository(databaseName);
-        movieRepositoryForTests = new MovieRepository(databaseName);
+    static void init() {
+        ticketRepositoryForTests = new TicketRepositoryImpl(DATABASE_NAME);
+        accountRepositoryForTests = new AccountRepositoryImpl(DATABASE_NAME);
+        movieRepositoryForTests = new MovieRepositoryImpl(DATABASE_NAME);
     }
 
     @BeforeEach
-    public void addExampleTickets() {
+    void addExampleTickets() {
         try {
-            clientNo1 = userRepositoryForTests.createClient("ClientLoginNo1", "ClientPasswordNo1");
-            clientNo2 = userRepositoryForTests.createClient("ClientLoginNo2", "ClientPasswordNo2");
-        } catch (UserRepositoryException exception) {
+            clientNo1 = accountRepositoryForTests.createClient("ClientLoginNo1", "ClientPasswordNo1");
+            clientNo2 = accountRepositoryForTests.createClient("ClientLoginNo2", "ClientPasswordNo2");
+
+            movieNo1 = movieRepositoryForTests.create("MovieTitleNo1", 25.00, 1, 45);
+            movieNo2 = movieRepositoryForTests.create("MovieTitleNo2", 35.50, 2, 70);
+
+            LocalDateTime localDateTimeNo1 = LocalDateTime.of(2023, 11, 2, 20, 15, 0);
+            LocalDateTime localDateTimeNo2 = LocalDateTime.of(2023, 10, 28, 18, 45, 0);
+
+            ticketNo1 = ticketRepositoryForTests.create(localDateTimeNo1, clientNo1.getId(), movieNo1.getId());
+            ticketNo2 = ticketRepositoryForTests.create(localDateTimeNo2, clientNo2.getId(), movieNo2.getId());
+        } catch (Exception exception) {
             throw new RuntimeException("Could not initialize test database while adding example clients to it.", exception);
         }
 
         try {
             movieNo1 = movieRepositoryForTests.create("MovieTitleNo1", 25.00, 1, 45);
             movieNo2 = movieRepositoryForTests.create("MovieTitleNo2", 35.50, 2, 70);
-        } catch (MovieRepositoryException exception) {
+        } catch (Exception exception) {
             throw new RuntimeException("Could not initialize test database while adding example movies to it.", exception);
-        }
-
-        LocalDateTime localDateTimeNo1 = LocalDateTime.of(2023, 11, 2, 20, 15, 0);
-        LocalDateTime localDateTimeNo2 = LocalDateTime.of(2023, 10, 28, 18, 45, 0);
-
-        try {
-            ticketNo1 = ticketRepositoryForTests.create(localDateTimeNo1, clientNo1.getUserID(), movieNo1.getMovieID());
-            ticketNo2 = ticketRepositoryForTests.create(localDateTimeNo2, clientNo2.getUserID(), movieNo2.getMovieID());
-        } catch (TicketRepositoryException exception) {
-            throw new RuntimeException("Could not initialize test database while adding example tickets to it.", exception);
         }
     }
 
     @AfterEach
-    public void removeExampleTickets() {
+    void removeExampleTickets() {
         try {
-            List<Ticket> listOfAllTickets = ticketRepositoryForTests.findAll();
-            for (Ticket ticket : listOfAllTickets) {
-                ticketRepositoryForTests.delete(ticket.getTicketID());
-            }
-        } catch (TicketRepositoryException exception) {
+            List<Ticket> tickets = ticketRepositoryForTests.findAll();
+            tickets.forEach(ticket -> ticketRepositoryForTests.delete(ticket.getId()));
+
+            List<Client> clients = accountRepositoryForTests.findAllClients();
+            clients.forEach(client -> accountRepositoryForTests.delete(client.getId(), "client"));
+
+            List<Movie> movies = movieRepositoryForTests.findAll();
+            movies.forEach(movie -> movieRepositoryForTests.delete(movie.getId()));
+        } catch (Exception exception) {
             throw new RuntimeException("Could not remove all tickets from the test database after ticket repository tests.", exception);
-        }
-
-        try {
-            List<Client> listOfAllClients = userRepositoryForTests.findAllClients();
-            for (Client client : listOfAllClients) {
-                userRepositoryForTests.delete(client.getUserID(), "client");
-            }
-        } catch (UserRepositoryException exception) {
-            throw new RuntimeException("Could not remove all clients from the test database after ticket repository tests.", exception);
-        }
-
-        try {
-            List<Movie> listOfAllMovies = movieRepositoryForTests.findAll();
-            for (Movie movie : listOfAllMovies) {
-                movieRepositoryForTests.delete(movie.getMovieID());
-            }
-        } catch (MovieRepositoryException exception) {
-            throw new RuntimeException("Could not remove all movies from the test database after ticket repository tests.", exception);
         }
     }
 
     @AfterAll
-    public static void destroy() {
+    static void destroy() {
         ticketRepositoryForTests.close();
-        userRepositoryForTests.close();
+        accountRepositoryForTests.close();
         movieRepositoryForTests.close();
     }
 
     @Test
-    public void ticketRepositoryCreateTicketTestPositive() throws TicketRepositoryException {
+    void ticketRepositoryCreateTicketTestPositive() throws TicketRepositoryException {
         LocalDateTime localDateTime = LocalDateTime.of(2023, 11, 4, 20, 10, 0);
-        Ticket ticket = ticketRepositoryForTests.create(localDateTime, clientNo1.getUserID(), movieNo1.getMovieID());
+        Ticket ticket = ticketRepositoryForTests.create(localDateTime, clientNo1.getId(), movieNo1.getId());
         assertNotNull(ticket);
-        Ticket foundTicket = ticketRepositoryForTests.findByUUID(ticket.getTicketID());
+        Ticket foundTicket = ticketRepositoryForTests.findByUUID(ticket.getId());
         assertNotNull(foundTicket);
         assertEquals(ticket, foundTicket);
     }
 
     @Test
-    public void ticketRepositoryCreateTicketWithInactiveClientTestNegative() throws UserRepositoryException {
+    void ticketRepositoryCreateTicketWithInactiveClientTestNegative() throws UserRepositoryException {
         LocalDateTime localDateTime = LocalDateTime.of(2023, 11, 4, 20, 10, 0);
-        userRepositoryForTests.deactivate(clientNo1, "client");
-        assertThrows(TicketRepositoryCreateException.class, () -> ticketRepositoryForTests.create(localDateTime, clientNo1.getUserID(), movieNo1.getMovieID()));
+        accountRepositoryForTests.deactivate(clientNo1, "client");
+        assertThrows(TicketRepositoryCreateException.class, () -> ticketRepositoryForTests.create(localDateTime, clientNo1.getId(), movieNo1.getId()));
     }
 
     @Test
-    public void ticketRepositoryCreateTicketWithNullMovieTimeTestNegative() {
-        assertThrows(TicketRepositoryCreateException.class, () -> ticketRepositoryForTests.create(null, clientNo1.getUserID(), movieNo1.getMovieID()));
+    void ticketRepositoryCreateTicketWithNullMovieTimeTestNegative() {
+        assertThrows(TicketRepositoryCreateException.class, () -> ticketRepositoryForTests.create(null, clientNo1.getId(), movieNo1.getId()));
     }
 
     @Test
-    public void ticketRepositoryCreateTicketWithNullClientTestNegative() {
+    void ticketRepositoryCreateTicketWithNullClientTestNegative() {
         LocalDateTime localDateTime = LocalDateTime.of(2023, 11, 4, 20, 10, 0);
-        assertThrows(TicketRepositoryCreateException.class, () -> ticketRepositoryForTests.create(localDateTime, null, movieNo1.getMovieID()));
+        assertThrows(TicketRepositoryCreateException.class, () -> ticketRepositoryForTests.create(localDateTime, null, movieNo1.getId()));
     }
 
     @Test
-    public void ticketRepositoryCreateTicketWithNullMovieTestNegative() {
+    void ticketRepositoryCreateTicketWithNullMovieTestNegative() {
         LocalDateTime localDateTime = LocalDateTime.of(2023, 11, 4, 20, 10, 0);
-        assertThrows(TicketRepositoryCreateException.class, () -> ticketRepositoryForTests.create(localDateTime, clientNo1.getUserID(), null));
+        assertThrows(TicketRepositoryCreateException.class, () -> ticketRepositoryForTests.create(localDateTime, clientNo1.getId(), null));
     }
 
     @Test
-    public void ticketRepositoryFindTicketTestPositive() throws TicketRepositoryException {
-        Ticket foundTicket = ticketRepositoryForTests.findByUUID(ticketNo1.getTicketID());
+    void ticketRepositoryFindTicketTestPositive() throws TicketRepositoryException {
+        Ticket foundTicket = ticketRepositoryForTests.findByUUID(ticketNo1.getId());
         assertNotNull(foundTicket);
         assertEquals(ticketNo1, foundTicket);
     }
 
     @Test
-    public void ticketRepositoryFindTicketThatIsNotInTheDatabaseTestNegative() {
+    void ticketRepositoryFindTicketThatIsNotInTheDatabaseTestNegative() {
         LocalDateTime localDateTime = LocalDateTime.of(2023, 11, 4, 20, 10, 0);
         assertNotNull(localDateTime);
-        Ticket ticket = new Ticket(UUID.randomUUID(), localDateTime, movieNo1.getMovieBasePrice(), clientNo1.getUserID(), movieNo1.getMovieID());
+        Ticket ticket = new Ticket(UUID.randomUUID(), localDateTime, movieNo1.getBasePrice(), clientNo1.getId(), movieNo1.getId());
         assertNotNull(ticket);
-        assertThrows(TicketRepositoryTicketNotFoundException.class, () -> ticketRepositoryForTests.findByUUID(ticket.getTicketID()));
+        assertThrows(TicketRepositoryTicketNotFoundException.class, () -> ticketRepositoryForTests.findByUUID(ticket.getId()));
     }
 
     @Test
-    public void ticketRepositoryFindAllTicketsTestPositive() throws TicketRepositoryException {
+    void ticketRepositoryFindAllTicketsTestPositive() throws TicketRepositoryException {
         List<Ticket> listOfAllTickets = ticketRepositoryForTests.findAll();
         assertNotNull(listOfAllTickets);
         assertFalse(listOfAllTickets.isEmpty());
@@ -166,7 +151,7 @@ public class TicketRepositoryTest {
     }
 
     @Test
-    public void ticketRepositoryUpdateTicketTestPositive() throws TicketRepositoryException {
+    void ticketRepositoryUpdateTicketTestPositive() throws TicketRepositoryException {
         LocalDateTime localDateTime = LocalDateTime.now();
         assertNotNull(localDateTime);
         LocalDateTime movieTimeBefore = ticketNo1.getMovieTime();
@@ -179,25 +164,25 @@ public class TicketRepositoryTest {
     }
 
     @Test
-    public void ticketRepositoryUpdateTicketThatIsNotInTheDatabaseTestNegative() {
+    void ticketRepositoryUpdateTicketThatIsNotInTheDatabaseTestNegative() {
         LocalDateTime localDateTime = LocalDateTime.of(2023, 11, 4, 20, 10, 0);
         assertNotNull(localDateTime);
-        Ticket ticket = new Ticket(UUID.randomUUID(), localDateTime, movieNo1.getMovieBasePrice(), clientNo1.getUserID(), movieNo1.getMovieID());
+        Ticket ticket = new Ticket(UUID.randomUUID(), localDateTime, movieNo1.getBasePrice(), clientNo1.getId(), movieNo1.getId());
         assertNotNull(ticket);
         assertThrows(TicketRepositoryUpdateException.class, () -> ticketRepositoryForTests.update(ticket));
     }
 
     @Test
-    public void ticketRepositoryUpdateTicketWithNullLocalDateTimeTestNegative() {
+    void ticketRepositoryUpdateTicketWithNullLocalDateTimeTestNegative() {
         ticketNo1.setMovieTime(null);
         assertThrows(TicketRepositoryUpdateException.class, () -> ticketRepositoryForTests.update(ticketNo1));
     }
 
     @Test
-    public void ticketRepositoryDeleteTicketTestPositive() throws TicketRepositoryException {
+    void ticketRepositoryDeleteTicketTestPositive() throws TicketRepositoryException {
         int numberOfTicketsBefore = ticketRepositoryForTests.findAll().size();
-        UUID removedTicketID = ticketNo1.getTicketID();
-        ticketRepositoryForTests.delete(ticketNo1.getTicketID());
+        UUID removedTicketID = ticketNo1.getId();
+        ticketRepositoryForTests.delete(ticketNo1.getId());
         int numberOfTicketsAfter = ticketRepositoryForTests.findAll().size();
         assertNotEquals(numberOfTicketsBefore, numberOfTicketsAfter);
         assertEquals(2, numberOfTicketsBefore);
@@ -206,54 +191,54 @@ public class TicketRepositoryTest {
     }
 
     @Test
-    public void ticketRepositoryDeleteTicketThatIsNotInTheDatabaseTestNegative() {
+    void ticketRepositoryDeleteTicketThatIsNotInTheDatabaseTestNegative() {
         LocalDateTime localDateTime = LocalDateTime.of(2023, 11, 4, 20, 10, 0);
         assertNotNull(localDateTime);
-        Ticket ticket = new Ticket(UUID.randomUUID(), localDateTime, movieNo1.getMovieBasePrice(), clientNo1.getUserID(), movieNo1.getMovieID());
+        Ticket ticket = new Ticket(UUID.randomUUID(), localDateTime, movieNo1.getBasePrice(), clientNo1.getId(), movieNo1.getId());
         assertNotNull(ticket);
-        assertThrows(TicketRepositoryDeleteException.class, () -> ticketRepositoryForTests.delete(ticket.getTicketID()));
+        assertThrows(TicketRepositoryDeleteException.class, () -> ticketRepositoryForTests.delete(ticket.getId()));
     }
 
     @Test
-    public void movieRepositoryDeleteMovieThatIsUsedByTheTicketInTheDatabaseTestNegative() {
-        assertThrows(MovieRepositoryDeleteException.class, () -> movieRepositoryForTests.delete(movieNo1.getMovieID()));
+    void movieRepositoryDeleteMovieThatIsUsedByTheTicketInTheDatabaseTestNegative() {
+        assertThrows(MovieRepositoryDeleteException.class, () -> movieRepositoryForTests.delete(movieNo1.getId()));
     }
 
     @Test
-    public void clientRepositoryFindAllTicketsWithGivenClient() throws TicketRepositoryException, UserRepositoryException {
-        List<Ticket> listOfActiveTicketsNo1 = userRepositoryForTests.getListOfTicketsForClient(clientNo1.getUserID(), "client");
+    void clientRepositoryFindAllTicketsWithGivenClient() throws TicketRepositoryException, UserRepositoryException {
+        List<Ticket> listOfActiveTicketsNo1 = accountRepositoryForTests.getListOfTicketsForClient(clientNo1.getId(), "client");
         assertNotNull(listOfActiveTicketsNo1);
         assertFalse(listOfActiveTicketsNo1.isEmpty());
         assertEquals(1, listOfActiveTicketsNo1.size());
-        ticketRepositoryForTests.create(ticketNo2.getMovieTime(), clientNo1.getUserID(), movieNo2.getMovieID());
-        List<Ticket> listOfActiveTicketsNo2 = userRepositoryForTests.getListOfTicketsForClient(clientNo1.getUserID(), "client");
+        ticketRepositoryForTests.create(ticketNo2.getMovieTime(), clientNo1.getId(), movieNo2.getId());
+        List<Ticket> listOfActiveTicketsNo2 = accountRepositoryForTests.getListOfTicketsForClient(clientNo1.getId(), "client");
         assertNotNull(listOfActiveTicketsNo2);
         assertFalse(listOfActiveTicketsNo2.isEmpty());
         assertEquals(2, listOfActiveTicketsNo2.size());
     }
 
     @Test
-    public void clientRepositoryFindALlTicketsWithGivenClientThatIsNotInTheDatabaseTestNegative() {
+    void clientRepositoryFindALlTicketsWithGivenClientThatIsNotInTheDatabaseTestNegative() {
         Client client = new Client(UUID.randomUUID(), "SomeRandomLogin", "SomeRandomPassword");
         assertNotNull(client);
-        assertThrows(UserRepositoryReadException.class, () -> userRepositoryForTests.getListOfTicketsForClient(client.getUserID(), "client"));
+        assertThrows(UserRepositoryReadException.class, () -> accountRepositoryForTests.getListOfTicketsForClient(client.getId(), "client"));
     }
 
     @Test
-    public void clientRepositoryFindALlTicketsWithGivenClientThatIsInTheDatabaseAndIncorrectNameTestNegative() throws UserRepositoryException {
-        Admin admin = userRepositoryForTests.createAdmin("SomeLogin", "SomePassword");
+    void clientRepositoryFindALlTicketsWithGivenClientThatIsInTheDatabaseAndIncorrectNameTestNegative() throws UserRepositoryException {
+        Admin admin = accountRepositoryForTests.createAdmin("SomeLogin", "SomePassword");
         assertNotNull(admin);
-        assertThrows(UserRepositoryReadException.class, () -> userRepositoryForTests.getListOfTicketsForClient(admin.getUserID(), "client"));
+        assertThrows(UserRepositoryReadException.class, () -> accountRepositoryForTests.getListOfTicketsForClient(admin.getId(), "client"));
     }
 
     @Test
-    public void movieRepositoryFindAllTicketsWithGivenMovie() throws TicketRepositoryException {
-        List<Ticket> listOfActiveTicketsNo1 = movieRepositoryForTests.getListOfTicketsForMovie(movieNo1.getMovieID());
+    void movieRepositoryFindAllTicketsWithGivenMovie() throws TicketRepositoryException {
+        List<Ticket> listOfActiveTicketsNo1 = movieRepositoryForTests.getListOfTicketsForMovie(movieNo1.getId());
         assertNotNull(listOfActiveTicketsNo1);
         assertFalse(listOfActiveTicketsNo1.isEmpty());
         assertEquals(1, listOfActiveTicketsNo1.size());
-        ticketRepositoryForTests.create(ticketNo2.getMovieTime(), clientNo2.getUserID(), movieNo1.getMovieID());
-        List<Ticket> listOfActiveTicketsNo2 = movieRepositoryForTests.getListOfTicketsForMovie(movieNo1.getMovieID());
+        ticketRepositoryForTests.create(ticketNo2.getMovieTime(), clientNo2.getId(), movieNo1.getId());
+        List<Ticket> listOfActiveTicketsNo2 = movieRepositoryForTests.getListOfTicketsForMovie(movieNo1.getId());
         assertNotNull(listOfActiveTicketsNo2);
         assertFalse(listOfActiveTicketsNo2.isEmpty());
         assertEquals(2, listOfActiveTicketsNo2.size());

@@ -11,8 +11,8 @@ import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Service;
-import pl.pas.gr3.cinema.consts.model.UserConstants;
-import pl.pas.gr3.cinema.model.users.User;
+import pl.pas.gr3.cinema.entity.account.Account;
+import pl.pas.gr3.cinema.util.consts.model.UserConstants;
 
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
@@ -46,15 +46,15 @@ public class JWTService {
                 .sign(algorithm);
     }
 
-    public String generateJWTToken(User user) {
+    public String generateJWTToken(Account account) {
         UserDetails userDetails = new org.springframework.security.core.userdetails.User(
-                user.getUserLogin(),
-                user.getUserPassword(),
-                user.isUserStatusActive(),
+                account.getLogin(),
+                account.getPassword(),
+                account.isActive(),
                 true,
                 true,
                 true,
-                List.of(new SimpleGrantedAuthority(user.getUserRole().name()))
+                List.of(new SimpleGrantedAuthority(account.getRole().name()))
         );
 
         return generateJWTToken(userDetails);

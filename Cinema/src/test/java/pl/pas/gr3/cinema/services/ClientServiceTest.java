@@ -1,143 +1,136 @@
 package pl.pas.gr3.cinema.services;
 
-import org.junit.jupiter.api.*;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import pl.pas.gr3.cinema.exception.services.crud.client.*;
-import pl.pas.gr3.cinema.services.impl.ClientService;
-import pl.pas.gr3.cinema.model.users.Client;
-import pl.pas.gr3.cinema.repositories.impl.UserRepository;
+import lombok.extern.slf4j.Slf4j;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import pl.pas.gr3.cinema.service.impl.ClientServiceImpl;
+import pl.pas.gr3.cinema.entity.account.Client;
+import pl.pas.gr3.cinema.repository.impl.AccountRepositoryImpl;
 
 import java.util.List;
 import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-public class ClientServiceTest {
+@Slf4j
+class ClientServiceTest {
 
-    private final static Logger logger = LoggerFactory.getLogger(ClientServiceTest.class);
-
-    private final static String databaseName = "test";
-    private static UserRepository userRepository;
-    private static ClientService clientService;
+    private static final String DATABASE_NAME = "test";
+    private static AccountRepositoryImpl accountRepository;
+    private static ClientServiceImpl clientService;
 
     private Client clientNo1;
     private Client clientNo2;
 
     @BeforeAll
-    public static void initialize() {
-        userRepository = new UserRepository(databaseName);
-        clientService = new ClientService(userRepository);
+    static void initialize() {
+        accountRepository = new AccountRepositoryImpl(DATABASE_NAME);
+        clientService = new ClientServiceImpl(accountRepository);
     }
 
     @BeforeEach
-    public void initializeSampleData() {
+    void initializeSampleData() {
         this.clearTestData();
         try {
             clientNo1 = clientService.create("UniqueClientLoginNo1", "UniqueClientPasswordNo1");
             clientNo2 = clientService.create("UniqueClientLoginNo2", "UniqueClientPasswordNo2");
-        } catch (ClientServiceCreateException exception) {
-            logger.error(exception.getMessage());
+        } catch (Exception exception) {
+            log.error(exception.getMessage());
         }
     }
 
     @AfterEach
-    public void destroySampleData() {
+    void destroySampleData() {
         this.clearTestData();
     }
 
     private void clearTestData() {
         try {
-            List<Client> listOfClients = clientService.findAll();
-            for (Client client : listOfClients) {
-                clientService.delete(client.getUserID());
-            }
-        } catch (ClientServiceReadException | ClientServiceDeleteException exception) {
-            logger.error(exception.getMessage());
+            List<Client> clients = clientService.findAll();
+            clients.forEach(client -> clientService.delete(client.getId()));
+        } catch (Exception exception) {
+            log.error(exception.getMessage());
         }
     }
 
     @AfterAll
-    public static void destroy() {
-        userRepository.close();
+    static void destroy() {
+        accountRepository.close();
     }
 
     // Constructor tests
 
     @Test
-    public void clientServiceNoArgsConstructorTestPositive() {
-        ClientService testClientService = new ClientService();
-        assertNotNull(testClientService);
-    }
-
-    @Test
-    public void clientServiceAllArgsConstructorTestPositive() {
-        ClientService testClientService = new ClientService(userRepository);
+    void clientServiceAllArgsConstructorTestPositive() {
+        ClientServiceImpl testClientService = new ClientServiceImpl(accountRepository);
         assertNotNull(testClientService);
     }
 
     // Create tests
     
     @Test
-    public void clientServiceCreateClientTestPositive() throws ClientServiceCreateException {
+    void clientServiceCreateClientTestPositive() throws ClientServiceCreateException {
         String clientLogin = "SomeOtherLoginNo1";
         String clientPassword = "SomeOtherPasswordNo1";
         Client client = clientService.create(clientLogin, clientPassword);
         assertNotNull(client);
-        assertEquals(clientLogin, client.getUserLogin());
-        assertEquals(clientPassword, client.getUserPassword());
+        assertEquals(clientLogin, client.getLogin());
+        assertEquals(clientPassword, client.getPassword());
     }
 
     @Test
-    public void clientServiceCreateClientWithNullLoginThatTestNegative() {
+    void clientServiceCreateClientWithNullLoginThatTestNegative() {
         String clientLogin = null;
         String clientPassword = "SomeOtherPasswordNo1";
         assertThrows(ClientServiceCreateException.class, () -> clientService.create(clientLogin, clientPassword));
     }
 
     @Test
-    public void clientServiceCreateClientWithEmptyLoginThatTestNegative() {
+    void clientServiceCreateClientWithEmptyLoginThatTestNegative() {
         String clientLogin = "";
         String clientPassword = "SomeOtherPasswordNo1";
         assertThrows(ClientServiceCreateException.class, () -> clientService.create(clientLogin, clientPassword));
     }
 
     @Test
-    public void clientServiceCreateClientWithLoginTooShortThatTestNegative() {
+    void clientServiceCreateClientWithLoginTooShortThatTestNegative() {
         String clientLogin = "ddddfdd";
         String clientPassword = "SomeOtherPasswordNo1";
         assertThrows(ClientServiceCreateException.class, () -> clientService.create(clientLogin, clientPassword));
     }
 
     @Test
-    public void clientServiceCreateClientWithLoginTooLongThatTestNegative() {
+    void clientServiceCreateClientWithLoginTooLongThatTestNegative() {
         String clientLogin = "ddddfddddfddddfddddfd";
         String clientPassword = "SomeOtherPasswordNo1";
         assertThrows(ClientServiceCreateException.class, () -> clientService.create(clientLogin, clientPassword));
     }
 
     @Test
-    public void clientServiceCreateClientWithLoginLengthEqualTo8ThatTestPositive() throws ClientServiceCreateException {
+    void clientServiceCreateClientWithLoginLengthEqualTo8ThatTestPositive() throws ClientServiceCreateException {
         String clientLogin = "ddddfddd";
         String clientPassword = "SomeOtherPasswordNo1";
         Client client = clientService.create(clientLogin, clientPassword);
         assertNotNull(client);
-        assertEquals(clientLogin, client.getUserLogin());
-        assertEquals(clientPassword, client.getUserPassword());
+        assertEquals(clientLogin, client.getLogin());
+        assertEquals(clientPassword, client.getPassword());
     }
 
     @Test
-    public void clientServiceCreateClientWithLoginLengthEqualTo20ThatTestPositive() throws ClientServiceCreateException {
+    void clientServiceCreateClientWithLoginLengthEqualTo20ThatTestPositive() throws ClientServiceCreateException {
         String clientLogin = "ddddfddddfddddfddddf";
         String clientPassword = "SomeOtherPasswordNo1";
         Client client = clientService.create(clientLogin, clientPassword);
         assertNotNull(client);
-        assertEquals(clientLogin, client.getUserLogin());
-        assertEquals(clientPassword, client.getUserPassword());
+        assertEquals(clientLogin, client.getLogin());
+        assertEquals(clientPassword, client.getPassword());
     }
 
     @Test
-    public void clientServiceCreateClientWithLoginThatDoesNotMeetRegExTestNegative() {
+    void clientServiceCreateClientWithLoginThatDoesNotMeetRegExTestNegative() {
         String clientLogin = "Some Invalid Login";
         String clientPassword = "SomeOtherPasswordNo1";
         assertThrows(ClientServiceCreateException.class, () -> clientService.create(clientLogin, clientPassword));
@@ -146,35 +139,35 @@ public class ClientServiceTest {
     // Read tests
 
     @Test
-    public void clientServiceFindClientByIDTestPositive() throws ClientServiceReadException {
-        Client foundClient = clientService.findByUUID(clientNo1.getUserID());
+    void clientServiceFindClientByIDTestPositive() throws ClientServiceReadException {
+        Client foundClient = clientService.findByUUID(clientNo1.getId());
         assertNotNull(foundClient);
         assertEquals(clientNo1, foundClient);
     }
 
     @Test
-    public void clientServiceFindClientByIDThatIsNotInTheDatabaseTestNegative() {
+    void clientServiceFindClientByIDThatIsNotInTheDatabaseTestNegative() {
         Client client = new Client(UUID.randomUUID(), "SomeOtherLoginNo1", "SomeOtherPasswordNo1");
         assertNotNull(client);
-        assertThrows(ClientServiceClientNotFoundException.class, () -> clientService.findByUUID(client.getUserID()));
+        assertThrows(ClientServiceClientNotFoundException.class, () -> clientService.findByUUID(client.getId()));
     }
 
     @Test
-    public void clientServiceFindClientByLoginTestPositive() throws ClientServiceReadException {
-        Client foundClient = clientService.findByLogin(clientNo1.getUserLogin());
+    void clientServiceFindClientByLoginTestPositive() throws ClientServiceReadException {
+        Client foundClient = clientService.findByLogin(clientNo1.getLogin());
         assertNotNull(foundClient);
         assertEquals(clientNo1, foundClient);
     }
 
     @Test
-    public void clientServiceFindClientByLoginThatIsNotInTheDatabaseTestNegative() {
+    void clientServiceFindClientByLoginThatIsNotInTheDatabaseTestNegative() {
         Client client = new Client(UUID.randomUUID(), "SomeOtherLoginNo1", "SomeOtherPasswordNo1");
         assertNotNull(client);
-        assertThrows(ClientServiceClientNotFoundException.class, () -> clientService.findByLogin(client.getUserLogin()));
+        assertThrows(ClientServiceClientNotFoundException.class, () -> clientService.findByLogin(client.getLogin()));
     }
 
     @Test
-    public void clientServiceFindAllClientsMatchingLoginTestPositive() throws ClientServiceCreateException, ClientServiceReadException {
+    void clientServiceFindAllClientsMatchingLoginTestPositive() throws ClientServiceCreateException, ClientServiceReadException {
         clientService.create("NewClientLogin", "NewClientPassword");
         List<Client> listOfClients = clientService.findAllMatchingLogin("New");
         assertNotNull(listOfClients);
@@ -183,7 +176,7 @@ public class ClientServiceTest {
     }
 
     @Test
-    public void clientServiceFindAllClientsTestPositive() throws ClientServiceReadException {
+    void clientServiceFindAllClientsTestPositive() throws ClientServiceReadException {
         List<Client> listOfClients = clientService.findAll();
         assertNotNull(listOfClients);
         assertFalse(listOfClients.isEmpty());
@@ -193,17 +186,17 @@ public class ClientServiceTest {
     // Update tests
 
     @Test
-    public void clientServiceUpdateClientTestPositive() throws ClientServiceUpdateException, ClientServiceReadException {
-        String clientLoginBefore = clientNo1.getUserLogin();
-        String clientPasswordBefore = clientNo1.getUserPassword();
+    void clientServiceUpdateClientTestPositive() throws ClientServiceUpdateException, ClientServiceReadException {
+        String clientLoginBefore = clientNo1.getLogin();
+        String clientPasswordBefore = clientNo1.getPassword();
         String newClientLogin = "OtherNewLoginNo1";
         String newClientPassword = "OtherNewPasswordNo1";
-        clientNo1.setUserLogin(newClientLogin);
-        clientNo1.setUserPassword(newClientPassword);
+        clientNo1.setLogin(newClientLogin);
+        clientNo1.setPassword(newClientPassword);
         clientService.update(clientNo1);
-        Client foundClient = clientService.findByUUID(clientNo1.getUserID());
-        String clientLoginAfter =  foundClient.getUserLogin();
-        String clientPasswordAfter = foundClient.getUserPassword();
+        Client foundClient = clientService.findByUUID(clientNo1.getId());
+        String clientLoginAfter =  foundClient.getLogin();
+        String clientPasswordAfter = foundClient.getPassword();
         assertNotNull(clientLoginAfter);
         assertNotNull(clientPasswordAfter);
         assertEquals(newClientLogin, clientLoginAfter);
@@ -213,79 +206,79 @@ public class ClientServiceTest {
     }
 
     @Test
-    public void clientServiceUpdateClientWithNullLoginTestNegative() {
+    void clientServiceUpdateClientWithNullLoginTestNegative() {
         String clientLogin = null;
         String clientPassword = "SomeOtherPasswordNo2";
-        clientNo1.setUserLogin(clientLogin);
-        clientNo1.setUserPassword(clientPassword);
+        clientNo1.setLogin(clientLogin);
+        clientNo1.setPassword(clientPassword);
         assertThrows(ClientServiceUpdateException.class, () -> clientService.update(clientNo1));
     }
 
     @Test
-    public void clientServiceUpdateClientWithEmptyLoginTestNegative() {
+    void clientServiceUpdateClientWithEmptyLoginTestNegative() {
         String clientLogin = "";
         String clientPassword = "SomeOtherPasswordNo2";
-        clientNo1.setUserLogin(clientLogin);
-        clientNo1.setUserPassword(clientPassword);
+        clientNo1.setLogin(clientLogin);
+        clientNo1.setPassword(clientPassword);
         assertThrows(ClientServiceUpdateException.class, () -> clientService.update(clientNo1));
     }
 
     @Test
-    public void clientServiceUpdateClientWithLoginTooShortTestNegative() {
+    void clientServiceUpdateClientWithLoginTooShortTestNegative() {
         String clientLogin = "ddddfdd";
         String clientPassword = "SomeOtherPasswordNo2";
-        clientNo1.setUserLogin(clientLogin);
-        clientNo1.setUserPassword(clientPassword);
+        clientNo1.setLogin(clientLogin);
+        clientNo1.setPassword(clientPassword);
         assertThrows(ClientServiceUpdateException.class, () -> clientService.update(clientNo1));
     }
 
     @Test
-    public void clientServiceUpdateClientWithLoginTooLongTestNegative() {
+    void clientServiceUpdateClientWithLoginTooLongTestNegative() {
         String clientLogin = "ddddfddddfddddfddddfd";
         String clientPassword = "SomeOtherPasswordNo2";
-        clientNo1.setUserLogin(clientLogin);
-        clientNo1.setUserPassword(clientPassword);
+        clientNo1.setLogin(clientLogin);
+        clientNo1.setPassword(clientPassword);
         assertThrows(ClientServiceUpdateException.class, () -> clientService.update(clientNo1));
     }
 
     @Test
-    public void clientServiceUpdateClientWithLoginLengthEqualTo8TestPositive() throws ClientServiceReadException {
+    void clientServiceUpdateClientWithLoginLengthEqualTo8TestPositive() throws ClientServiceReadException {
         String clientLogin = "ddddfddd";
         String clientPassword = "SomeOtherPasswordNo2";
-        clientNo1.setUserLogin(clientLogin);
-        clientNo1.setUserPassword(clientPassword);
+        clientNo1.setLogin(clientLogin);
+        clientNo1.setPassword(clientPassword);
         assertDoesNotThrow(() -> clientService.update(clientNo1));
-        Client foundClient = clientService.findByUUID(clientNo1.getUserID());
-        assertEquals(clientLogin, foundClient.getUserLogin());
-        assertEquals(clientPassword, foundClient.getUserPassword());
+        Client foundClient = clientService.findByUUID(clientNo1.getId());
+        assertEquals(clientLogin, foundClient.getLogin());
+        assertEquals(clientPassword, foundClient.getPassword());
     }
 
     @Test
-    public void clientServiceUpdateClientWithLoginLengthEqualTo20TestPositive() throws ClientServiceReadException {
+    void clientServiceUpdateClientWithLoginLengthEqualTo20TestPositive() throws ClientServiceReadException {
         String clientLogin = "ddddfddddfddddfddddf";
         String clientPassword = "SomeOtherPasswordNo2";
-        clientNo1.setUserLogin(clientLogin);
-        clientNo1.setUserPassword(clientPassword);
+        clientNo1.setLogin(clientLogin);
+        clientNo1.setPassword(clientPassword);
         assertDoesNotThrow(() -> clientService.update(clientNo1));
-        Client foundClient = clientService.findByUUID(clientNo1.getUserID());
-        assertEquals(clientLogin, foundClient.getUserLogin());
-        assertEquals(clientPassword, foundClient.getUserPassword());
+        Client foundClient = clientService.findByUUID(clientNo1.getId());
+        assertEquals(clientLogin, foundClient.getLogin());
+        assertEquals(clientPassword, foundClient.getPassword());
     }
 
     @Test
-    public void clientServiceUpdateClientWithLoginThatViolatesRegExTestNegative() {
+    void clientServiceUpdateClientWithLoginThatViolatesRegExTestNegative() {
         String clientLogin = "Some Invalid Login";
         String clientPassword = "SomeOtherPasswordNo2";
-        clientNo1.setUserLogin(clientLogin);
-        clientNo1.setUserPassword(clientPassword);
+        clientNo1.setLogin(clientLogin);
+        clientNo1.setPassword(clientPassword);
         assertThrows(ClientServiceUpdateException.class, () -> clientService.update(clientNo1));
     }
 
     // Delete tests
 
     @Test
-    public void clientServiceDeleteClientTestPositive() throws ClientServiceReadException, ClientServiceDeleteException {
-        UUID removedClientUUID = clientNo1.getUserID();
+    void clientServiceDeleteClientTestPositive() throws ClientServiceReadException, ClientServiceDeleteException {
+        UUID removedClientUUID = clientNo1.getId();
         Client foundClient = clientService.findByUUID(removedClientUUID);
         assertNotNull(foundClient);
         assertEquals(clientNo1, foundClient);
@@ -294,52 +287,52 @@ public class ClientServiceTest {
     }
 
     @Test
-    public void clientServiceDeleteClientThatIsNotInTheDatabaseTestNegative() {
+    void clientServiceDeleteClientThatIsNotInTheDatabaseTestNegative() {
         Client client = new Client(UUID.randomUUID(), "SomeOtherClientLoginNo3", "SomeOtherClientPasswordNo3");
         assertNotNull(client);
-        assertThrows(ClientServiceDeleteException.class, () -> clientService.delete(client.getUserID()));
+        assertThrows(ClientServiceDeleteException.class, () -> clientService.delete(client.getId()));
     }
 
     // Activate tests
 
     @Test
-    public void clientServiceActivateClientTestPositive() throws ClientServiceReadException, ClientServiceDeactivationException, ClientServiceActivationException {
-        clientService.deactivate(clientNo1.getUserID());
+    void clientServiceActivateClientTestPositive() throws ClientServiceReadException, ClientServiceDeactivationException, ClientServiceActivationException {
+        clientService.deactivate(clientNo1.getId());
 
-        Client foundClient = clientService.findByUUID(clientNo1.getUserID());
+        Client foundClient = clientService.findByUUID(clientNo1.getId());
         assertNotNull(foundClient);
-        assertFalse(foundClient.isUserStatusActive());
-        clientService.activate(clientNo1.getUserID());
-        foundClient = clientService.findByUUID(clientNo1.getUserID());
+        assertFalse(foundClient.isActive());
+        clientService.activate(clientNo1.getId());
+        foundClient = clientService.findByUUID(clientNo1.getId());
         assertNotNull(foundClient);
-        assertTrue(foundClient.isUserStatusActive());
+        assertTrue(foundClient.isActive());
     }
 
     @Test
-    public void clientServiceActivateClientThatIsNotInTheDatabaseTestNegative() {
+    void clientServiceActivateClientThatIsNotInTheDatabaseTestNegative() {
         Client client = new Client(UUID.randomUUID(), "SomeOtherClientLoginNo3", "SomeOtherClientPasswordNo3");
         assertNotNull(client);
-        assertThrows(ClientServiceActivationException.class, () -> clientService.activate(client.getUserID()));
+        assertThrows(ClientServiceActivationException.class, () -> clientService.activate(client.getId()));
     }
 
     // Deactivate tests
 
     @Test
-    public void clientServiceDeactivateClientTestPositive() throws ClientServiceReadException, ClientServiceDeactivationException {
-        Client foundClient = clientService.findByUUID(clientNo1.getUserID());
+    void clientServiceDeactivateClientTestPositive() throws ClientServiceReadException, ClientServiceDeactivationException {
+        Client foundClient = clientService.findByUUID(clientNo1.getId());
         assertNotNull(foundClient);
         assertEquals(clientNo1, foundClient);
-        assertTrue(foundClient.isUserStatusActive());
-        clientService.deactivate(clientNo1.getUserID());
-        foundClient = clientService.findByUUID(clientNo1.getUserID());
+        assertTrue(foundClient.isActive());
+        clientService.deactivate(clientNo1.getId());
+        foundClient = clientService.findByUUID(clientNo1.getId());
         assertNotNull(foundClient);
-        assertFalse(foundClient.isUserStatusActive());
+        assertFalse(foundClient.isActive());
     }
 
     @Test
-    public void clientServiceDeactivateClientThatIsNotInTheDatabaseTestNegative() {
+    void clientServiceDeactivateClientThatIsNotInTheDatabaseTestNegative() {
         Client client = new Client(UUID.randomUUID(), "SomeOtherClientLoginNo3", "SomeOtherClientPasswordNo3");
         assertNotNull(client);
-        assertThrows(ClientServiceDeactivationException.class, () -> clientService.deactivate(client.getUserID()));
+        assertThrows(ClientServiceDeactivationException.class, () -> clientService.deactivate(client.getId()));
     }
 }

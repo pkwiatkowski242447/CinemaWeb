@@ -7,12 +7,12 @@ import com.auth0.jwt.interfaces.DecodedJWT;
 import io.jsonwebtoken.io.Decoders;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
-import pl.pas.gr3.cinema.consts.model.MovieConstants;
-import pl.pas.gr3.cinema.consts.model.TicketConstants;
-import pl.pas.gr3.cinema.consts.model.UserConstants;
-import pl.pas.gr3.cinema.model.Movie;
-import pl.pas.gr3.cinema.model.Ticket;
-import pl.pas.gr3.cinema.model.users.User;
+import pl.pas.gr3.cinema.util.consts.model.MovieConstants;
+import pl.pas.gr3.cinema.util.consts.model.TicketConstants;
+import pl.pas.gr3.cinema.util.consts.model.UserConstants;
+import pl.pas.gr3.cinema.entity.Movie;
+import pl.pas.gr3.cinema.entity.Ticket;
+import pl.pas.gr3.cinema.entity.account.Account;
 
 @Service
 public class JWSService {
@@ -20,13 +20,13 @@ public class JWSService {
     @Value("${security.jwt.token.secret-key:secret-value}")
     private String SECRET_KEY;
 
-    public String generateSignatureForUser(User user) {
+    public String generateSignatureForUser(Account account) {
         Algorithm algorithm = Algorithm.HMAC256(getSignInKey());
         return JWT
                 .create()
-                .withClaim(UserConstants.USER_ID, user.getUserID().toString())
-                .withClaim(UserConstants.USER_LOGIN, user.getUserLogin())
-                .withClaim(UserConstants.USER_STATUS_ACTIVE, user.isUserStatusActive())
+                .withClaim(UserConstants.USER_ID, account.getId().toString())
+                .withClaim(UserConstants.USER_LOGIN, account.getLogin())
+                .withClaim(UserConstants.USER_STATUS_ACTIVE, account.isActive())
                 .sign(algorithm);
     }
 
@@ -34,7 +34,7 @@ public class JWSService {
         Algorithm algorithm = Algorithm.HMAC256(getSignInKey());
         return JWT
                 .create()
-                .withClaim(MovieConstants.MOVIE_ID, movie.getMovieID().toString())
+                .withClaim(MovieConstants.MOVIE_ID, movie.getId().toString())
                 .sign(algorithm);
     }
 
@@ -42,10 +42,10 @@ public class JWSService {
         Algorithm algorithm = Algorithm.HMAC256(getSignInKey());
         return JWT
                 .create()
-                .withClaim(TicketConstants.TICKET_ID, ticket.getTicketID().toString())
-                .withClaim(TicketConstants.TICKET_FINAL_PRICE, ticket.getTicketPrice())
-                .withClaim(TicketConstants.USER_ID, ticket.getUserID().toString())
-                .withClaim(TicketConstants.MOVIE_ID, ticket.getMovieID().toString())
+                .withClaim(TicketConstants.TICKET_ID, ticket.getId().toString())
+                .withClaim(TicketConstants.TICKET_FINAL_PRICE, ticket.getPrice())
+                .withClaim(TicketConstants.USER_ID, ticket.getUserId().toString())
+                .withClaim(TicketConstants.MOVIE_ID, ticket.getMovieId().toString())
                 .sign(algorithm);
     }
 
@@ -55,8 +55,8 @@ public class JWSService {
         return decodedJWT.getClaim(UserConstants.USER_LOGIN).asString();
     }
 
-    public boolean verifyUserSignature(String signature, User user) {
-        String currentSignature = this.generateSignatureForUser(user);
+    public boolean verifyUserSignature(String signature, Account account) {
+        String currentSignature = this.generateSignatureForUser(account);
         return signature.equals(currentSignature);
     }
 

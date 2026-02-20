@@ -7,27 +7,28 @@ import io.restassured.http.ContentType;
 import io.restassured.response.Response;
 import io.restassured.response.ValidatableResponse;
 import io.restassured.specification.RequestSpecification;
-import org.junit.jupiter.api.*;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.extern.slf4j.Slf4j;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.springframework.http.HttpHeaders;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import pl.pas.gr3.cinema.TestConstants;
-import pl.pas.gr3.cinema.consts.model.UserConstants;
-import pl.pas.gr3.cinema.exception.repositories.UserRepositoryException;
-import pl.pas.gr3.cinema.model.users.Admin;
-import pl.pas.gr3.cinema.model.users.Client;
-import pl.pas.gr3.cinema.model.users.Staff;
-import pl.pas.gr3.cinema.repositories.impl.UserRepository;
-import pl.pas.gr3.cinema.dto.auth.UserInputDTO;
+import pl.pas.gr3.cinema.exception.not_found.MovieNotFoundException;
+import pl.pas.gr3.cinema.util.consts.model.UserConstants;
+import pl.pas.gr3.cinema.entity.account.Admin;
+import pl.pas.gr3.cinema.entity.account.Client;
+import pl.pas.gr3.cinema.entity.account.Staff;
+import pl.pas.gr3.cinema.repository.impl.AccountRepositoryImpl;
+import pl.pas.gr3.cinema.dto.auth.LoginAccountRequest;
 import pl.pas.gr3.cinema.dto.output.MovieDTO;
 import pl.pas.gr3.cinema.dto.input.MovieInputDTO;
-import pl.pas.gr3.cinema.exception.services.crud.movie.MovieServiceCreateException;
-import pl.pas.gr3.cinema.exception.services.crud.movie.MovieServiceDeleteException;
-import pl.pas.gr3.cinema.exception.services.crud.movie.MovieServiceReadException;
-import pl.pas.gr3.cinema.services.impl.MovieService;
-import pl.pas.gr3.cinema.model.Movie;
-import pl.pas.gr3.cinema.repositories.impl.MovieRepository;
+import pl.pas.gr3.cinema.service.impl.MovieServiceImpl;
+import pl.pas.gr3.cinema.entity.Movie;
+import pl.pas.gr3.cinema.repository.impl.MovieRepositoryImpl;
 
 import java.net.URL;
 import java.util.List;
@@ -35,13 +36,12 @@ import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-public class MovieControllerTest {
+@Slf4j
+class MovieControllerTest {
 
-    private static final Logger logger = LoggerFactory.getLogger(MovieControllerTest.class);
-
-    private static MovieRepository movieRepository;
-    private static UserRepository userRepository;
-    private static MovieService movieService;
+    private static MovieRepositoryImpl movieRepository;
+    private static AccountRepositoryImpl accountRepository;
+    private static MovieServiceImpl movieService;
     private static PasswordEncoder passwordEncoder;
 
     private Movie movieNo1;
@@ -52,10 +52,10 @@ public class MovieControllerTest {
     private static String passwordNotHashed;
 
     @BeforeAll
-    public static void init() {
-        movieRepository = new MovieRepository(TestConstants.databaseName);
-        userRepository = new UserRepository(TestConstants.databaseName);
-        movieService = new MovieService(movieRepository);
+    static void init() {
+        movieRepository = new MovieRepositoryImpl(TestConstants.databaseName);
+        accountRepository = new AccountRepositoryImpl(TestConstants.databaseName);
+        movieService = new MovieServiceImpl(movieRepository);
 
         passwordEncoder = new BCryptPasswordEncoder();
 
@@ -63,80 +63,72 @@ public class MovieControllerTest {
         URL resourceURL = classLoader.getResource("pas-truststore.jks");
 
         RestAssured.config = RestAssuredConfig.newConfig().sslConfig(
-                new SSLConfig().trustStore(resourceURL.getPath(), "password")
-                        .and()
-                        .port(8000)
-                        .and()
-                        .allowAllHostnames()
+            new SSLConfig().trustStore(resourceURL.getPath(), "password")
+                .and()
+                .port(8000)
+                .and()
+                .allowAllHostnames()
         );
 
         passwordNotHashed = "password";
     }
 
     @BeforeEach
-    public void initializeSampleData() {
-        this.clearCollection();
+    void initializeSampleData() {
+        clearCollection();
 
         try {
-            clientUser = userRepository.createClient("ClientLoginX", passwordEncoder.encode(passwordNotHashed));
-            staffUser = userRepository.createStaff("StaffLoginX", passwordEncoder.encode(passwordNotHashed));
-            adminUser = userRepository.createAdmin("AdminLoginX", passwordEncoder.encode(passwordNotHashed));
-        } catch (UserRepositoryException exception) {
+            clientUser = accountRepository.createClient("ClientLoginX", passwordEncoder.encode(passwordNotHashed));
+            staffUser = accountRepository.createStaff("StaffLoginX", passwordEncoder.encode(passwordNotHashed));
+            adminUser = accountRepository.createAdmin("AdminLoginX", passwordEncoder.encode(passwordNotHashed));
+        } catch (Exception exception) {
             throw new RuntimeException("Could not create sample users with userRepository object.", exception);
         }
 
         try {
             movieNo1 = movieService.create("ExampleMovieTitleNo1", 38.45, 5, 40);
             movieNo2 = movieService.create("ExampleMovieTitleNo1", 32.60, 2, 75);
-        } catch (MovieServiceCreateException exception) {
+        } catch (Exception exception) {
             throw new RuntimeException("Could not create sample movies with movieRepository object.", exception);
         }
     }
 
     @AfterEach
-    public void destroySampleData() {
-        this.clearCollection();
+    void destroySampleData() {
+        clearCollection();
     }
 
     private void clearCollection() {
         try {
-            List<Client> listOfClients = userRepository.findAllClients();
-            for (Client client : listOfClients) {
-                userRepository.delete(client.getUserID(), UserConstants.CLIENT_DISCRIMINATOR);
-            }
+            List<Client> clients = accountRepository.findAllClients();
+            clients.forEach(client -> accountRepository.delete(client.getId(), UserConstants.CLIENT_DISCRIMINATOR));
 
-            List<Admin> listOfAdmins = userRepository.findAllAdmins();
-            for (Admin admin : listOfAdmins) {
-                userRepository.delete(admin.getUserID(), UserConstants.ADMIN_DISCRIMINATOR);
-            }
+            List<Admin> admins = accountRepository.findAllAdmins();
+            admins.forEach(admin -> accountRepository.delete(admin.getId(), UserConstants.ADMIN_DISCRIMINATOR));
 
-            List<Staff> listOfStaffs = userRepository.findAllStaffs();
-            for (Staff staff : listOfStaffs) {
-                userRepository.delete(staff.getUserID(), UserConstants.STAFF_DISCRIMINATOR);
-            }
-        } catch (UserRepositoryException exception) {
+            List<Staff> staffs = accountRepository.findAllStaffs();
+            staffs.forEach(staff -> accountRepository.delete(staff.getId(), UserConstants.STAFF_DISCRIMINATOR));
+        } catch (Exception exception) {
             throw new RuntimeException("Could not delete sample users with userRepository object.", exception);
         }
 
         try {
-            List<Movie> listOfMovies = movieService.findAll();
-            for (Movie movie : listOfMovies) {
-                movieService.delete(movie.getMovieID());
-            }
-        } catch (MovieServiceReadException | MovieServiceDeleteException exception) {
+            List<Movie> movies = movieService.findAll();
+            movies.forEach(movie -> movieService.delete(movie.getId()));
+        } catch (Exception exception) {
             throw new RuntimeException("Could not delete sample movies with movieRepository object.", exception);
         }
     }
 
     @AfterAll
-    public static void destroy() {
+    static void destroy() {
         movieRepository.close();
     }
 
     // Create tests
 
     @Test
-    public void movieControllerCreateMovieAsAnUnauthenticatedUserTestNegative() {
+    void movieControllerCreateMovieAsAnUnauthenticatedUserTestNegative() {
         String movieTitle = "OtherExampleMovieTitleNo1";
         double movieBasePrice = 50.25;
         int scrRoomNumber = 11;
@@ -150,15 +142,14 @@ public class MovieControllerTest {
         requestSpecification.body(movieInputDTO);
 
         Response response = requestSpecification.post(TestConstants.moviesURL);
-        logger.debug("Response: " + response.asString());
         ValidatableResponse validatableResponse = response.then();
 
         validatableResponse.statusCode(403);
     }
 
     @Test
-    public void movieControllerCreateMovieAsAnAuthenticatedClientTestNegative() {
-        String accessToken = this.loginToAccount(new UserInputDTO(clientUser.getUserLogin(), passwordNotHashed), TestConstants.clientLoginURL);
+    void movieControllerCreateMovieAsAnAuthenticatedClientTestNegative() {
+        String accessToken = loginToAccount(new LoginAccountRequest(clientUser.getLogin(), passwordNotHashed), TestConstants.clientLoginURL);
 
         String movieTitle = "OtherExampleMovieTitleNo1";
         double movieBasePrice = 50.25;
@@ -169,20 +160,19 @@ public class MovieControllerTest {
 
         RequestSpecification requestSpecification = RestAssured.given();
         requestSpecification.contentType(ContentType.JSON);
-        requestSpecification.header("Authorization", "Bearer " + accessToken);
+        requestSpecification.header(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken);
         requestSpecification.accept(ContentType.JSON);
         requestSpecification.body(movieInputDTO);
 
         Response response = requestSpecification.post(TestConstants.moviesURL);
-        logger.debug("Response: " + response.asString());
         ValidatableResponse validatableResponse = response.then();
 
         validatableResponse.statusCode(403);
     }
 
     @Test
-    public void movieControllerCreateMovieAsAnAuthenticatedStaffTestPositive() {
-        String accessToken = this.loginToAccount(new UserInputDTO(staffUser.getUserLogin(), passwordNotHashed), TestConstants.staffLoginURL);
+    void movieControllerCreateMovieAsAnAuthenticatedStaffTestPositive() {
+        String accessToken = loginToAccount(new LoginAccountRequest(staffUser.getLogin(), passwordNotHashed), TestConstants.staffLoginURL);
 
         String movieTitle = "OtherExampleMovieTitleNo1";
         double movieBasePrice = 50.25;
@@ -193,12 +183,11 @@ public class MovieControllerTest {
 
         RequestSpecification requestSpecification = RestAssured.given();
         requestSpecification.contentType(ContentType.JSON);
-        requestSpecification.header("Authorization", "Bearer " + accessToken);
+        requestSpecification.header(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken);
         requestSpecification.accept(ContentType.JSON);
         requestSpecification.body(movieInputDTO);
 
         Response response = requestSpecification.post(TestConstants.moviesURL);
-        logger.debug("Response: " + response.asString());
         ValidatableResponse validatableResponse = response.then();
 
         validatableResponse.statusCode(201);
@@ -206,15 +195,15 @@ public class MovieControllerTest {
         MovieDTO movieDTO = response.getBody().as(MovieDTO.class);
 
         assertNotNull(movieDTO);
-        assertEquals(movieTitle, movieDTO.getMovieTitle());
-        assertEquals(movieBasePrice, movieDTO.getMovieBasePrice());
+        assertEquals(movieTitle, movieDTO.getTitle());
+        assertEquals(movieBasePrice, movieDTO.getBasePrice());
         assertEquals(scrRoomNumber, movieDTO.getScrRoomNumber());
-        assertEquals(numberOfAvailableSeats, movieDTO.getNumberOfAvailableSeats());
+        assertEquals(numberOfAvailableSeats, movieDTO.getAvailableSeats());
     }
 
     @Test
-    public void movieControllerCreateMovieAsAnAuthenticatedAdminTestNegative() {
-        String accessToken = this.loginToAccount(new UserInputDTO(adminUser.getUserLogin(), passwordNotHashed), TestConstants.adminLoginURL);
+    void movieControllerCreateMovieAsAnAuthenticatedAdminTestNegative() {
+        String accessToken = loginToAccount(new LoginAccountRequest(adminUser.getLogin(), passwordNotHashed), TestConstants.adminLoginURL);
 
         String movieTitle = "OtherExampleMovieTitleNo1";
         double movieBasePrice = 50.25;
@@ -225,20 +214,19 @@ public class MovieControllerTest {
 
         RequestSpecification requestSpecification = RestAssured.given();
         requestSpecification.contentType(ContentType.JSON);
-        requestSpecification.header("Authorization", "Bearer " + accessToken);
+        requestSpecification.header(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken);
         requestSpecification.accept(ContentType.JSON);
         requestSpecification.body(movieInputDTO);
 
         Response response = requestSpecification.post(TestConstants.moviesURL);
-        logger.debug("Response: " + response.asString());
         ValidatableResponse validatableResponse = response.then();
 
         validatableResponse.statusCode(403);
     }
 
     @Test
-    public void movieControllerCreateMovieWithNullMovieTitleAsAnAuthenticatedStaffTestNegative() {
-        String accessToken = this.loginToAccount(new UserInputDTO(staffUser.getUserLogin(), passwordNotHashed), TestConstants.staffLoginURL);
+    void movieControllerCreateMovieWithNullMovieTitleAsAnAuthenticatedStaffTestNegative() {
+        String accessToken = loginToAccount(new LoginAccountRequest(staffUser.getLogin(), passwordNotHashed), TestConstants.staffLoginURL);
 
         String movieTitle = null;
         double movieBasePrice = 50.25;
@@ -249,20 +237,19 @@ public class MovieControllerTest {
 
         RequestSpecification requestSpecification = RestAssured.given();
         requestSpecification.contentType(ContentType.JSON);
-        requestSpecification.header("Authorization", "Bearer " + accessToken);
+        requestSpecification.header(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken);
         requestSpecification.accept(ContentType.JSON);
         requestSpecification.body(movieInputDTO);
 
         Response response = requestSpecification.post(TestConstants.moviesURL);
-        logger.debug("Response: " + response.asString());
         ValidatableResponse validatableResponse = response.then();
 
         validatableResponse.statusCode(400);
     }
 
     @Test
-    public void movieControllerCreateMovieWithEmptyMovieTitleAsAnAuthenticatedStaffTestNegative() {
-        String accessToken = this.loginToAccount(new UserInputDTO(staffUser.getUserLogin(), passwordNotHashed), TestConstants.staffLoginURL);
+    void movieControllerCreateMovieWithEmptyMovieTitleAsAnAuthenticatedStaffTestNegative() {
+        String accessToken = loginToAccount(new LoginAccountRequest(staffUser.getLogin(), passwordNotHashed), TestConstants.staffLoginURL);
 
         String movieTitle = "";
         double movieBasePrice = 50.25;
@@ -273,20 +260,19 @@ public class MovieControllerTest {
 
         RequestSpecification requestSpecification = RestAssured.given();
         requestSpecification.contentType(ContentType.JSON);
-        requestSpecification.header("Authorization", "Bearer " + accessToken);
+        requestSpecification.header(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken);
         requestSpecification.accept(ContentType.JSON);
         requestSpecification.body(movieInputDTO);
 
         Response response = requestSpecification.post(TestConstants.moviesURL);
-        logger.debug("Response: " + response.asString());
         ValidatableResponse validatableResponse = response.then();
 
         validatableResponse.statusCode(400);
     }
 
     @Test
-    public void movieControllerCreateMovieWithMovieTitleTooShortAsAnAuthenticatedStaffTestNegative() {
-        String accessToken = this.loginToAccount(new UserInputDTO(staffUser.getUserLogin(), passwordNotHashed), TestConstants.staffLoginURL);
+    void movieControllerCreateMovieWithMovieTitleTooShortAsAnAuthenticatedStaffTestNegative() {
+        String accessToken = loginToAccount(new LoginAccountRequest(staffUser.getLogin(), passwordNotHashed), TestConstants.staffLoginURL);
 
         String movieTitle = "";
         double movieBasePrice = 50.25;
@@ -297,20 +283,19 @@ public class MovieControllerTest {
 
         RequestSpecification requestSpecification = RestAssured.given();
         requestSpecification.contentType(ContentType.JSON);
-        requestSpecification.header("Authorization", "Bearer " + accessToken);
+        requestSpecification.header(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken);
         requestSpecification.accept(ContentType.JSON);
         requestSpecification.body(movieInputDTO);
 
         Response response = requestSpecification.post(TestConstants.moviesURL);
-        logger.debug("Response: " + response.asString());
         ValidatableResponse validatableResponse = response.then();
 
         validatableResponse.statusCode(400);
     }
 
     @Test
-    public void movieControllerCreateMovieWithMovieTitleTooLongAsAnAuthenticatedStaffTestNegative() {
-        String accessToken = this.loginToAccount(new UserInputDTO(staffUser.getUserLogin(), passwordNotHashed), TestConstants.staffLoginURL);
+    void movieControllerCreateMovieWithMovieTitleTooLongAsAnAuthenticatedStaffTestNegative() {
+        String accessToken = loginToAccount(new LoginAccountRequest(staffUser.getLogin(), passwordNotHashed), TestConstants.staffLoginURL);
 
         String movieTitle = "ddddfddddfddddfddddfddddfddddfddddfddddfddddfddddfddddfddddfddddfddddfddddfddddfddddfddddfddddfddddfddddfddddfddddfddddfddddfddddfddddfddddfddddfddddfd";
         double movieBasePrice = 50.25;
@@ -321,20 +306,19 @@ public class MovieControllerTest {
 
         RequestSpecification requestSpecification = RestAssured.given();
         requestSpecification.contentType(ContentType.JSON);
-        requestSpecification.header("Authorization", "Bearer " + accessToken);
+        requestSpecification.header(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken);
         requestSpecification.accept(ContentType.JSON);
         requestSpecification.body(movieInputDTO);
 
         Response response = requestSpecification.post(TestConstants.moviesURL);
-        logger.debug("Response: " + response.asString());
         ValidatableResponse validatableResponse = response.then();
 
         validatableResponse.statusCode(400);
     }
 
     @Test
-    public void movieControllerCreateMovieWithMovieTitleLengthEqualTo1AsAnAuthenticatedStaffTestPositive() {
-        String accessToken = this.loginToAccount(new UserInputDTO(staffUser.getUserLogin(), passwordNotHashed), TestConstants.staffLoginURL);
+    void movieControllerCreateMovieWithMovieTitleLengthEqualTo1AsAnAuthenticatedStaffTestPositive() {
+        String accessToken = loginToAccount(new LoginAccountRequest(staffUser.getLogin(), passwordNotHashed), TestConstants.staffLoginURL);
 
         String movieTitle = "d";
         double movieBasePrice = 50.25;
@@ -345,12 +329,11 @@ public class MovieControllerTest {
 
         RequestSpecification requestSpecification = RestAssured.given();
         requestSpecification.contentType(ContentType.JSON);
-        requestSpecification.header("Authorization", "Bearer " + accessToken);
+        requestSpecification.header(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken);
         requestSpecification.accept(ContentType.JSON);
         requestSpecification.body(movieInputDTO);
 
         Response response = requestSpecification.post(TestConstants.moviesURL);
-        logger.debug("Response: " + response.asString());
         ValidatableResponse validatableResponse = response.then();
 
         validatableResponse.statusCode(201);
@@ -358,15 +341,15 @@ public class MovieControllerTest {
         MovieDTO movieDTO = response.getBody().as(MovieDTO.class);
 
         assertNotNull(movieDTO);
-        assertEquals(movieTitle, movieDTO.getMovieTitle());
-        assertEquals(movieBasePrice, movieDTO.getMovieBasePrice());
+        assertEquals(movieTitle, movieDTO.getTitle());
+        assertEquals(movieBasePrice, movieDTO.getBasePrice());
         assertEquals(scrRoomNumber, movieDTO.getScrRoomNumber());
-        assertEquals(numberOfAvailableSeats, movieDTO.getNumberOfAvailableSeats());
+        assertEquals(numberOfAvailableSeats, movieDTO.getAvailableSeats());
     }
 
     @Test
-    public void movieControllerCreateMovieWithMovieTitleLengthEqualTo150AsAnAuthenticatedStaffTestPositive() {
-        String accessToken = this.loginToAccount(new UserInputDTO(staffUser.getUserLogin(), passwordNotHashed), TestConstants.staffLoginURL);
+    void movieControllerCreateMovieWithMovieTitleLengthEqualTo150AsAnAuthenticatedStaffTestPositive() {
+        String accessToken = loginToAccount(new LoginAccountRequest(staffUser.getLogin(), passwordNotHashed), TestConstants.staffLoginURL);
 
         String movieTitle = "ddddfddddfddddfddddfddddfddddfddddfddddfddddfddddfddddfddddfddddfddddfddddfddddfddddfddddfddddfddddfddddfddddfddddfddddfddddfddddfddddfddddfddddfddddf";
         double movieBasePrice = 50.25;
@@ -377,12 +360,11 @@ public class MovieControllerTest {
 
         RequestSpecification requestSpecification = RestAssured.given();
         requestSpecification.contentType(ContentType.JSON);
-        requestSpecification.header("Authorization", "Bearer " + accessToken);
+        requestSpecification.header(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken);
         requestSpecification.accept(ContentType.JSON);
         requestSpecification.body(movieInputDTO);
 
         Response response = requestSpecification.post(TestConstants.moviesURL);
-        logger.debug("Response: " + response.asString());
         ValidatableResponse validatableResponse = response.then();
 
         validatableResponse.statusCode(201);
@@ -390,15 +372,15 @@ public class MovieControllerTest {
         MovieDTO movieDTO = response.getBody().as(MovieDTO.class);
 
         assertNotNull(movieDTO);
-        assertEquals(movieTitle, movieDTO.getMovieTitle());
-        assertEquals(movieBasePrice, movieDTO.getMovieBasePrice());
+        assertEquals(movieTitle, movieDTO.getTitle());
+        assertEquals(movieBasePrice, movieDTO.getBasePrice());
         assertEquals(scrRoomNumber, movieDTO.getScrRoomNumber());
-        assertEquals(numberOfAvailableSeats, movieDTO.getNumberOfAvailableSeats());
+        assertEquals(numberOfAvailableSeats, movieDTO.getAvailableSeats());
     }
 
     @Test
-    public void movieControllerCreateMovieWithNegativeMovieBasePriceAsAnAuthenticatedStaffTestNegative() {
-        String accessToken = this.loginToAccount(new UserInputDTO(staffUser.getUserLogin(), passwordNotHashed), TestConstants.staffLoginURL);
+    void movieControllerCreateMovieWithNegativeMovieBasePriceAsAnAuthenticatedStaffTestNegative() {
+        String accessToken = loginToAccount(new LoginAccountRequest(staffUser.getLogin(), passwordNotHashed), TestConstants.staffLoginURL);
 
         String movieTitle = "OtherExampleMovieTitleNo1";
         double movieBasePrice = -1;
@@ -409,20 +391,19 @@ public class MovieControllerTest {
 
         RequestSpecification requestSpecification = RestAssured.given();
         requestSpecification.contentType(ContentType.JSON);
-        requestSpecification.header("Authorization", "Bearer " + accessToken);
+        requestSpecification.header(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken);
         requestSpecification.accept(ContentType.JSON);
         requestSpecification.body(movieInputDTO);
 
         Response response = requestSpecification.post(TestConstants.moviesURL);
-        logger.debug("Response: " + response.asString());
         ValidatableResponse validatableResponse = response.then();
 
         validatableResponse.statusCode(400);
     }
 
     @Test
-    public void movieControllerCreateMovieWithMovieBasePriceTooHighAsAnAuthenticatedStaffTestNegative() {
-        String accessToken = this.loginToAccount(new UserInputDTO(staffUser.getUserLogin(), passwordNotHashed), TestConstants.staffLoginURL);
+    void movieControllerCreateMovieWithMovieBasePriceTooHighAsAnAuthenticatedStaffTestNegative() {
+        String accessToken = loginToAccount(new LoginAccountRequest(staffUser.getLogin(), passwordNotHashed), TestConstants.staffLoginURL);
 
         String movieTitle = "OtherExampleMovieTitleNo1";
         double movieBasePrice = 101.00;
@@ -433,20 +414,19 @@ public class MovieControllerTest {
 
         RequestSpecification requestSpecification = RestAssured.given();
         requestSpecification.contentType(ContentType.JSON);
-        requestSpecification.header("Authorization", "Bearer " + accessToken);
+        requestSpecification.header(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken);
         requestSpecification.accept(ContentType.JSON);
         requestSpecification.body(movieInputDTO);
 
         Response response = requestSpecification.post(TestConstants.moviesURL);
-        logger.debug("Response: " + response.asString());
         ValidatableResponse validatableResponse = response.then();
 
         validatableResponse.statusCode(400);
     }
 
     @Test
-    public void movieControllerCreateMovieWithMovieBasePriceEqualTo0AsAnAuthenticatedStaffTestPositive() {
-        String accessToken = this.loginToAccount(new UserInputDTO(staffUser.getUserLogin(), passwordNotHashed), TestConstants.staffLoginURL);
+    void movieControllerCreateMovieWithMovieBasePriceEqualTo0AsAnAuthenticatedStaffTestPositive() {
+        String accessToken = loginToAccount(new LoginAccountRequest(staffUser.getLogin(), passwordNotHashed), TestConstants.staffLoginURL);
 
         String movieTitle = "OtherExampleMovieTitleNo1";
         double movieBasePrice = 0;
@@ -457,12 +437,11 @@ public class MovieControllerTest {
 
         RequestSpecification requestSpecification = RestAssured.given();
         requestSpecification.contentType(ContentType.JSON);
-        requestSpecification.header("Authorization", "Bearer " + accessToken);
+        requestSpecification.header(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken);
         requestSpecification.accept(ContentType.JSON);
         requestSpecification.body(movieInputDTO);
 
         Response response = requestSpecification.post(TestConstants.moviesURL);
-        logger.debug("Response: " + response.asString());
         ValidatableResponse validatableResponse = response.then();
 
         validatableResponse.statusCode(201);
@@ -470,15 +449,15 @@ public class MovieControllerTest {
         MovieDTO movieDTO = response.getBody().as(MovieDTO.class);
 
         assertNotNull(movieDTO);
-        assertEquals(movieTitle, movieDTO.getMovieTitle());
-        assertEquals(movieBasePrice, movieDTO.getMovieBasePrice());
+        assertEquals(movieTitle, movieDTO.getTitle());
+        assertEquals(movieBasePrice, movieDTO.getBasePrice());
         assertEquals(scrRoomNumber, movieDTO.getScrRoomNumber());
-        assertEquals(numberOfAvailableSeats, movieDTO.getNumberOfAvailableSeats());
+        assertEquals(numberOfAvailableSeats, movieDTO.getAvailableSeats());
     }
 
     @Test
-    public void movieControllerCreateMovieWithMovieBasePriceEqualTo100AsAnAuthenticatedStaffTestPositive() {
-        String accessToken = this.loginToAccount(new UserInputDTO(staffUser.getUserLogin(), passwordNotHashed), TestConstants.staffLoginURL);
+    void movieControllerCreateMovieWithMovieBasePriceEqualTo100AsAnAuthenticatedStaffTestPositive() {
+        String accessToken = loginToAccount(new LoginAccountRequest(staffUser.getLogin(), passwordNotHashed), TestConstants.staffLoginURL);
 
         String movieTitle = "OtherExampleMovieTitleNo1";
         double movieBasePrice = 100.00;
@@ -489,12 +468,11 @@ public class MovieControllerTest {
 
         RequestSpecification requestSpecification = RestAssured.given();
         requestSpecification.contentType(ContentType.JSON);
-        requestSpecification.header("Authorization", "Bearer " + accessToken);
+        requestSpecification.header(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken);
         requestSpecification.accept(ContentType.JSON);
         requestSpecification.body(movieInputDTO);
 
         Response response = requestSpecification.post(TestConstants.moviesURL);
-        logger.debug("Response: " + response.asString());
         ValidatableResponse validatableResponse = response.then();
 
         validatableResponse.statusCode(201);
@@ -502,15 +480,15 @@ public class MovieControllerTest {
         MovieDTO movieDTO = response.getBody().as(MovieDTO.class);
 
         assertNotNull(movieDTO);
-        assertEquals(movieTitle, movieDTO.getMovieTitle());
-        assertEquals(movieBasePrice, movieDTO.getMovieBasePrice());
+        assertEquals(movieTitle, movieDTO.getTitle());
+        assertEquals(movieBasePrice, movieDTO.getBasePrice());
         assertEquals(scrRoomNumber, movieDTO.getScrRoomNumber());
-        assertEquals(numberOfAvailableSeats, movieDTO.getNumberOfAvailableSeats());
+        assertEquals(numberOfAvailableSeats, movieDTO.getAvailableSeats());
     }
 
     @Test
-    public void movieControllerCreateMovieWithScreeningRoomNumberEqualTo0AsAnAuthenticatedStaffTestNegative() {
-        String accessToken = this.loginToAccount(new UserInputDTO(staffUser.getUserLogin(), passwordNotHashed), TestConstants.staffLoginURL);
+    void movieControllerCreateMovieWithScreeningRoomNumberEqualTo0AsAnAuthenticatedStaffTestNegative() {
+        String accessToken = loginToAccount(new LoginAccountRequest(staffUser.getLogin(), passwordNotHashed), TestConstants.staffLoginURL);
 
         String movieTitle = "OtherExampleMovieTitleNo1";
         double movieBasePrice = 50.25;
@@ -521,20 +499,19 @@ public class MovieControllerTest {
 
         RequestSpecification requestSpecification = RestAssured.given();
         requestSpecification.contentType(ContentType.JSON);
-        requestSpecification.header("Authorization", "Bearer " + accessToken);
+        requestSpecification.header(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken);
         requestSpecification.accept(ContentType.JSON);
         requestSpecification.body(movieInputDTO);
 
         Response response = requestSpecification.post(TestConstants.moviesURL);
-        logger.debug("Response: " + response.asString());
         ValidatableResponse validatableResponse = response.then();
 
         validatableResponse.statusCode(400);
     }
 
     @Test
-    public void movieControllerCreateMovieWithScreeningRoomNumberTooHighAsAnAuthenticatedStaffTestNegative() {
-        String accessToken = this.loginToAccount(new UserInputDTO(staffUser.getUserLogin(), passwordNotHashed), TestConstants.staffLoginURL);
+    void movieControllerCreateMovieWithScreeningRoomNumberTooHighAsAnAuthenticatedStaffTestNegative() {
+        String accessToken = loginToAccount(new LoginAccountRequest(staffUser.getLogin(), passwordNotHashed), TestConstants.staffLoginURL);
 
         String movieTitle = "OtherExampleMovieTitleNo1";
         double movieBasePrice = 50.25;
@@ -545,20 +522,19 @@ public class MovieControllerTest {
 
         RequestSpecification requestSpecification = RestAssured.given();
         requestSpecification.contentType(ContentType.JSON);
-        requestSpecification.header("Authorization", "Bearer " + accessToken);
+        requestSpecification.header(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken);
         requestSpecification.accept(ContentType.JSON);
         requestSpecification.body(movieInputDTO);
 
         Response response = requestSpecification.post(TestConstants.moviesURL);
-        logger.debug("Response: " + response.asString());
         ValidatableResponse validatableResponse = response.then();
 
         validatableResponse.statusCode(400);
     }
 
     @Test
-    public void movieControllerCreateMovieWithScreeningRoomNumberEqualTo1AsAnAuthenticatedStaffTestPositive() {
-        String accessToken = this.loginToAccount(new UserInputDTO(staffUser.getUserLogin(), passwordNotHashed), TestConstants.staffLoginURL);
+    void movieControllerCreateMovieWithScreeningRoomNumberEqualTo1AsAnAuthenticatedStaffTestPositive() {
+        String accessToken = loginToAccount(new LoginAccountRequest(staffUser.getLogin(), passwordNotHashed), TestConstants.staffLoginURL);
 
         String movieTitle = "OtherExampleMovieTitleNo1";
         double movieBasePrice = 50.25;
@@ -569,12 +545,11 @@ public class MovieControllerTest {
 
         RequestSpecification requestSpecification = RestAssured.given();
         requestSpecification.contentType(ContentType.JSON);
-        requestSpecification.header("Authorization", "Bearer " + accessToken);
+        requestSpecification.header(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken);
         requestSpecification.accept(ContentType.JSON);
         requestSpecification.body(movieInputDTO);
 
         Response response = requestSpecification.post(TestConstants.moviesURL);
-        logger.debug("Response: " + response.asString());
         ValidatableResponse validatableResponse = response.then();
 
         validatableResponse.statusCode(201);
@@ -582,15 +557,15 @@ public class MovieControllerTest {
         MovieDTO movieDTO = response.getBody().as(MovieDTO.class);
 
         assertNotNull(movieDTO);
-        assertEquals(movieTitle, movieDTO.getMovieTitle());
-        assertEquals(movieBasePrice, movieDTO.getMovieBasePrice());
+        assertEquals(movieTitle, movieDTO.getTitle());
+        assertEquals(movieBasePrice, movieDTO.getBasePrice());
         assertEquals(scrRoomNumber, movieDTO.getScrRoomNumber());
-        assertEquals(numberOfAvailableSeats, movieDTO.getNumberOfAvailableSeats());
+        assertEquals(numberOfAvailableSeats, movieDTO.getAvailableSeats());
     }
 
     @Test
-    public void movieControllerCreateMovieWithScreeningRoomNumberEqualTo30TestPositive() {
-        String accessToken = this.loginToAccount(new UserInputDTO(staffUser.getUserLogin(), passwordNotHashed), TestConstants.staffLoginURL);
+    void movieControllerCreateMovieWithScreeningRoomNumberEqualTo30TestPositive() {
+        String accessToken = loginToAccount(new LoginAccountRequest(staffUser.getLogin(), passwordNotHashed), TestConstants.staffLoginURL);
 
         String movieTitle = "OtherExampleMovieTitleNo1";
         double movieBasePrice = 50.25;
@@ -601,12 +576,11 @@ public class MovieControllerTest {
 
         RequestSpecification requestSpecification = RestAssured.given();
         requestSpecification.contentType(ContentType.JSON);
-        requestSpecification.header("Authorization", "Bearer " + accessToken);
+        requestSpecification.header(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken);
         requestSpecification.accept(ContentType.JSON);
         requestSpecification.body(movieInputDTO);
 
         Response response = requestSpecification.post(TestConstants.moviesURL);
-        logger.debug("Response: " + response.asString());
         ValidatableResponse validatableResponse = response.then();
 
         validatableResponse.statusCode(201);
@@ -614,15 +588,15 @@ public class MovieControllerTest {
         MovieDTO movieDTO = response.getBody().as(MovieDTO.class);
 
         assertNotNull(movieDTO);
-        assertEquals(movieTitle, movieDTO.getMovieTitle());
-        assertEquals(movieBasePrice, movieDTO.getMovieBasePrice());
+        assertEquals(movieTitle, movieDTO.getTitle());
+        assertEquals(movieBasePrice, movieDTO.getBasePrice());
         assertEquals(scrRoomNumber, movieDTO.getScrRoomNumber());
-        assertEquals(numberOfAvailableSeats, movieDTO.getNumberOfAvailableSeats());
+        assertEquals(numberOfAvailableSeats, movieDTO.getAvailableSeats());
     }
 
     @Test
-    public void movieControllerCreateMovieWithNegativeNumberOfAvailableSeatsTestNegative() throws Exception {
-        String accessToken = this.loginToAccount(new UserInputDTO(staffUser.getUserLogin(), passwordNotHashed), TestConstants.staffLoginURL);
+    void movieControllerCreateMovieWithNegativeNumberOfAvailableSeatsTestNegative() {
+        String accessToken = loginToAccount(new LoginAccountRequest(staffUser.getLogin(), passwordNotHashed), TestConstants.staffLoginURL);
 
         String movieTitle = "OtherExampleMovieTitleNo1";
         double movieBasePrice = 50.25;
@@ -633,20 +607,19 @@ public class MovieControllerTest {
 
         RequestSpecification requestSpecification = RestAssured.given();
         requestSpecification.contentType(ContentType.JSON);
-        requestSpecification.header("Authorization", "Bearer " + accessToken);
+        requestSpecification.header(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken);
         requestSpecification.accept(ContentType.JSON);
         requestSpecification.body(movieInputDTO);
 
         Response response = requestSpecification.post(TestConstants.moviesURL);
-        logger.debug("Response: " + response.asString());
         ValidatableResponse validatableResponse = response.then();
 
         validatableResponse.statusCode(400);
     }
 
     @Test
-    public void movieControllerCreateMovieWithNumberOfAvailableSeatsTooHighTestNegative() throws Exception {
-        String accessToken = this.loginToAccount(new UserInputDTO(staffUser.getUserLogin(), passwordNotHashed), TestConstants.staffLoginURL);
+    void movieControllerCreateMovieWithNumberOfAvailableSeatsTooHighTestNegative() {
+        String accessToken = loginToAccount(new LoginAccountRequest(staffUser.getLogin(), passwordNotHashed), TestConstants.staffLoginURL);
 
         String movieTitle = "OtherExampleMovieTitleNo1";
         double movieBasePrice = 50.25;
@@ -657,20 +630,19 @@ public class MovieControllerTest {
 
         RequestSpecification requestSpecification = RestAssured.given();
         requestSpecification.contentType(ContentType.JSON);
-        requestSpecification.header("Authorization", "Bearer " + accessToken);
+        requestSpecification.header(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken);
         requestSpecification.accept(ContentType.JSON);
         requestSpecification.body(movieInputDTO);
 
         Response response = requestSpecification.post(TestConstants.moviesURL);
-        logger.debug("Response: " + response.asString());
         ValidatableResponse validatableResponse = response.then();
 
         validatableResponse.statusCode(400);
     }
 
     @Test
-    public void movieControllerCreateMovieWithNumberOfAvailableSeatsEqualTo0TestPositive() throws Exception {
-        String accessToken = this.loginToAccount(new UserInputDTO(staffUser.getUserLogin(), passwordNotHashed), TestConstants.staffLoginURL);
+    void movieControllerCreateMovieWithNumberOfAvailableSeatsEqualTo0TestPositive() {
+        String accessToken = loginToAccount(new LoginAccountRequest(staffUser.getLogin(), passwordNotHashed), TestConstants.staffLoginURL);
 
         String movieTitle = "OtherExampleMovieTitleNo1";
         double movieBasePrice = 50.25;
@@ -681,12 +653,11 @@ public class MovieControllerTest {
 
         RequestSpecification requestSpecification = RestAssured.given();
         requestSpecification.contentType(ContentType.JSON);
-        requestSpecification.header("Authorization", "Bearer " + accessToken);
+        requestSpecification.header(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken);
         requestSpecification.accept(ContentType.JSON);
         requestSpecification.body(movieInputDTO);
 
         Response response = requestSpecification.post(TestConstants.moviesURL);
-        logger.debug("Response: " + response.asString());
         ValidatableResponse validatableResponse = response.then();
 
         validatableResponse.statusCode(201);
@@ -694,15 +665,15 @@ public class MovieControllerTest {
         MovieDTO movieDTO = response.getBody().as(MovieDTO.class);
 
         assertNotNull(movieDTO);
-        assertEquals(movieTitle, movieDTO.getMovieTitle());
-        assertEquals(movieBasePrice, movieDTO.getMovieBasePrice());
+        assertEquals(movieTitle, movieDTO.getTitle());
+        assertEquals(movieBasePrice, movieDTO.getBasePrice());
         assertEquals(scrRoomNumber, movieDTO.getScrRoomNumber());
-        assertEquals(numberOfAvailableSeats, movieDTO.getNumberOfAvailableSeats());
+        assertEquals(numberOfAvailableSeats, movieDTO.getAvailableSeats());
     }
 
     @Test
-    public void movieControllerCreateMovieWithNumberOfAvailableSeatsEqualTo120TestPositive() throws Exception {
-        String accessToken = this.loginToAccount(new UserInputDTO(staffUser.getUserLogin(), passwordNotHashed), TestConstants.staffLoginURL);
+    void movieControllerCreateMovieWithNumberOfAvailableSeatsEqualTo120TestPositive() {
+        String accessToken = loginToAccount(new LoginAccountRequest(staffUser.getLogin(), passwordNotHashed), TestConstants.staffLoginURL);
 
         String movieTitle = "OtherExampleMovieTitleNo1";
         double movieBasePrice = 50.25;
@@ -713,12 +684,11 @@ public class MovieControllerTest {
 
         RequestSpecification requestSpecification = RestAssured.given();
         requestSpecification.contentType(ContentType.JSON);
-        requestSpecification.header("Authorization", "Bearer " + accessToken);
+        requestSpecification.header(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken);
         requestSpecification.accept(ContentType.JSON);
         requestSpecification.body(movieInputDTO);
 
         Response response = requestSpecification.post(TestConstants.moviesURL);
-        logger.debug("Response: " + response.asString());
         ValidatableResponse validatableResponse = response.then();
 
         validatableResponse.statusCode(201);
@@ -726,189 +696,179 @@ public class MovieControllerTest {
         MovieDTO movieDTO = response.getBody().as(MovieDTO.class);
 
         assertNotNull(movieDTO);
-        assertEquals(movieTitle, movieDTO.getMovieTitle());
-        assertEquals(movieBasePrice, movieDTO.getMovieBasePrice());
+        assertEquals(movieTitle, movieDTO.getTitle());
+        assertEquals(movieBasePrice, movieDTO.getBasePrice());
         assertEquals(scrRoomNumber, movieDTO.getScrRoomNumber());
-        assertEquals(numberOfAvailableSeats, movieDTO.getNumberOfAvailableSeats());
+        assertEquals(numberOfAvailableSeats, movieDTO.getAvailableSeats());
     }
 
     // Read tests
 
     @Test
-    public void movieControllerFindMovieByIDAsAnUnauthenticatedUserTestNegative() {
-        UUID searchedMovieID = movieNo1.getMovieID();
+    void movieControllerFindMovieByIDAsAnUnauthenticatedUserTestNegative() {
+        UUID searchedMovieID = movieNo1.getId();
         String path = TestConstants.moviesURL + "/" + searchedMovieID;
 
         RequestSpecification requestSpecification = RestAssured.given();
         requestSpecification.accept(ContentType.JSON);
 
         Response response = requestSpecification.get(path);
-        logger.debug("Response: " + response.getBody().asString());
         ValidatableResponse validatableResponse = response.then();
 
         validatableResponse.statusCode(403);
     }
 
     @Test
-    public void movieControllerFindMovieByIDAsAnAuthenticatedClientTestPositive() {
-        String accessToken = this.loginToAccount(new UserInputDTO(clientUser.getUserLogin(), passwordNotHashed), TestConstants.clientLoginURL);
+    void movieControllerFindMovieByIDAsAnAuthenticatedClientTestPositive() {
+        String accessToken = loginToAccount(new LoginAccountRequest(clientUser.getLogin(), passwordNotHashed), TestConstants.clientLoginURL);
 
-        UUID searchedMovieID = movieNo1.getMovieID();
+        UUID searchedMovieID = movieNo1.getId();
         String path = TestConstants.moviesURL + "/" + searchedMovieID;
 
         RequestSpecification requestSpecification = RestAssured.given();
         requestSpecification.accept(ContentType.JSON);
-        requestSpecification.header("Authorization", "Bearer " + accessToken);
+        requestSpecification.header(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken);
 
         Response response = requestSpecification.get(path);
-        logger.debug("Response: " + response.getBody().asString());
         ValidatableResponse validatableResponse = response.then();
 
         validatableResponse.statusCode(200);
 
         MovieDTO movieDTO = response.getBody().as(MovieDTO.class);
 
-        assertEquals(movieNo1.getMovieID(), movieDTO.getMovieID());
-        assertEquals(movieNo1.getMovieTitle(), movieDTO.getMovieTitle());
+        assertEquals(movieNo1.getId(), movieDTO.getId());
+        assertEquals(movieNo1.getTitle(), movieDTO.getTitle());
         assertEquals(movieNo1.getScrRoomNumber(), movieDTO.getScrRoomNumber());
-        assertEquals(movieNo1.getNumberOfAvailableSeats(), movieDTO.getNumberOfAvailableSeats());
+        assertEquals(movieNo1.getAvailableSeats(), movieDTO.getAvailableSeats());
     }
 
     @Test
-    public void movieControllerFindMovieByIDAsAnAuthenticatedStaffTestPositive() {
-        String accessToken = this.loginToAccount(new UserInputDTO(staffUser.getUserLogin(), passwordNotHashed), TestConstants.staffLoginURL);
+    void movieControllerFindMovieByIDAsAnAuthenticatedStaffTestPositive() {
+        String accessToken = loginToAccount(new LoginAccountRequest(staffUser.getLogin(), passwordNotHashed), TestConstants.staffLoginURL);
 
-        UUID searchedMovieID = movieNo1.getMovieID();
+        UUID searchedMovieID = movieNo1.getId();
         String path = TestConstants.moviesURL + "/" + searchedMovieID;
 
         RequestSpecification requestSpecification = RestAssured.given();
         requestSpecification.accept(ContentType.JSON);
-        requestSpecification.header("Authorization", "Bearer " + accessToken);
+        requestSpecification.header(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken);
 
         Response response = requestSpecification.get(path);
-        logger.debug("Response: " + response.getBody().asString());
         ValidatableResponse validatableResponse = response.then();
 
         validatableResponse.statusCode(200);
 
         MovieDTO movieDTO = response.getBody().as(MovieDTO.class);
 
-        assertEquals(movieNo1.getMovieID(), movieDTO.getMovieID());
-        assertEquals(movieNo1.getMovieTitle(), movieDTO.getMovieTitle());
+        assertEquals(movieNo1.getId(), movieDTO.getId());
+        assertEquals(movieNo1.getTitle(), movieDTO.getTitle());
         assertEquals(movieNo1.getScrRoomNumber(), movieDTO.getScrRoomNumber());
-        assertEquals(movieNo1.getNumberOfAvailableSeats(), movieDTO.getNumberOfAvailableSeats());
+        assertEquals(movieNo1.getAvailableSeats(), movieDTO.getAvailableSeats());
     }
 
     @Test
-    public void movieControllerFindMovieByIDAsAnAuthenticatedStaffTestNegative() {
-        String accessToken = this.loginToAccount(new UserInputDTO(adminUser.getUserLogin(), passwordNotHashed), TestConstants.adminLoginURL);
+    void movieControllerFindMovieByIDAsAnAuthenticatedStaffTestNegative() {
+        String accessToken = loginToAccount(new LoginAccountRequest(adminUser.getLogin(), passwordNotHashed), TestConstants.adminLoginURL);
 
-        UUID searchedMovieID = movieNo1.getMovieID();
+        UUID searchedMovieID = movieNo1.getId();
         String path = TestConstants.moviesURL + "/" + searchedMovieID;
 
         RequestSpecification requestSpecification = RestAssured.given();
         requestSpecification.accept(ContentType.JSON);
-        requestSpecification.header("Authorization", "Bearer " + accessToken);
+        requestSpecification.header(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken);
 
         Response response = requestSpecification.get(path);
-        logger.debug("Response: " + response.getBody().asString());
         ValidatableResponse validatableResponse = response.then();
 
         validatableResponse.statusCode(403);
     }
 
     @Test
-    public void movieControllerFindMovieByIDThatIsNotInTheDatabaseAsAnAuthenticatedClientTestNegative() {
-        String accessToken = this.loginToAccount(new UserInputDTO(clientUser.getUserLogin(), passwordNotHashed), TestConstants.clientLoginURL);
+    void movieControllerFindMovieByIDThatIsNotInTheDatabaseAsAnAuthenticatedClientTestNegative() {
+        String accessToken = loginToAccount(new LoginAccountRequest(clientUser.getLogin(), passwordNotHashed), TestConstants.clientLoginURL);
 
         UUID searchedMovieID = UUID.randomUUID();
         String path = TestConstants.moviesURL + "/" + searchedMovieID;
 
         RequestSpecification requestSpecification = RestAssured.given();
         requestSpecification.accept(ContentType.JSON);
-        requestSpecification.header("Authorization", "Bearer " + accessToken);
+        requestSpecification.header(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken);
 
         Response response = requestSpecification.get(path);
-        logger.debug("Response: " + response.getBody().asString());
         ValidatableResponse validatableResponse = response.then();
 
         validatableResponse.statusCode(404);
     }
 
     @Test
-    public void movieControllerFindMovieByIDThatIsNotInTheDatabaseAsAnAuthenticatedStaffTestNegative() {
-        String accessToken = this.loginToAccount(new UserInputDTO(staffUser.getUserLogin(), passwordNotHashed), TestConstants.staffLoginURL);
+    void movieControllerFindMovieByIDThatIsNotInTheDatabaseAsAnAuthenticatedStaffTestNegative() {
+        String accessToken = loginToAccount(new LoginAccountRequest(staffUser.getLogin(), passwordNotHashed), TestConstants.staffLoginURL);
 
         UUID searchedMovieID = UUID.randomUUID();
         String path = TestConstants.moviesURL + "/" + searchedMovieID;
 
         RequestSpecification requestSpecification = RestAssured.given();
         requestSpecification.accept(ContentType.JSON);
-        requestSpecification.header("Authorization", "Bearer " + accessToken);
+        requestSpecification.header(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken);
 
         Response response = requestSpecification.get(path);
-        logger.debug("Response: " + response.getBody().asString());
         ValidatableResponse validatableResponse = response.then();
 
         validatableResponse.statusCode(404);
     }
 
     @Test
-    public void movieControllerFindAllMoviesAsAnUnauthenticatedUserTestNegative() {
+    void movieControllerFindAllMoviesAsAnUnauthenticatedUserTestNegative() {
         String path = TestConstants.moviesURL + "/all";
         RequestSpecification requestSpecification = RestAssured.given();
         requestSpecification.contentType(ContentType.JSON);
 
         Response response = requestSpecification.get(path);
-        logger.debug("Response: " + response.getBody().asString());
         ValidatableResponse validatableResponse = response.then();
 
         validatableResponse.statusCode(403);
     }
 
     @Test
-    public void movieControllerFindAllMoviesAsAnAuthenticatedClientTestPositive() {
-        String accessToken = this.loginToAccount(new UserInputDTO(clientUser.getUserLogin(), passwordNotHashed), TestConstants.clientLoginURL);
+    void movieControllerFindAllMoviesAsAnAuthenticatedClientTestPositive() {
+        String accessToken = loginToAccount(new LoginAccountRequest(clientUser.getLogin(), passwordNotHashed), TestConstants.clientLoginURL);
 
         String path = TestConstants.moviesURL + "/all";
         RequestSpecification requestSpecification = RestAssured.given();
         requestSpecification.contentType(ContentType.JSON);
-        requestSpecification.header("Authorization", "Bearer " + accessToken);
+        requestSpecification.header(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken);
 
         Response response = requestSpecification.get(path);
-        logger.debug("Response: " + response.getBody().asString());
         ValidatableResponse validatableResponse = response.then();
 
         validatableResponse.statusCode(200);
     }
 
     @Test
-    public void movieControllerFindAllMoviesAsAnAuthenticatedStaffTestPositive() {
-        String accessToken = this.loginToAccount(new UserInputDTO(staffUser.getUserLogin(), passwordNotHashed), TestConstants.staffLoginURL);
+    void movieControllerFindAllMoviesAsAnAuthenticatedStaffTestPositive() {
+        String accessToken = loginToAccount(new LoginAccountRequest(staffUser.getLogin(), passwordNotHashed), TestConstants.staffLoginURL);
 
         String path = TestConstants.moviesURL + "/all";
         RequestSpecification requestSpecification = RestAssured.given();
         requestSpecification.contentType(ContentType.JSON);
-        requestSpecification.header("Authorization", "Bearer " + accessToken);
+        requestSpecification.header(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken);
 
         Response response = requestSpecification.get(path);
-        logger.debug("Response: " + response.getBody().asString());
         ValidatableResponse validatableResponse = response.then();
 
         validatableResponse.statusCode(200);
     }
 
     @Test
-    public void movieControllerFindAllMoviesAsAnAuthenticatedAdminTestNegative() {
-        String accessToken = this.loginToAccount(new UserInputDTO(adminUser.getUserLogin(), passwordNotHashed), TestConstants.adminLoginURL);
+    void movieControllerFindAllMoviesAsAnAuthenticatedAdminTestNegative() {
+        String accessToken = loginToAccount(new LoginAccountRequest(adminUser.getLogin(), passwordNotHashed), TestConstants.adminLoginURL);
 
         String path = TestConstants.moviesURL + "/all";
         RequestSpecification requestSpecification = RestAssured.given();
         requestSpecification.contentType(ContentType.JSON);
-        requestSpecification.header("Authorization", "Bearer " + accessToken);
+        requestSpecification.header(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken);
 
         Response response = requestSpecification.get(path);
-        logger.debug("Response: " + response.getBody().asString());
         ValidatableResponse validatableResponse = response.then();
 
         validatableResponse.statusCode(403);
@@ -917,30 +877,29 @@ public class MovieControllerTest {
     // Update tests
 
     @Test
-    public void movieControllerUpdateMovieAsAnUnauthenticatedUserTestNegative() {
-        String accessToken = this.loginToAccount(new UserInputDTO(staffUser.getUserLogin(), passwordNotHashed), TestConstants.staffLoginURL);
+    void movieControllerUpdateMovieAsAnUnauthenticatedUserTestNegative() {
+        String accessToken = loginToAccount(new LoginAccountRequest(staffUser.getLogin(), passwordNotHashed), TestConstants.staffLoginURL);
 
         RequestSpecification requestSpecification = RestAssured.given();
-        requestSpecification.header("Authorization", "Bearer " + accessToken);
+        requestSpecification.header(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken);
         requestSpecification.contentType(ContentType.JSON);
 
-        Response response = requestSpecification.get(TestConstants.moviesURL + "/" + movieNo1.getMovieID());
-        logger.debug("Response: " + response.getBody().asString());
+        Response response = requestSpecification.get(TestConstants.moviesURL + "/" + movieNo1.getId());
         ValidatableResponse validatableResponse = response.then();
         validatableResponse.statusCode(200);
 
         MovieDTO movieOutputDTO = response.getBody().as(MovieDTO.class);
-        String etagContent = response.header("ETag");
+        String etagContent = response.header(HttpHeaders.ETAG);
 
         String newMovieTitle = "SomeExampleMovieTitleNo1";
         double newMovieBasePrice = 45.27;
         int newScrRoomNumber = 7;
         int newNumberOfAvailableSeats = 11;
 
-        movieOutputDTO.setMovieTitle(newMovieTitle);
-        movieOutputDTO.setMovieBasePrice(newMovieBasePrice);
+        movieOutputDTO.setTitle(newMovieTitle);
+        movieOutputDTO.setBasePrice(newMovieBasePrice);
         movieOutputDTO.setScrRoomNumber(newScrRoomNumber);
-        movieOutputDTO.setNumberOfAvailableSeats(newNumberOfAvailableSeats);
+        movieOutputDTO.setAvailableSeats(newNumberOfAvailableSeats);
 
         requestSpecification = RestAssured.given();
         requestSpecification.contentType(ContentType.JSON);
@@ -954,36 +913,35 @@ public class MovieControllerTest {
     }
 
     @Test
-    public void movieControllerUpdateMovieAsAnAuthenticatedClientTestNegative() {
-        String accessToken = this.loginToAccount(new UserInputDTO(staffUser.getUserLogin(), passwordNotHashed), TestConstants.staffLoginURL);
+    void movieControllerUpdateMovieAsAnAuthenticatedClientTestNegative() {
+        String accessToken = loginToAccount(new LoginAccountRequest(staffUser.getLogin(), passwordNotHashed), TestConstants.staffLoginURL);
 
         RequestSpecification requestSpecification = RestAssured.given();
-        requestSpecification.header("Authorization", "Bearer " + accessToken);
+        requestSpecification.header(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken);
         requestSpecification.contentType(ContentType.JSON);
 
-        Response response = requestSpecification.get(TestConstants.moviesURL + "/" + movieNo1.getMovieID());
-        logger.debug("Response: " + response.getBody().asString());
+        Response response = requestSpecification.get(TestConstants.moviesURL + "/" + movieNo1.getId());
         ValidatableResponse validatableResponse = response.then();
         validatableResponse.statusCode(200);
 
         MovieDTO movieOutputDTO = response.getBody().as(MovieDTO.class);
-        String etagContent = response.header("ETag");
+        String etagContent = response.header(HttpHeaders.ETAG);
 
-        accessToken = this.loginToAccount(new UserInputDTO(clientUser.getUserLogin(), passwordNotHashed), TestConstants.clientLoginURL);
+        accessToken = loginToAccount(new LoginAccountRequest(clientUser.getLogin(), passwordNotHashed), TestConstants.clientLoginURL);
 
         String newMovieTitle = "SomeExampleMovieTitleNo1";
         double newMovieBasePrice = 45.27;
         int newScrRoomNumber = 7;
         int newNumberOfAvailableSeats = 11;
 
-        movieOutputDTO.setMovieTitle(newMovieTitle);
-        movieOutputDTO.setMovieBasePrice(newMovieBasePrice);
+        movieOutputDTO.setTitle(newMovieTitle);
+        movieOutputDTO.setBasePrice(newMovieBasePrice);
         movieOutputDTO.setScrRoomNumber(newScrRoomNumber);
-        movieOutputDTO.setNumberOfAvailableSeats(newNumberOfAvailableSeats);
+        movieOutputDTO.setAvailableSeats(newNumberOfAvailableSeats);
 
         requestSpecification = RestAssured.given();
         requestSpecification.contentType(ContentType.JSON);
-        requestSpecification.header("Authorization", "Bearer " + accessToken);
+        requestSpecification.header(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken);
         requestSpecification.header("If-Match", etagContent);
         requestSpecification.body(movieOutputDTO);
 
@@ -994,39 +952,38 @@ public class MovieControllerTest {
     }
 
     @Test
-    public void movieControllerUpdateMovieAsAnAuthenticatedStaffTestPositive() throws Exception {
-        String accessToken = this.loginToAccount(new UserInputDTO(staffUser.getUserLogin(), passwordNotHashed), TestConstants.staffLoginURL);
+    void movieControllerUpdateMovieAsAnAuthenticatedStaffTestPositive() {
+        String accessToken = loginToAccount(new LoginAccountRequest(staffUser.getLogin(), passwordNotHashed), TestConstants.staffLoginURL);
 
         RequestSpecification requestSpecification = RestAssured.given();
-        requestSpecification.header("Authorization", "Bearer " + accessToken);
+        requestSpecification.header(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken);
         requestSpecification.contentType(ContentType.JSON);
 
-        Response response = requestSpecification.get(TestConstants.moviesURL + "/" + movieNo1.getMovieID());
-        logger.debug("Response: " + response.getBody().asString());
+        Response response = requestSpecification.get(TestConstants.moviesURL + "/" + movieNo1.getId());
         ValidatableResponse validatableResponse = response.then();
         validatableResponse.statusCode(200);
 
         MovieDTO movieOutputDTO = response.getBody().as(MovieDTO.class);
-        String etagContent = response.header("ETag");
+        String etagContent = response.header(HttpHeaders.ETAG);
 
-        String movieTitleBefore = movieNo1.getMovieTitle();
-        double movieBasePriceBefore = movieNo1.getMovieBasePrice();
+        String movieTitleBefore = movieNo1.getTitle();
+        double movieBasePriceBefore = movieNo1.getBasePrice();
         int scrRoomNumberBefore = movieNo1.getScrRoomNumber();
-        int numberOfAvailableSeatsBefore = movieNo1.getNumberOfAvailableSeats();
+        int numberOfAvailableSeatsBefore = movieNo1.getAvailableSeats();
 
         String newMovieTitle = "SomeExampleMovieTitleNo1";
         double newMovieBasePrice = 45.27;
         int newScrRoomNumber = 7;
         int newNumberOfAvailableSeats = 11;
 
-        movieOutputDTO.setMovieTitle(newMovieTitle);
-        movieOutputDTO.setMovieBasePrice(newMovieBasePrice);
+        movieOutputDTO.setTitle(newMovieTitle);
+        movieOutputDTO.setBasePrice(newMovieBasePrice);
         movieOutputDTO.setScrRoomNumber(newScrRoomNumber);
-        movieOutputDTO.setNumberOfAvailableSeats(newNumberOfAvailableSeats);
+        movieOutputDTO.setAvailableSeats(newNumberOfAvailableSeats);
 
         requestSpecification = RestAssured.given();
         requestSpecification.contentType(ContentType.JSON);
-        requestSpecification.header("Authorization", "Bearer " + accessToken);
+        requestSpecification.header(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken);
         requestSpecification.header("If-Match", etagContent);
         requestSpecification.body(movieOutputDTO);
 
@@ -1035,12 +992,12 @@ public class MovieControllerTest {
         validatableResponse = response.then();
         validatableResponse.statusCode(204);
 
-        Movie foundMovie = movieService.findByUUID(movieNo1.getMovieID());
+        Movie foundMovie = movieService.findByUUID(movieNo1.getId());
 
-        String movieTitleAfter = foundMovie.getMovieTitle();
-        double movieBasePriceAfter = foundMovie.getMovieBasePrice();
+        String movieTitleAfter = foundMovie.getTitle();
+        double movieBasePriceAfter = foundMovie.getBasePrice();
         int scrRoomNumberAfter = foundMovie.getScrRoomNumber();
-        int numberOfAvailableSeatsAfter = foundMovie.getNumberOfAvailableSeats();
+        int numberOfAvailableSeatsAfter = foundMovie.getAvailableSeats();
 
         assertEquals(newMovieTitle, movieTitleAfter);
         assertEquals(newMovieBasePrice, movieBasePriceAfter);
@@ -1054,36 +1011,35 @@ public class MovieControllerTest {
     }
 
     @Test
-    public void movieControllerUpdateMovieAsAnAuthenticatedAdminTestNegative() {
-        String accessToken = this.loginToAccount(new UserInputDTO(staffUser.getUserLogin(), passwordNotHashed), TestConstants.staffLoginURL);
+    void movieControllerUpdateMovieAsAnAuthenticatedAdminTestNegative() {
+        String accessToken = loginToAccount(new LoginAccountRequest(staffUser.getLogin(), passwordNotHashed), TestConstants.staffLoginURL);
 
         RequestSpecification requestSpecification = RestAssured.given();
-        requestSpecification.header("Authorization", "Bearer " + accessToken);
+        requestSpecification.header(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken);
         requestSpecification.contentType(ContentType.JSON);
 
-        Response response = requestSpecification.get(TestConstants.moviesURL + "/" + movieNo1.getMovieID());
-        logger.debug("Response: " + response.getBody().asString());
+        Response response = requestSpecification.get(TestConstants.moviesURL + "/" + movieNo1.getId());
         ValidatableResponse validatableResponse = response.then();
         validatableResponse.statusCode(200);
 
         MovieDTO movieOutputDTO = response.getBody().as(MovieDTO.class);
-        String etagContent = response.header("ETag");
+        String etagContent = response.header(HttpHeaders.ETAG);
 
-        accessToken = this.loginToAccount(new UserInputDTO(adminUser.getUserLogin(), passwordNotHashed), TestConstants.adminLoginURL);
+        accessToken = loginToAccount(new LoginAccountRequest(adminUser.getLogin(), passwordNotHashed), TestConstants.adminLoginURL);
 
         String newMovieTitle = "SomeExampleMovieTitleNo1";
         double newMovieBasePrice = 45.27;
         int newScrRoomNumber = 7;
         int newNumberOfAvailableSeats = 11;
 
-        movieOutputDTO.setMovieTitle(newMovieTitle);
-        movieOutputDTO.setMovieBasePrice(newMovieBasePrice);
+        movieOutputDTO.setTitle(newMovieTitle);
+        movieOutputDTO.setBasePrice(newMovieBasePrice);
         movieOutputDTO.setScrRoomNumber(newScrRoomNumber);
-        movieOutputDTO.setNumberOfAvailableSeats(newNumberOfAvailableSeats);
+        movieOutputDTO.setAvailableSeats(newNumberOfAvailableSeats);
 
         requestSpecification = RestAssured.given();
         requestSpecification.contentType(ContentType.JSON);
-        requestSpecification.header("Authorization", "Bearer " + accessToken);
+        requestSpecification.header(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken);
         requestSpecification.header("If-Match", etagContent);
         requestSpecification.body(movieOutputDTO);
 
@@ -1094,15 +1050,14 @@ public class MovieControllerTest {
     }
 
     @Test
-    public void movieControllerUpdateMovieWithoutIfMatchHeaderAsAnAuthenticatedStaffTestPositive() {
-        String accessToken = this.loginToAccount(new UserInputDTO(staffUser.getUserLogin(), passwordNotHashed), TestConstants.staffLoginURL);
+    void movieControllerUpdateMovieWithoutIfMatchHeaderAsAnAuthenticatedStaffTestPositive() {
+        String accessToken = loginToAccount(new LoginAccountRequest(staffUser.getLogin(), passwordNotHashed), TestConstants.staffLoginURL);
 
         RequestSpecification requestSpecification = RestAssured.given();
-        requestSpecification.header("Authorization", "Bearer " + accessToken);
+        requestSpecification.header(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken);
         requestSpecification.contentType(ContentType.JSON);
 
-        Response response = requestSpecification.get(TestConstants.moviesURL + "/" + movieNo1.getMovieID());
-        logger.debug("Response: " + response.getBody().asString());
+        Response response = requestSpecification.get(TestConstants.moviesURL + "/" + movieNo1.getId());
         ValidatableResponse validatableResponse = response.then();
         validatableResponse.statusCode(200);
 
@@ -1113,14 +1068,14 @@ public class MovieControllerTest {
         int newScrRoomNumber = 7;
         int newNumberOfAvailableSeats = 11;
 
-        movieOutputDTO.setMovieTitle(newMovieTitle);
-        movieOutputDTO.setMovieBasePrice(newMovieBasePrice);
+        movieOutputDTO.setTitle(newMovieTitle);
+        movieOutputDTO.setBasePrice(newMovieBasePrice);
         movieOutputDTO.setScrRoomNumber(newScrRoomNumber);
-        movieOutputDTO.setNumberOfAvailableSeats(newNumberOfAvailableSeats);
+        movieOutputDTO.setAvailableSeats(newNumberOfAvailableSeats);
 
         requestSpecification = RestAssured.given();
         requestSpecification.contentType(ContentType.JSON);
-        requestSpecification.header("Authorization", "Bearer " + accessToken);
+        requestSpecification.header(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken);
         requestSpecification.body(movieOutputDTO);
 
         response = requestSpecification.put(TestConstants.moviesURL + "/update");
@@ -1130,26 +1085,25 @@ public class MovieControllerTest {
     }
 
     @Test
-    public void movieControllerUpdateMovieWithChangedIDAsAnAuthenticatedStaffTestPositive() {
-        String accessToken = this.loginToAccount(new UserInputDTO(staffUser.getUserLogin(), passwordNotHashed), TestConstants.staffLoginURL);
+    void movieControllerUpdateMovieWithChangedIDAsAnAuthenticatedStaffTestPositive() {
+        String accessToken = loginToAccount(new LoginAccountRequest(staffUser.getLogin(), passwordNotHashed), TestConstants.staffLoginURL);
 
         RequestSpecification requestSpecification = RestAssured.given();
-        requestSpecification.header("Authorization", "Bearer " + accessToken);
+        requestSpecification.header(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken);
         requestSpecification.contentType(ContentType.JSON);
 
-        Response response = requestSpecification.get(TestConstants.moviesURL + "/" + movieNo1.getMovieID());
-        logger.debug("Response: " + response.getBody().asString());
+        Response response = requestSpecification.get(TestConstants.moviesURL + "/" + movieNo1.getId());
         ValidatableResponse validatableResponse = response.then();
         validatableResponse.statusCode(200);
 
         MovieDTO movieOutputDTO = response.getBody().as(MovieDTO.class);
-        String etagContent = response.header("ETag");
+        String etagContent = response.header(HttpHeaders.ETAG);
 
-        movieOutputDTO.setMovieID(UUID.randomUUID());
+        movieOutputDTO.setId(UUID.randomUUID());
 
         requestSpecification = RestAssured.given();
         requestSpecification.contentType(ContentType.JSON);
-        requestSpecification.header("Authorization", "Bearer " + accessToken);
+        requestSpecification.header(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken);
         requestSpecification.header("If-Match", etagContent);
         requestSpecification.body(movieOutputDTO);
 
@@ -1160,34 +1114,33 @@ public class MovieControllerTest {
     }
 
     @Test
-    public void movieControllerUpdateMovieWithNullMovieTitleAsAnAuthenticatedStaffTestNegative() {
-        String accessToken = this.loginToAccount(new UserInputDTO(staffUser.getUserLogin(), passwordNotHashed), TestConstants.staffLoginURL);
+    void movieControllerUpdateMovieWithNullMovieTitleAsAnAuthenticatedStaffTestNegative() {
+        String accessToken = loginToAccount(new LoginAccountRequest(staffUser.getLogin(), passwordNotHashed), TestConstants.staffLoginURL);
 
         RequestSpecification requestSpecification = RestAssured.given();
-        requestSpecification.header("Authorization", "Bearer " + accessToken);
+        requestSpecification.header(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken);
         requestSpecification.contentType(ContentType.JSON);
 
-        Response response = requestSpecification.get(TestConstants.moviesURL + "/" + movieNo1.getMovieID());
-        logger.debug("Response: " + response.getBody().asString());
+        Response response = requestSpecification.get(TestConstants.moviesURL + "/" + movieNo1.getId());
         ValidatableResponse validatableResponse = response.then();
         validatableResponse.statusCode(200);
 
         MovieDTO movieOutputDTO = response.getBody().as(MovieDTO.class);
-        String etagContent = response.header("ETag");
+        String etagContent = response.header(HttpHeaders.ETAG);
 
         String newMovieTitle = null;
         double newMovieBasePrice = 45.27;
         int newScrRoomNumber = 7;
         int newNumberOfAvailableSeats = 11;
 
-        movieOutputDTO.setMovieTitle(newMovieTitle);
-        movieOutputDTO.setMovieBasePrice(newMovieBasePrice);
+        movieOutputDTO.setTitle(newMovieTitle);
+        movieOutputDTO.setBasePrice(newMovieBasePrice);
         movieOutputDTO.setScrRoomNumber(newScrRoomNumber);
-        movieOutputDTO.setNumberOfAvailableSeats(newNumberOfAvailableSeats);
+        movieOutputDTO.setAvailableSeats(newNumberOfAvailableSeats);
 
         requestSpecification = RestAssured.given();
         requestSpecification.contentType(ContentType.JSON);
-        requestSpecification.header("Authorization", "Bearer " + accessToken);
+        requestSpecification.header(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken);
         requestSpecification.header("If-Match", etagContent);
         requestSpecification.body(movieOutputDTO);
 
@@ -1198,34 +1151,33 @@ public class MovieControllerTest {
     }
 
     @Test
-    public void movieControllerUpdateMovieWithEmptyMovieTitleTestNegative() {
-        String accessToken = this.loginToAccount(new UserInputDTO(staffUser.getUserLogin(), passwordNotHashed), TestConstants.staffLoginURL);
+    void movieControllerUpdateMovieWithEmptyMovieTitleTestNegative() {
+        String accessToken = loginToAccount(new LoginAccountRequest(staffUser.getLogin(), passwordNotHashed), TestConstants.staffLoginURL);
 
         RequestSpecification requestSpecification = RestAssured.given();
-        requestSpecification.header("Authorization", "Bearer " + accessToken);
+        requestSpecification.header(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken);
         requestSpecification.contentType(ContentType.JSON);
 
-        Response response = requestSpecification.get(TestConstants.moviesURL + "/" + movieNo1.getMovieID());
-        logger.debug("Response: " + response.getBody().asString());
+        Response response = requestSpecification.get(TestConstants.moviesURL + "/" + movieNo1.getId());
         ValidatableResponse validatableResponse = response.then();
         validatableResponse.statusCode(200);
 
         MovieDTO movieOutputDTO = response.getBody().as(MovieDTO.class);
-        String etagContent = response.header("ETag");
+        String etagContent = response.header(HttpHeaders.ETAG);
 
         String newMovieTitle = "";
         double newMovieBasePrice = 45.27;
         int newScrRoomNumber = 7;
         int newNumberOfAvailableSeats = 11;
 
-        movieOutputDTO.setMovieTitle(newMovieTitle);
-        movieOutputDTO.setMovieBasePrice(newMovieBasePrice);
+        movieOutputDTO.setTitle(newMovieTitle);
+        movieOutputDTO.setBasePrice(newMovieBasePrice);
         movieOutputDTO.setScrRoomNumber(newScrRoomNumber);
-        movieOutputDTO.setNumberOfAvailableSeats(newNumberOfAvailableSeats);
+        movieOutputDTO.setAvailableSeats(newNumberOfAvailableSeats);
 
         requestSpecification = RestAssured.given();
         requestSpecification.contentType(ContentType.JSON);
-        requestSpecification.header("Authorization", "Bearer " + accessToken);
+        requestSpecification.header(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken);
         requestSpecification.header("If-Match", etagContent);
         requestSpecification.body(movieOutputDTO);
 
@@ -1236,34 +1188,33 @@ public class MovieControllerTest {
     }
 
     @Test
-    public void movieControllerUpdateMovieWithMovieTitleTooShortTestNegative() {
-        String accessToken = this.loginToAccount(new UserInputDTO(staffUser.getUserLogin(), passwordNotHashed), TestConstants.staffLoginURL);
+    void movieControllerUpdateMovieWithMovieTitleTooShortTestNegative() {
+        String accessToken = loginToAccount(new LoginAccountRequest(staffUser.getLogin(), passwordNotHashed), TestConstants.staffLoginURL);
 
         RequestSpecification requestSpecification = RestAssured.given();
-        requestSpecification.header("Authorization", "Bearer " + accessToken);
+        requestSpecification.header(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken);
         requestSpecification.contentType(ContentType.JSON);
 
-        Response response = requestSpecification.get(TestConstants.moviesURL + "/" + movieNo1.getMovieID());
-        logger.debug("Response: " + response.getBody().asString());
+        Response response = requestSpecification.get(TestConstants.moviesURL + "/" + movieNo1.getId());
         ValidatableResponse validatableResponse = response.then();
         validatableResponse.statusCode(200);
 
         MovieDTO movieOutputDTO = response.getBody().as(MovieDTO.class);
-        String etagContent = response.header("ETag");
+        String etagContent = response.header(HttpHeaders.ETAG);
 
         String newMovieTitle = "";
         double newMovieBasePrice = 45.27;
         int newScrRoomNumber = 7;
         int newNumberOfAvailableSeats = 11;
 
-        movieOutputDTO.setMovieTitle(newMovieTitle);
-        movieOutputDTO.setMovieBasePrice(newMovieBasePrice);
+        movieOutputDTO.setTitle(newMovieTitle);
+        movieOutputDTO.setBasePrice(newMovieBasePrice);
         movieOutputDTO.setScrRoomNumber(newScrRoomNumber);
-        movieOutputDTO.setNumberOfAvailableSeats(newNumberOfAvailableSeats);
+        movieOutputDTO.setAvailableSeats(newNumberOfAvailableSeats);
 
         requestSpecification = RestAssured.given();
         requestSpecification.contentType(ContentType.JSON);
-        requestSpecification.header("Authorization", "Bearer " + accessToken);
+        requestSpecification.header(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken);
         requestSpecification.header("If-Match", etagContent);
         requestSpecification.body(movieOutputDTO);
 
@@ -1274,34 +1225,33 @@ public class MovieControllerTest {
     }
 
     @Test
-    public void movieControllerUpdateMovieWithMovieTitleTooLongTestNegative() {
-        String accessToken = this.loginToAccount(new UserInputDTO(staffUser.getUserLogin(), passwordNotHashed), TestConstants.staffLoginURL);
+    void movieControllerUpdateMovieWithMovieTitleTooLongTestNegative() {
+        String accessToken = loginToAccount(new LoginAccountRequest(staffUser.getLogin(), passwordNotHashed), TestConstants.staffLoginURL);
 
         RequestSpecification requestSpecification = RestAssured.given();
-        requestSpecification.header("Authorization", "Bearer " + accessToken);
+        requestSpecification.header(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken);
         requestSpecification.contentType(ContentType.JSON);
 
-        Response response = requestSpecification.get(TestConstants.moviesURL + "/" + movieNo1.getMovieID());
-        logger.debug("Response: " + response.getBody().asString());
+        Response response = requestSpecification.get(TestConstants.moviesURL + "/" + movieNo1.getId());
         ValidatableResponse validatableResponse = response.then();
         validatableResponse.statusCode(200);
 
         MovieDTO movieOutputDTO = response.getBody().as(MovieDTO.class);
-        String etagContent = response.header("ETag");
+        String etagContent = response.header(HttpHeaders.ETAG);
 
         String newMovieTitle = "ddddfddddfddddfddddfddddfddddfddddfddddfddddfddddfddddfddddfddddfddddfddddfddddfddddfddddfddddfddddfddddfddddfddddfddddfddddfddddfddddfddddfddddfddddfd";
         double newMovieBasePrice = 45.27;
         int newScrRoomNumber = 7;
         int newNumberOfAvailableSeats = 11;
 
-        movieOutputDTO.setMovieTitle(newMovieTitle);
-        movieOutputDTO.setMovieBasePrice(newMovieBasePrice);
+        movieOutputDTO.setTitle(newMovieTitle);
+        movieOutputDTO.setBasePrice(newMovieBasePrice);
         movieOutputDTO.setScrRoomNumber(newScrRoomNumber);
-        movieOutputDTO.setNumberOfAvailableSeats(newNumberOfAvailableSeats);
+        movieOutputDTO.setAvailableSeats(newNumberOfAvailableSeats);
 
         requestSpecification = RestAssured.given();
         requestSpecification.contentType(ContentType.JSON);
-        requestSpecification.header("Authorization", "Bearer " + accessToken);
+        requestSpecification.header(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken);
         requestSpecification.header("If-Match", etagContent);
         requestSpecification.body(movieOutputDTO);
 
@@ -1312,39 +1262,38 @@ public class MovieControllerTest {
     }
 
     @Test
-    public void movieControllerUpdateMovieWithMovieTitleLengthEqualTo1TestPositive() throws Exception {
-        String accessToken = this.loginToAccount(new UserInputDTO(staffUser.getUserLogin(), passwordNotHashed), TestConstants.staffLoginURL);
+    void movieControllerUpdateMovieWithMovieTitleLengthEqualTo1TestPositive() {
+        String accessToken = loginToAccount(new LoginAccountRequest(staffUser.getLogin(), passwordNotHashed), TestConstants.staffLoginURL);
 
         RequestSpecification requestSpecification = RestAssured.given();
-        requestSpecification.header("Authorization", "Bearer " + accessToken);
+        requestSpecification.header(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken);
         requestSpecification.contentType(ContentType.JSON);
 
-        Response response = requestSpecification.get(TestConstants.moviesURL + "/" + movieNo1.getMovieID());
-        logger.debug("Response: " + response.getBody().asString());
+        Response response = requestSpecification.get(TestConstants.moviesURL + "/" + movieNo1.getId());
         ValidatableResponse validatableResponse = response.then();
         validatableResponse.statusCode(200);
 
         MovieDTO movieOutputDTO = response.getBody().as(MovieDTO.class);
-        String etagContent = response.header("ETag");
+        String etagContent = response.header(HttpHeaders.ETAG);
 
-        String movieTitleBefore = movieNo1.getMovieTitle();
-        double movieBasePriceBefore = movieNo1.getMovieBasePrice();
+        String movieTitleBefore = movieNo1.getTitle();
+        double movieBasePriceBefore = movieNo1.getBasePrice();
         int scrRoomNumberBefore = movieNo1.getScrRoomNumber();
-        int numberOfAvailableSeatsBefore = movieNo1.getNumberOfAvailableSeats();
+        int numberOfAvailableSeatsBefore = movieNo1.getAvailableSeats();
 
         String newMovieTitle = "d";
         double newMovieBasePrice = 45.27;
         int newScrRoomNumber = 7;
         int newNumberOfAvailableSeats = 11;
 
-        movieOutputDTO.setMovieTitle(newMovieTitle);
-        movieOutputDTO.setMovieBasePrice(newMovieBasePrice);
+        movieOutputDTO.setTitle(newMovieTitle);
+        movieOutputDTO.setBasePrice(newMovieBasePrice);
         movieOutputDTO.setScrRoomNumber(newScrRoomNumber);
-        movieOutputDTO.setNumberOfAvailableSeats(newNumberOfAvailableSeats);
+        movieOutputDTO.setAvailableSeats(newNumberOfAvailableSeats);
 
         requestSpecification = RestAssured.given();
         requestSpecification.contentType(ContentType.JSON);
-        requestSpecification.header("Authorization", "Bearer " + accessToken);
+        requestSpecification.header(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken);
         requestSpecification.header("If-Match", etagContent);
         requestSpecification.body(movieOutputDTO);
 
@@ -1353,12 +1302,12 @@ public class MovieControllerTest {
         validatableResponse = response.then();
         validatableResponse.statusCode(204);
 
-        Movie foundMovie = movieService.findByUUID(movieNo1.getMovieID());
+        Movie foundMovie = movieService.findByUUID(movieNo1.getId());
 
-        String movieTitleAfter = foundMovie.getMovieTitle();
-        double movieBasePriceAfter = foundMovie.getMovieBasePrice();
+        String movieTitleAfter = foundMovie.getTitle();
+        double movieBasePriceAfter = foundMovie.getBasePrice();
         int scrRoomNumberAfter = foundMovie.getScrRoomNumber();
-        int numberOfAvailableSeatsAfter = foundMovie.getNumberOfAvailableSeats();
+        int numberOfAvailableSeatsAfter = foundMovie.getAvailableSeats();
 
         assertEquals(newMovieTitle, movieTitleAfter);
         assertEquals(newMovieBasePrice, movieBasePriceAfter);
@@ -1372,39 +1321,38 @@ public class MovieControllerTest {
     }
 
     @Test
-    public void movieControllerUpdateMovieWithMovieTitleLengthEqualTo150TestPositive() throws Exception {
-        String accessToken = this.loginToAccount(new UserInputDTO(staffUser.getUserLogin(), passwordNotHashed), TestConstants.staffLoginURL);
+    void movieControllerUpdateMovieWithMovieTitleLengthEqualTo150TestPositive() {
+        String accessToken = loginToAccount(new LoginAccountRequest(staffUser.getLogin(), passwordNotHashed), TestConstants.staffLoginURL);
 
         RequestSpecification requestSpecification = RestAssured.given();
-        requestSpecification.header("Authorization", "Bearer " + accessToken);
+        requestSpecification.header(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken);
         requestSpecification.contentType(ContentType.JSON);
 
-        Response response = requestSpecification.get(TestConstants.moviesURL + "/" + movieNo1.getMovieID());
-        logger.debug("Response: " + response.getBody().asString());
+        Response response = requestSpecification.get(TestConstants.moviesURL + "/" + movieNo1.getId());
         ValidatableResponse validatableResponse = response.then();
         validatableResponse.statusCode(200);
 
         MovieDTO movieOutputDTO = response.getBody().as(MovieDTO.class);
-        String etagContent = response.header("ETag");
+        String etagContent = response.header(HttpHeaders.ETAG);
 
-        String movieTitleBefore = movieNo1.getMovieTitle();
-        double movieBasePriceBefore = movieNo1.getMovieBasePrice();
+        String movieTitleBefore = movieNo1.getTitle();
+        double movieBasePriceBefore = movieNo1.getBasePrice();
         int scrRoomNumberBefore = movieNo1.getScrRoomNumber();
-        int numberOfAvailableSeatsBefore = movieNo1.getNumberOfAvailableSeats();
+        int numberOfAvailableSeatsBefore = movieNo1.getAvailableSeats();
 
         String newMovieTitle = "ddddfddddfddddfddddfddddfddddfddddfddddfddddfddddfddddfddddfddddfddddfddddfddddfddddfddddfddddfddddfddddfddddfddddfddddfddddfddddfddddfddddfddddfddddf";
         double newMovieBasePrice = 45.27;
         int newScrRoomNumber = 7;
         int newNumberOfAvailableSeats = 11;
 
-        movieOutputDTO.setMovieTitle(newMovieTitle);
-        movieOutputDTO.setMovieBasePrice(newMovieBasePrice);
+        movieOutputDTO.setTitle(newMovieTitle);
+        movieOutputDTO.setBasePrice(newMovieBasePrice);
         movieOutputDTO.setScrRoomNumber(newScrRoomNumber);
-        movieOutputDTO.setNumberOfAvailableSeats(newNumberOfAvailableSeats);
+        movieOutputDTO.setAvailableSeats(newNumberOfAvailableSeats);
 
         requestSpecification = RestAssured.given();
         requestSpecification.contentType(ContentType.JSON);
-        requestSpecification.header("Authorization", "Bearer " + accessToken);
+        requestSpecification.header(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken);
         requestSpecification.header("If-Match", etagContent);
         requestSpecification.body(movieOutputDTO);
 
@@ -1413,12 +1361,12 @@ public class MovieControllerTest {
         validatableResponse = response.then();
         validatableResponse.statusCode(204);
 
-        Movie foundMovie = movieService.findByUUID(movieNo1.getMovieID());
+        Movie foundMovie = movieService.findByUUID(movieNo1.getId());
 
-        String movieTitleAfter = foundMovie.getMovieTitle();
-        double movieBasePriceAfter = foundMovie.getMovieBasePrice();
+        String movieTitleAfter = foundMovie.getTitle();
+        double movieBasePriceAfter = foundMovie.getBasePrice();
         int scrRoomNumberAfter = foundMovie.getScrRoomNumber();
-        int numberOfAvailableSeatsAfter = foundMovie.getNumberOfAvailableSeats();
+        int numberOfAvailableSeatsAfter = foundMovie.getAvailableSeats();
 
         assertEquals(newMovieTitle, movieTitleAfter);
         assertEquals(newMovieBasePrice, movieBasePriceAfter);
@@ -1432,34 +1380,33 @@ public class MovieControllerTest {
     }
 
     @Test
-    public void movieControllerUpdateMovieWithNegativeMovieBasePriceTestNegative() {
-        String accessToken = this.loginToAccount(new UserInputDTO(staffUser.getUserLogin(), passwordNotHashed), TestConstants.staffLoginURL);
+    void movieControllerUpdateMovieWithNegativeMovieBasePriceTestNegative() {
+        String accessToken = loginToAccount(new LoginAccountRequest(staffUser.getLogin(), passwordNotHashed), TestConstants.staffLoginURL);
 
         RequestSpecification requestSpecification = RestAssured.given();
-        requestSpecification.header("Authorization", "Bearer " + accessToken);
+        requestSpecification.header(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken);
         requestSpecification.contentType(ContentType.JSON);
 
-        Response response = requestSpecification.get(TestConstants.moviesURL + "/" + movieNo1.getMovieID());
-        logger.debug("Response: " + response.getBody().asString());
+        Response response = requestSpecification.get(TestConstants.moviesURL + "/" + movieNo1.getId());
         ValidatableResponse validatableResponse = response.then();
         validatableResponse.statusCode(200);
 
         MovieDTO movieOutputDTO = response.getBody().as(MovieDTO.class);
-        String etagContent = response.header("ETag");
+        String etagContent = response.header(HttpHeaders.ETAG);
 
         String newMovieTitle = "OtherExampleMovieTitleNo1";
         double newMovieBasePrice = -1;
         int newScrRoomNumber = 7;
         int newNumberOfAvailableSeats = 11;
 
-        movieOutputDTO.setMovieTitle(newMovieTitle);
-        movieOutputDTO.setMovieBasePrice(newMovieBasePrice);
+        movieOutputDTO.setTitle(newMovieTitle);
+        movieOutputDTO.setBasePrice(newMovieBasePrice);
         movieOutputDTO.setScrRoomNumber(newScrRoomNumber);
-        movieOutputDTO.setNumberOfAvailableSeats(newNumberOfAvailableSeats);
+        movieOutputDTO.setAvailableSeats(newNumberOfAvailableSeats);
 
         requestSpecification = RestAssured.given();
         requestSpecification.contentType(ContentType.JSON);
-        requestSpecification.header("Authorization", "Bearer " + accessToken);
+        requestSpecification.header(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken);
         requestSpecification.header("If-Match", etagContent);
         requestSpecification.body(movieOutputDTO);
 
@@ -1470,34 +1417,33 @@ public class MovieControllerTest {
     }
 
     @Test
-    public void movieControllerUpdateMovieWithMovieBasePriceTooHighTestNegative() {
-        String accessToken = this.loginToAccount(new UserInputDTO(staffUser.getUserLogin(), passwordNotHashed), TestConstants.staffLoginURL);
+    void movieControllerUpdateMovieWithMovieBasePriceTooHighTestNegative() {
+        String accessToken = loginToAccount(new LoginAccountRequest(staffUser.getLogin(), passwordNotHashed), TestConstants.staffLoginURL);
 
         RequestSpecification requestSpecification = RestAssured.given();
-        requestSpecification.header("Authorization", "Bearer " + accessToken);
+        requestSpecification.header(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken);
         requestSpecification.contentType(ContentType.JSON);
 
-        Response response = requestSpecification.get(TestConstants.moviesURL + "/" + movieNo1.getMovieID());
-        logger.debug("Response: " + response.getBody().asString());
+        Response response = requestSpecification.get(TestConstants.moviesURL + "/" + movieNo1.getId());
         ValidatableResponse validatableResponse = response.then();
         validatableResponse.statusCode(200);
 
         MovieDTO movieOutputDTO = response.getBody().as(MovieDTO.class);
-        String etagContent = response.header("ETag");
+        String etagContent = response.header(HttpHeaders.ETAG);
 
         String newMovieTitle = "OtherExampleMovieTitleNo1";
         double newMovieBasePrice = 101.00;
         int newScrRoomNumber = 7;
         int newNumberOfAvailableSeats = 11;
 
-        movieOutputDTO.setMovieTitle(newMovieTitle);
-        movieOutputDTO.setMovieBasePrice(newMovieBasePrice);
+        movieOutputDTO.setTitle(newMovieTitle);
+        movieOutputDTO.setBasePrice(newMovieBasePrice);
         movieOutputDTO.setScrRoomNumber(newScrRoomNumber);
-        movieOutputDTO.setNumberOfAvailableSeats(newNumberOfAvailableSeats);
+        movieOutputDTO.setAvailableSeats(newNumberOfAvailableSeats);
 
         requestSpecification = RestAssured.given();
         requestSpecification.contentType(ContentType.JSON);
-        requestSpecification.header("Authorization", "Bearer " + accessToken);
+        requestSpecification.header(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken);
         requestSpecification.header("If-Match", etagContent);
         requestSpecification.body(movieOutputDTO);
 
@@ -1508,39 +1454,38 @@ public class MovieControllerTest {
     }
 
     @Test
-    public void movieControllerUpdateMovieWithMovieBasePriceEqualTo0TestPositive() throws Exception {
-        String accessToken = this.loginToAccount(new UserInputDTO(staffUser.getUserLogin(), passwordNotHashed), TestConstants.staffLoginURL);
+    void movieControllerUpdateMovieWithMovieBasePriceEqualTo0TestPositive() {
+        String accessToken = loginToAccount(new LoginAccountRequest(staffUser.getLogin(), passwordNotHashed), TestConstants.staffLoginURL);
 
         RequestSpecification requestSpecification = RestAssured.given();
-        requestSpecification.header("Authorization", "Bearer " + accessToken);
+        requestSpecification.header(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken);
         requestSpecification.contentType(ContentType.JSON);
 
-        Response response = requestSpecification.get(TestConstants.moviesURL + "/" + movieNo1.getMovieID());
-        logger.debug("Response: " + response.getBody().asString());
+        Response response = requestSpecification.get(TestConstants.moviesURL + "/" + movieNo1.getId());
         ValidatableResponse validatableResponse = response.then();
         validatableResponse.statusCode(200);
 
         MovieDTO movieOutputDTO = response.getBody().as(MovieDTO.class);
-        String etagContent = response.header("ETag");
+        String etagContent = response.header(HttpHeaders.ETAG);
 
-        String movieTitleBefore = movieNo1.getMovieTitle();
-        double movieBasePriceBefore = movieNo1.getMovieBasePrice();
+        String movieTitleBefore = movieNo1.getTitle();
+        double movieBasePriceBefore = movieNo1.getBasePrice();
         int scrRoomNumberBefore = movieNo1.getScrRoomNumber();
-        int numberOfAvailableSeatsBefore = movieNo1.getNumberOfAvailableSeats();
+        int numberOfAvailableSeatsBefore = movieNo1.getAvailableSeats();
 
         String newMovieTitle = "SomeExampleMovieTitleNo1";
         double newMovieBasePrice = 0;
         int newScrRoomNumber = 7;
         int newNumberOfAvailableSeats = 11;
 
-        movieOutputDTO.setMovieTitle(newMovieTitle);
-        movieOutputDTO.setMovieBasePrice(newMovieBasePrice);
+        movieOutputDTO.setTitle(newMovieTitle);
+        movieOutputDTO.setBasePrice(newMovieBasePrice);
         movieOutputDTO.setScrRoomNumber(newScrRoomNumber);
-        movieOutputDTO.setNumberOfAvailableSeats(newNumberOfAvailableSeats);
+        movieOutputDTO.setAvailableSeats(newNumberOfAvailableSeats);
 
         requestSpecification = RestAssured.given();
         requestSpecification.contentType(ContentType.JSON);
-        requestSpecification.header("Authorization", "Bearer " + accessToken);
+        requestSpecification.header(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken);
         requestSpecification.header("If-Match", etagContent);
         requestSpecification.body(movieOutputDTO);
 
@@ -1549,12 +1494,12 @@ public class MovieControllerTest {
         validatableResponse = response.then();
         validatableResponse.statusCode(204);
 
-        Movie foundMovie = movieService.findByUUID(movieNo1.getMovieID());
+        Movie foundMovie = movieService.findByUUID(movieNo1.getId());
 
-        String movieTitleAfter = foundMovie.getMovieTitle();
-        double movieBasePriceAfter = foundMovie.getMovieBasePrice();
+        String movieTitleAfter = foundMovie.getTitle();
+        double movieBasePriceAfter = foundMovie.getBasePrice();
         int scrRoomNumberAfter = foundMovie.getScrRoomNumber();
-        int numberOfAvailableSeatsAfter = foundMovie.getNumberOfAvailableSeats();
+        int numberOfAvailableSeatsAfter = foundMovie.getAvailableSeats();
 
         assertEquals(newMovieTitle, movieTitleAfter);
         assertEquals(newMovieBasePrice, movieBasePriceAfter);
@@ -1568,39 +1513,38 @@ public class MovieControllerTest {
     }
 
     @Test
-    public void movieControllerUpdateMovieWithMovieBasePriceEqualTo100TestPositive() throws Exception {
-        String accessToken = this.loginToAccount(new UserInputDTO(staffUser.getUserLogin(), passwordNotHashed), TestConstants.staffLoginURL);
+    void movieControllerUpdateMovieWithMovieBasePriceEqualTo100TestPositive() {
+        String accessToken = loginToAccount(new LoginAccountRequest(staffUser.getLogin(), passwordNotHashed), TestConstants.staffLoginURL);
 
         RequestSpecification requestSpecification = RestAssured.given();
-        requestSpecification.header("Authorization", "Bearer " + accessToken);
+        requestSpecification.header(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken);
         requestSpecification.contentType(ContentType.JSON);
 
-        Response response = requestSpecification.get(TestConstants.moviesURL + "/" + movieNo1.getMovieID());
-        logger.debug("Response: " + response.getBody().asString());
+        Response response = requestSpecification.get(TestConstants.moviesURL + "/" + movieNo1.getId());
         ValidatableResponse validatableResponse = response.then();
         validatableResponse.statusCode(200);
 
         MovieDTO movieOutputDTO = response.getBody().as(MovieDTO.class);
-        String etagContent = response.header("ETag");
+        String etagContent = response.header(HttpHeaders.ETAG);
 
-        String movieTitleBefore = movieNo1.getMovieTitle();
-        double movieBasePriceBefore = movieNo1.getMovieBasePrice();
+        String movieTitleBefore = movieNo1.getTitle();
+        double movieBasePriceBefore = movieNo1.getBasePrice();
         int scrRoomNumberBefore = movieNo1.getScrRoomNumber();
-        int numberOfAvailableSeatsBefore = movieNo1.getNumberOfAvailableSeats();
+        int numberOfAvailableSeatsBefore = movieNo1.getAvailableSeats();
 
         String newMovieTitle = "SomeExampleMovieTitleNo1";
         double newMovieBasePrice = 100.00;
         int newScrRoomNumber = 7;
         int newNumberOfAvailableSeats = 11;
 
-        movieOutputDTO.setMovieTitle(newMovieTitle);
-        movieOutputDTO.setMovieBasePrice(newMovieBasePrice);
+        movieOutputDTO.setTitle(newMovieTitle);
+        movieOutputDTO.setBasePrice(newMovieBasePrice);
         movieOutputDTO.setScrRoomNumber(newScrRoomNumber);
-        movieOutputDTO.setNumberOfAvailableSeats(newNumberOfAvailableSeats);
+        movieOutputDTO.setAvailableSeats(newNumberOfAvailableSeats);
 
         requestSpecification = RestAssured.given();
         requestSpecification.contentType(ContentType.JSON);
-        requestSpecification.header("Authorization", "Bearer " + accessToken);
+        requestSpecification.header(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken);
         requestSpecification.header("If-Match", etagContent);
         requestSpecification.body(movieOutputDTO);
 
@@ -1609,12 +1553,12 @@ public class MovieControllerTest {
         validatableResponse = response.then();
         validatableResponse.statusCode(204);
 
-        Movie foundMovie = movieService.findByUUID(movieNo1.getMovieID());
+        Movie foundMovie = movieService.findByUUID(movieNo1.getId());
 
-        String movieTitleAfter = foundMovie.getMovieTitle();
-        double movieBasePriceAfter = foundMovie.getMovieBasePrice();
+        String movieTitleAfter = foundMovie.getTitle();
+        double movieBasePriceAfter = foundMovie.getBasePrice();
         int scrRoomNumberAfter = foundMovie.getScrRoomNumber();
-        int numberOfAvailableSeatsAfter = foundMovie.getNumberOfAvailableSeats();
+        int numberOfAvailableSeatsAfter = foundMovie.getAvailableSeats();
 
         assertEquals(newMovieTitle, movieTitleAfter);
         assertEquals(newMovieBasePrice, movieBasePriceAfter);
@@ -1628,34 +1572,33 @@ public class MovieControllerTest {
     }
 
     @Test
-    public void movieControllerUpdateMovieWithScreeningRoomNumberEqualTo0TestNegative() {
-        String accessToken = this.loginToAccount(new UserInputDTO(staffUser.getUserLogin(), passwordNotHashed), TestConstants.staffLoginURL);
+    void movieControllerUpdateMovieWithScreeningRoomNumberEqualTo0TestNegative() {
+        String accessToken = loginToAccount(new LoginAccountRequest(staffUser.getLogin(), passwordNotHashed), TestConstants.staffLoginURL);
 
         RequestSpecification requestSpecification = RestAssured.given();
-        requestSpecification.header("Authorization", "Bearer " + accessToken);
+        requestSpecification.header(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken);
         requestSpecification.contentType(ContentType.JSON);
 
-        Response response = requestSpecification.get(TestConstants.moviesURL + "/" + movieNo1.getMovieID());
-        logger.debug("Response: " + response.getBody().asString());
+        Response response = requestSpecification.get(TestConstants.moviesURL + "/" + movieNo1.getId());
         ValidatableResponse validatableResponse = response.then();
         validatableResponse.statusCode(200);
 
         MovieDTO movieOutputDTO = response.getBody().as(MovieDTO.class);
-        String etagContent = response.header("ETag");
+        String etagContent = response.header(HttpHeaders.ETAG);
 
         String newMovieTitle = "OtherExampleMovieTitleNo1";
         double newMovieBasePrice = 45.27;
         int newScrRoomNumber = 0;
         int newNumberOfAvailableSeats = 11;
 
-        movieOutputDTO.setMovieTitle(newMovieTitle);
-        movieOutputDTO.setMovieBasePrice(newMovieBasePrice);
+        movieOutputDTO.setTitle(newMovieTitle);
+        movieOutputDTO.setBasePrice(newMovieBasePrice);
         movieOutputDTO.setScrRoomNumber(newScrRoomNumber);
-        movieOutputDTO.setNumberOfAvailableSeats(newNumberOfAvailableSeats);
+        movieOutputDTO.setAvailableSeats(newNumberOfAvailableSeats);
 
         requestSpecification = RestAssured.given();
         requestSpecification.contentType(ContentType.JSON);
-        requestSpecification.header("Authorization", "Bearer " + accessToken);
+        requestSpecification.header(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken);
         requestSpecification.header("If-Match", etagContent);
         requestSpecification.body(movieOutputDTO);
 
@@ -1666,34 +1609,33 @@ public class MovieControllerTest {
     }
 
     @Test
-    public void movieControllerUpdateMovieWithScreeningRoomNumberTooHighTestNegative() {
-        String accessToken = this.loginToAccount(new UserInputDTO(staffUser.getUserLogin(), passwordNotHashed), TestConstants.staffLoginURL);
+    void movieControllerUpdateMovieWithScreeningRoomNumberTooHighTestNegative() {
+        String accessToken = loginToAccount(new LoginAccountRequest(staffUser.getLogin(), passwordNotHashed), TestConstants.staffLoginURL);
 
         RequestSpecification requestSpecification = RestAssured.given();
-        requestSpecification.header("Authorization", "Bearer " + accessToken);
+        requestSpecification.header(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken);
         requestSpecification.contentType(ContentType.JSON);
 
-        Response response = requestSpecification.get(TestConstants.moviesURL + "/" + movieNo1.getMovieID());
-        logger.debug("Response: " + response.getBody().asString());
+        Response response = requestSpecification.get(TestConstants.moviesURL + "/" + movieNo1.getId());
         ValidatableResponse validatableResponse = response.then();
         validatableResponse.statusCode(200);
 
         MovieDTO movieOutputDTO = response.getBody().as(MovieDTO.class);
-        String etagContent = response.header("ETag");
+        String etagContent = response.header(HttpHeaders.ETAG);
 
         String newMovieTitle = "OtherExampleMovieTitleNo1";
         double newMovieBasePrice = 45.27;
         int newScrRoomNumber = 31;
         int newNumberOfAvailableSeats = 11;
 
-        movieOutputDTO.setMovieTitle(newMovieTitle);
-        movieOutputDTO.setMovieBasePrice(newMovieBasePrice);
+        movieOutputDTO.setTitle(newMovieTitle);
+        movieOutputDTO.setBasePrice(newMovieBasePrice);
         movieOutputDTO.setScrRoomNumber(newScrRoomNumber);
-        movieOutputDTO.setNumberOfAvailableSeats(newNumberOfAvailableSeats);
+        movieOutputDTO.setAvailableSeats(newNumberOfAvailableSeats);
 
         requestSpecification = RestAssured.given();
         requestSpecification.contentType(ContentType.JSON);
-        requestSpecification.header("Authorization", "Bearer " + accessToken);
+        requestSpecification.header(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken);
         requestSpecification.header("If-Match", etagContent);
         requestSpecification.body(movieOutputDTO);
 
@@ -1704,39 +1646,38 @@ public class MovieControllerTest {
     }
 
     @Test
-    public void movieControllerUpdateMovieWithScreeningRoomNumberEqualTo1TestPositive() throws Exception {
-        String accessToken = this.loginToAccount(new UserInputDTO(staffUser.getUserLogin(), passwordNotHashed), TestConstants.staffLoginURL);
+    void movieControllerUpdateMovieWithScreeningRoomNumberEqualTo1TestPositive() {
+        String accessToken = loginToAccount(new LoginAccountRequest(staffUser.getLogin(), passwordNotHashed), TestConstants.staffLoginURL);
 
         RequestSpecification requestSpecification = RestAssured.given();
-        requestSpecification.header("Authorization", "Bearer " + accessToken);
+        requestSpecification.header(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken);
         requestSpecification.contentType(ContentType.JSON);
 
-        Response response = requestSpecification.get(TestConstants.moviesURL + "/" + movieNo1.getMovieID());
-        logger.debug("Response: " + response.getBody().asString());
+        Response response = requestSpecification.get(TestConstants.moviesURL + "/" + movieNo1.getId());
         ValidatableResponse validatableResponse = response.then();
         validatableResponse.statusCode(200);
 
         MovieDTO movieOutputDTO = response.getBody().as(MovieDTO.class);
-        String etagContent = response.header("ETag");
+        String etagContent = response.header(HttpHeaders.ETAG);
 
-        String movieTitleBefore = movieNo1.getMovieTitle();
-        double movieBasePriceBefore = movieNo1.getMovieBasePrice();
+        String movieTitleBefore = movieNo1.getTitle();
+        double movieBasePriceBefore = movieNo1.getBasePrice();
         int scrRoomNumberBefore = movieNo1.getScrRoomNumber();
-        int numberOfAvailableSeatsBefore = movieNo1.getNumberOfAvailableSeats();
+        int numberOfAvailableSeatsBefore = movieNo1.getAvailableSeats();
 
         String newMovieTitle = "SomeExampleMovieTitleNo1";
         double newMovieBasePrice = 45.27;
         int newScrRoomNumber = 1;
         int newNumberOfAvailableSeats = 11;
 
-        movieOutputDTO.setMovieTitle(newMovieTitle);
-        movieOutputDTO.setMovieBasePrice(newMovieBasePrice);
+        movieOutputDTO.setTitle(newMovieTitle);
+        movieOutputDTO.setBasePrice(newMovieBasePrice);
         movieOutputDTO.setScrRoomNumber(newScrRoomNumber);
-        movieOutputDTO.setNumberOfAvailableSeats(newNumberOfAvailableSeats);
+        movieOutputDTO.setAvailableSeats(newNumberOfAvailableSeats);
 
         requestSpecification = RestAssured.given();
         requestSpecification.contentType(ContentType.JSON);
-        requestSpecification.header("Authorization", "Bearer " + accessToken);
+        requestSpecification.header(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken);
         requestSpecification.header("If-Match", etagContent);
         requestSpecification.body(movieOutputDTO);
 
@@ -1745,12 +1686,12 @@ public class MovieControllerTest {
         validatableResponse = response.then();
         validatableResponse.statusCode(204);
 
-        Movie foundMovie = movieService.findByUUID(movieNo1.getMovieID());
+        Movie foundMovie = movieService.findByUUID(movieNo1.getId());
 
-        String movieTitleAfter = foundMovie.getMovieTitle();
-        double movieBasePriceAfter = foundMovie.getMovieBasePrice();
+        String movieTitleAfter = foundMovie.getTitle();
+        double movieBasePriceAfter = foundMovie.getBasePrice();
         int scrRoomNumberAfter = foundMovie.getScrRoomNumber();
-        int numberOfAvailableSeatsAfter = foundMovie.getNumberOfAvailableSeats();
+        int numberOfAvailableSeatsAfter = foundMovie.getAvailableSeats();
 
         assertEquals(newMovieTitle, movieTitleAfter);
         assertEquals(newMovieBasePrice, movieBasePriceAfter);
@@ -1764,39 +1705,38 @@ public class MovieControllerTest {
     }
 
     @Test
-    public void movieControllerUpdateMovieWithScreeningRoomNumberEqualTo30TestPositive() throws Exception {
-        String accessToken = this.loginToAccount(new UserInputDTO(staffUser.getUserLogin(), passwordNotHashed), TestConstants.staffLoginURL);
+    void movieControllerUpdateMovieWithScreeningRoomNumberEqualTo30TestPositive() {
+        String accessToken = loginToAccount(new LoginAccountRequest(staffUser.getLogin(), passwordNotHashed), TestConstants.staffLoginURL);
 
         RequestSpecification requestSpecification = RestAssured.given();
-        requestSpecification.header("Authorization", "Bearer " + accessToken);
+        requestSpecification.header(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken);
         requestSpecification.contentType(ContentType.JSON);
 
-        Response response = requestSpecification.get(TestConstants.moviesURL + "/" + movieNo1.getMovieID());
-        logger.debug("Response: " + response.getBody().asString());
+        Response response = requestSpecification.get(TestConstants.moviesURL + "/" + movieNo1.getId());
         ValidatableResponse validatableResponse = response.then();
         validatableResponse.statusCode(200);
 
         MovieDTO movieOutputDTO = response.getBody().as(MovieDTO.class);
-        String etagContent = response.header("ETag");
+        String etagContent = response.header(HttpHeaders.ETAG);
 
-        String movieTitleBefore = movieNo1.getMovieTitle();
-        double movieBasePriceBefore = movieNo1.getMovieBasePrice();
+        String movieTitleBefore = movieNo1.getTitle();
+        double movieBasePriceBefore = movieNo1.getBasePrice();
         int scrRoomNumberBefore = movieNo1.getScrRoomNumber();
-        int numberOfAvailableSeatsBefore = movieNo1.getNumberOfAvailableSeats();
+        int numberOfAvailableSeatsBefore = movieNo1.getAvailableSeats();
 
         String newMovieTitle = "SomeExampleMovieTitleNo1";
         double newMovieBasePrice = 45.27;
         int newScrRoomNumber = 30;
         int newNumberOfAvailableSeats = 11;
 
-        movieOutputDTO.setMovieTitle(newMovieTitle);
-        movieOutputDTO.setMovieBasePrice(newMovieBasePrice);
+        movieOutputDTO.setTitle(newMovieTitle);
+        movieOutputDTO.setBasePrice(newMovieBasePrice);
         movieOutputDTO.setScrRoomNumber(newScrRoomNumber);
-        movieOutputDTO.setNumberOfAvailableSeats(newNumberOfAvailableSeats);
+        movieOutputDTO.setAvailableSeats(newNumberOfAvailableSeats);
 
         requestSpecification = RestAssured.given();
         requestSpecification.contentType(ContentType.JSON);
-        requestSpecification.header("Authorization", "Bearer " + accessToken);
+        requestSpecification.header(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken);
         requestSpecification.header("If-Match", etagContent);
         requestSpecification.body(movieOutputDTO);
 
@@ -1805,12 +1745,12 @@ public class MovieControllerTest {
         validatableResponse = response.then();
         validatableResponse.statusCode(204);
 
-        Movie foundMovie = movieService.findByUUID(movieNo1.getMovieID());
+        Movie foundMovie = movieService.findByUUID(movieNo1.getId());
 
-        String movieTitleAfter = foundMovie.getMovieTitle();
-        double movieBasePriceAfter = foundMovie.getMovieBasePrice();
+        String movieTitleAfter = foundMovie.getTitle();
+        double movieBasePriceAfter = foundMovie.getBasePrice();
         int scrRoomNumberAfter = foundMovie.getScrRoomNumber();
-        int numberOfAvailableSeatsAfter = foundMovie.getNumberOfAvailableSeats();
+        int numberOfAvailableSeatsAfter = foundMovie.getAvailableSeats();
 
         assertEquals(newMovieTitle, movieTitleAfter);
         assertEquals(newMovieBasePrice, movieBasePriceAfter);
@@ -1824,34 +1764,33 @@ public class MovieControllerTest {
     }
 
     @Test
-    public void movieControllerUpdateMovieWithNegativeNumberOfAvailableSeatsTestNegative() {
-        String accessToken = this.loginToAccount(new UserInputDTO(staffUser.getUserLogin(), passwordNotHashed), TestConstants.staffLoginURL);
+    void movieControllerUpdateMovieWithNegativeNumberOfAvailableSeatsTestNegative() {
+        String accessToken = loginToAccount(new LoginAccountRequest(staffUser.getLogin(), passwordNotHashed), TestConstants.staffLoginURL);
 
         RequestSpecification requestSpecification = RestAssured.given();
-        requestSpecification.header("Authorization", "Bearer " + accessToken);
+        requestSpecification.header(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken);
         requestSpecification.contentType(ContentType.JSON);
 
-        Response response = requestSpecification.get(TestConstants.moviesURL + "/" + movieNo1.getMovieID());
-        logger.debug("Response: " + response.getBody().asString());
+        Response response = requestSpecification.get(TestConstants.moviesURL + "/" + movieNo1.getId());
         ValidatableResponse validatableResponse = response.then();
         validatableResponse.statusCode(200);
 
         MovieDTO movieOutputDTO = response.getBody().as(MovieDTO.class);
-        String etagContent = response.header("ETag");
+        String etagContent = response.header(HttpHeaders.ETAG);
 
         String newMovieTitle = "OtherExampleMovieTitleNo1";
         double newMovieBasePrice = 45.27;
         int newScrRoomNumber = 7;
         int newNumberOfAvailableSeats = -1;
 
-        movieOutputDTO.setMovieTitle(newMovieTitle);
-        movieOutputDTO.setMovieBasePrice(newMovieBasePrice);
+        movieOutputDTO.setTitle(newMovieTitle);
+        movieOutputDTO.setBasePrice(newMovieBasePrice);
         movieOutputDTO.setScrRoomNumber(newScrRoomNumber);
-        movieOutputDTO.setNumberOfAvailableSeats(newNumberOfAvailableSeats);
+        movieOutputDTO.setAvailableSeats(newNumberOfAvailableSeats);
 
         requestSpecification = RestAssured.given();
         requestSpecification.contentType(ContentType.JSON);
-        requestSpecification.header("Authorization", "Bearer " + accessToken);
+        requestSpecification.header(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken);
         requestSpecification.header("If-Match", etagContent);
         requestSpecification.body(movieOutputDTO);
 
@@ -1862,34 +1801,33 @@ public class MovieControllerTest {
     }
 
     @Test
-    public void movieControllerUpdateMovieWithNumberOfAvailableSeatsTooHighTestNegative() {
-        String accessToken = this.loginToAccount(new UserInputDTO(staffUser.getUserLogin(), passwordNotHashed), TestConstants.staffLoginURL);
+    void movieControllerUpdateMovieWithNumberOfAvailableSeatsTooHighTestNegative() {
+        String accessToken = loginToAccount(new LoginAccountRequest(staffUser.getLogin(), passwordNotHashed), TestConstants.staffLoginURL);
 
         RequestSpecification requestSpecification = RestAssured.given();
-        requestSpecification.header("Authorization", "Bearer " + accessToken);
+        requestSpecification.header(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken);
         requestSpecification.contentType(ContentType.JSON);
 
-        Response response = requestSpecification.get(TestConstants.moviesURL + "/" + movieNo1.getMovieID());
-        logger.debug("Response: " + response.getBody().asString());
+        Response response = requestSpecification.get(TestConstants.moviesURL + "/" + movieNo1.getId());
         ValidatableResponse validatableResponse = response.then();
         validatableResponse.statusCode(200);
 
         MovieDTO movieOutputDTO = response.getBody().as(MovieDTO.class);
-        String etagContent = response.header("ETag");
+        String etagContent = response.header(HttpHeaders.ETAG);
 
         String newMovieTitle = "OtherExampleMovieTitleNo1";
         double newMovieBasePrice = 45.27;
         int newScrRoomNumber = 7;
         int newNumberOfAvailableSeats = 121;
 
-        movieOutputDTO.setMovieTitle(newMovieTitle);
-        movieOutputDTO.setMovieBasePrice(newMovieBasePrice);
+        movieOutputDTO.setTitle(newMovieTitle);
+        movieOutputDTO.setBasePrice(newMovieBasePrice);
         movieOutputDTO.setScrRoomNumber(newScrRoomNumber);
-        movieOutputDTO.setNumberOfAvailableSeats(newNumberOfAvailableSeats);
+        movieOutputDTO.setAvailableSeats(newNumberOfAvailableSeats);
 
         requestSpecification = RestAssured.given();
         requestSpecification.contentType(ContentType.JSON);
-        requestSpecification.header("Authorization", "Bearer " + accessToken);
+        requestSpecification.header(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken);
         requestSpecification.header("If-Match", etagContent);
         requestSpecification.body(movieOutputDTO);
 
@@ -1900,39 +1838,38 @@ public class MovieControllerTest {
     }
 
     @Test
-    public void movieControllerUpdateMovieWithNumberOfAvailableSeatsEqualTo0TestPositive() throws Exception {
-        String accessToken = this.loginToAccount(new UserInputDTO(staffUser.getUserLogin(), passwordNotHashed), TestConstants.staffLoginURL);
+    void movieControllerUpdateMovieWithNumberOfAvailableSeatsEqualTo0TestPositive() {
+        String accessToken = loginToAccount(new LoginAccountRequest(staffUser.getLogin(), passwordNotHashed), TestConstants.staffLoginURL);
 
         RequestSpecification requestSpecification = RestAssured.given();
-        requestSpecification.header("Authorization", "Bearer " + accessToken);
+        requestSpecification.header(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken);
         requestSpecification.contentType(ContentType.JSON);
 
-        Response response = requestSpecification.get(TestConstants.moviesURL + "/" + movieNo1.getMovieID());
-        logger.debug("Response: " + response.getBody().asString());
+        Response response = requestSpecification.get(TestConstants.moviesURL + "/" + movieNo1.getId());
         ValidatableResponse validatableResponse = response.then();
         validatableResponse.statusCode(200);
 
         MovieDTO movieOutputDTO = response.getBody().as(MovieDTO.class);
-        String etagContent = response.header("ETag");
+        String etagContent = response.header(HttpHeaders.ETAG);
 
-        String movieTitleBefore = movieNo1.getMovieTitle();
-        double movieBasePriceBefore = movieNo1.getMovieBasePrice();
+        String movieTitleBefore = movieNo1.getTitle();
+        double movieBasePriceBefore = movieNo1.getBasePrice();
         int scrRoomNumberBefore = movieNo1.getScrRoomNumber();
-        int numberOfAvailableSeatsBefore = movieNo1.getNumberOfAvailableSeats();
+        int numberOfAvailableSeatsBefore = movieNo1.getAvailableSeats();
 
         String newMovieTitle = "SomeExampleMovieTitleNo1";
         double newMovieBasePrice = 45.27;
         int newScrRoomNumber = 7;
         int newNumberOfAvailableSeats = 0;
 
-        movieOutputDTO.setMovieTitle(newMovieTitle);
-        movieOutputDTO.setMovieBasePrice(newMovieBasePrice);
+        movieOutputDTO.setTitle(newMovieTitle);
+        movieOutputDTO.setBasePrice(newMovieBasePrice);
         movieOutputDTO.setScrRoomNumber(newScrRoomNumber);
-        movieOutputDTO.setNumberOfAvailableSeats(newNumberOfAvailableSeats);
+        movieOutputDTO.setAvailableSeats(newNumberOfAvailableSeats);
 
         requestSpecification = RestAssured.given();
         requestSpecification.contentType(ContentType.JSON);
-        requestSpecification.header("Authorization", "Bearer " + accessToken);
+        requestSpecification.header(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken);
         requestSpecification.header("If-Match", etagContent);
         requestSpecification.body(movieOutputDTO);
 
@@ -1941,12 +1878,12 @@ public class MovieControllerTest {
         validatableResponse = response.then();
         validatableResponse.statusCode(204);
 
-        Movie foundMovie = movieService.findByUUID(movieNo1.getMovieID());
+        Movie foundMovie = movieService.findByUUID(movieNo1.getId());
 
-        String movieTitleAfter = foundMovie.getMovieTitle();
-        double movieBasePriceAfter = foundMovie.getMovieBasePrice();
+        String movieTitleAfter = foundMovie.getTitle();
+        double movieBasePriceAfter = foundMovie.getBasePrice();
         int scrRoomNumberAfter = foundMovie.getScrRoomNumber();
-        int numberOfAvailableSeatsAfter = foundMovie.getNumberOfAvailableSeats();
+        int numberOfAvailableSeatsAfter = foundMovie.getAvailableSeats();
 
         assertEquals(newMovieTitle, movieTitleAfter);
         assertEquals(newMovieBasePrice, movieBasePriceAfter);
@@ -1960,39 +1897,38 @@ public class MovieControllerTest {
     }
 
     @Test
-    public void movieControllerUpdateMovieWithNumberOfAvailableSeatsEqualTo120TestPositive() throws Exception {
-        String accessToken = this.loginToAccount(new UserInputDTO(staffUser.getUserLogin(), passwordNotHashed), TestConstants.staffLoginURL);
+    void movieControllerUpdateMovieWithNumberOfAvailableSeatsEqualTo120TestPositive() {
+        String accessToken = loginToAccount(new LoginAccountRequest(staffUser.getLogin(), passwordNotHashed), TestConstants.staffLoginURL);
 
         RequestSpecification requestSpecification = RestAssured.given();
-        requestSpecification.header("Authorization", "Bearer " + accessToken);
+        requestSpecification.header(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken);
         requestSpecification.contentType(ContentType.JSON);
 
-        Response response = requestSpecification.get(TestConstants.moviesURL + "/" + movieNo1.getMovieID());
-        logger.debug("Response: " + response.getBody().asString());
+        Response response = requestSpecification.get(TestConstants.moviesURL + "/" + movieNo1.getId());
         ValidatableResponse validatableResponse = response.then();
         validatableResponse.statusCode(200);
 
         MovieDTO movieOutputDTO = response.getBody().as(MovieDTO.class);
-        String etagContent = response.header("ETag");
+        String etagContent = response.header(HttpHeaders.ETAG);
 
-        String movieTitleBefore = movieNo1.getMovieTitle();
-        double movieBasePriceBefore = movieNo1.getMovieBasePrice();
+        String movieTitleBefore = movieNo1.getTitle();
+        double movieBasePriceBefore = movieNo1.getBasePrice();
         int scrRoomNumberBefore = movieNo1.getScrRoomNumber();
-        int numberOfAvailableSeatsBefore = movieNo1.getNumberOfAvailableSeats();
+        int numberOfAvailableSeatsBefore = movieNo1.getAvailableSeats();
 
         String newMovieTitle = "SomeExampleMovieTitleNo1";
         double newMovieBasePrice = 45.27;
         int newScrRoomNumber = 7;
         int newNumberOfAvailableSeats = 120;
 
-        movieOutputDTO.setMovieTitle(newMovieTitle);
-        movieOutputDTO.setMovieBasePrice(newMovieBasePrice);
+        movieOutputDTO.setTitle(newMovieTitle);
+        movieOutputDTO.setBasePrice(newMovieBasePrice);
         movieOutputDTO.setScrRoomNumber(newScrRoomNumber);
-        movieOutputDTO.setNumberOfAvailableSeats(newNumberOfAvailableSeats);
+        movieOutputDTO.setAvailableSeats(newNumberOfAvailableSeats);
 
         requestSpecification = RestAssured.given();
         requestSpecification.contentType(ContentType.JSON);
-        requestSpecification.header("Authorization", "Bearer " + accessToken);
+        requestSpecification.header(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken);
         requestSpecification.header("If-Match", etagContent);
         requestSpecification.body(movieOutputDTO);
 
@@ -2001,12 +1937,12 @@ public class MovieControllerTest {
         validatableResponse = response.then();
         validatableResponse.statusCode(204);
 
-        Movie foundMovie = movieService.findByUUID(movieNo1.getMovieID());
+        Movie foundMovie = movieService.findByUUID(movieNo1.getId());
 
-        String movieTitleAfter = foundMovie.getMovieTitle();
-        double movieBasePriceAfter = foundMovie.getMovieBasePrice();
+        String movieTitleAfter = foundMovie.getTitle();
+        double movieBasePriceAfter = foundMovie.getBasePrice();
         int scrRoomNumberAfter = foundMovie.getScrRoomNumber();
-        int numberOfAvailableSeatsAfter = foundMovie.getNumberOfAvailableSeats();
+        int numberOfAvailableSeatsAfter = foundMovie.getAvailableSeats();
 
         assertEquals(newMovieTitle, movieTitleAfter);
         assertEquals(newMovieBasePrice, movieBasePriceAfter);
@@ -2022,119 +1958,114 @@ public class MovieControllerTest {
     // Delete tests
 
     @Test
-    public void movieControllerDeleteMovieAsAnUnauthenticatedClientTestNegative() throws Exception {
-        UUID removedMovieID = movieNo1.getMovieID();
+    void movieControllerDeleteMovieAsAnUnauthenticatedClientTestNegative() {
+        UUID removedMovieID = movieNo1.getId();
         String path = TestConstants.moviesURL + "/" + removedMovieID;
 
         Movie foundMovie = movieService.findByUUID(removedMovieID);
 
         assertNotNull(foundMovie);
-        assertEquals(movieNo1.getMovieTitle(), foundMovie.getMovieTitle());
-        assertEquals(movieNo1.getMovieBasePrice(), foundMovie.getMovieBasePrice());
+        assertEquals(movieNo1.getTitle(), foundMovie.getTitle());
+        assertEquals(movieNo1.getBasePrice(), foundMovie.getBasePrice());
         assertEquals(movieNo1.getScrRoomNumber(), foundMovie.getScrRoomNumber());
-        assertEquals(movieNo1.getNumberOfAvailableSeats(), foundMovie.getNumberOfAvailableSeats());
+        assertEquals(movieNo1.getAvailableSeats(), foundMovie.getAvailableSeats());
 
         RequestSpecification requestSpecification = RestAssured.given();
         Response response = requestSpecification.delete(path);
-        logger.debug("Response: " + response);
         ValidatableResponse validatableResponse = response.then();
         validatableResponse.statusCode(403);
     }
 
     @Test
-    public void movieControllerDeleteMovieAsAnAuthenticatedClientTestNegative() throws Exception {
-        String accessToken = this.loginToAccount(new UserInputDTO(clientUser.getUserLogin(), passwordNotHashed), TestConstants.clientLoginURL);
+    void movieControllerDeleteMovieAsAnAuthenticatedClientTestNegative() {
+        String accessToken = loginToAccount(new LoginAccountRequest(clientUser.getLogin(), passwordNotHashed), TestConstants.clientLoginURL);
 
-        UUID removedMovieID = movieNo1.getMovieID();
+        UUID removedMovieID = movieNo1.getId();
         String path = TestConstants.moviesURL + "/" + removedMovieID;
 
         Movie foundMovie = movieService.findByUUID(removedMovieID);
 
         assertNotNull(foundMovie);
-        assertEquals(movieNo1.getMovieTitle(), foundMovie.getMovieTitle());
-        assertEquals(movieNo1.getMovieBasePrice(), foundMovie.getMovieBasePrice());
+        assertEquals(movieNo1.getTitle(), foundMovie.getTitle());
+        assertEquals(movieNo1.getBasePrice(), foundMovie.getBasePrice());
         assertEquals(movieNo1.getScrRoomNumber(), foundMovie.getScrRoomNumber());
-        assertEquals(movieNo1.getNumberOfAvailableSeats(), foundMovie.getNumberOfAvailableSeats());
+        assertEquals(movieNo1.getAvailableSeats(), foundMovie.getAvailableSeats());
 
         RequestSpecification requestSpecification = RestAssured.given();
-        requestSpecification.header("Authorization", "Bearer " + accessToken);
+        requestSpecification.header(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken);
         Response response = requestSpecification.delete(path);
-        logger.debug("Response: " + response);
         ValidatableResponse validatableResponse = response.then();
         validatableResponse.statusCode(403);
     }
 
     @Test
-    public void movieControllerDeleteMovieAsAnAuthenticatedStaffTestPositive() throws Exception {
-        String accessToken = this.loginToAccount(new UserInputDTO(staffUser.getUserLogin(), passwordNotHashed), TestConstants.staffLoginURL);
+    void movieControllerDeleteMovieAsAnAuthenticatedStaffTestPositive() {
+        String accessToken = loginToAccount(new LoginAccountRequest(staffUser.getLogin(), passwordNotHashed), TestConstants.staffLoginURL);
 
-        UUID removedMovieID = movieNo1.getMovieID();
+        UUID removedMovieID = movieNo1.getId();
         String path = TestConstants.moviesURL + "/" + removedMovieID + "/delete";
 
         Movie foundMovie = movieService.findByUUID(removedMovieID);
 
         assertNotNull(foundMovie);
-        assertEquals(movieNo1.getMovieTitle(), foundMovie.getMovieTitle());
-        assertEquals(movieNo1.getMovieBasePrice(), foundMovie.getMovieBasePrice());
+        assertEquals(movieNo1.getTitle(), foundMovie.getTitle());
+        assertEquals(movieNo1.getBasePrice(), foundMovie.getBasePrice());
         assertEquals(movieNo1.getScrRoomNumber(), foundMovie.getScrRoomNumber());
-        assertEquals(movieNo1.getNumberOfAvailableSeats(), foundMovie.getNumberOfAvailableSeats());
+        assertEquals(movieNo1.getAvailableSeats(), foundMovie.getAvailableSeats());
 
         RequestSpecification requestSpecification = RestAssured.given();
-        requestSpecification.header("Authorization", "Bearer " + accessToken);
+        requestSpecification.header(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken);
         Response response = requestSpecification.delete(path);
-        logger.debug("Response: " + response);
         ValidatableResponse validatableResponse = response.then();
         validatableResponse.statusCode(204);
 
-        assertThrows(MovieServiceReadException.class, () -> movieService.findByUUID(removedMovieID));
+        assertThrows(MovieNotFoundException.class, () -> movieService.findByUUID(removedMovieID));
     }
 
     @Test
-    public void movieControllerDeleteMovieAsAnAuthenticatedAdminTestNegative() throws Exception {
-        String accessToken = this.loginToAccount(new UserInputDTO(adminUser.getUserLogin(), passwordNotHashed), TestConstants.adminLoginURL);
+    void movieControllerDeleteMovieAsAnAuthenticatedAdminTestNegative() {
+        String accessToken = loginToAccount(new LoginAccountRequest(adminUser.getLogin(), passwordNotHashed), TestConstants.adminLoginURL);
 
-        UUID removedMovieID = movieNo1.getMovieID();
+        UUID removedMovieID = movieNo1.getId();
         String path = TestConstants.moviesURL + "/" + removedMovieID + "/delete";
 
         Movie foundMovie = movieService.findByUUID(removedMovieID);
 
         assertNotNull(foundMovie);
-        assertEquals(movieNo1.getMovieTitle(), foundMovie.getMovieTitle());
-        assertEquals(movieNo1.getMovieBasePrice(), foundMovie.getMovieBasePrice());
+        assertEquals(movieNo1.getTitle(), foundMovie.getTitle());
+        assertEquals(movieNo1.getBasePrice(), foundMovie.getBasePrice());
         assertEquals(movieNo1.getScrRoomNumber(), foundMovie.getScrRoomNumber());
-        assertEquals(movieNo1.getNumberOfAvailableSeats(), foundMovie.getNumberOfAvailableSeats());
+        assertEquals(movieNo1.getAvailableSeats(), foundMovie.getAvailableSeats());
 
         RequestSpecification requestSpecification = RestAssured.given();
-        requestSpecification.header("Authorization", "Bearer " + accessToken);
+        requestSpecification.header(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken);
         Response response = requestSpecification.delete(path);
-        logger.debug("Response: " + response);
         ValidatableResponse validatableResponse = response.then();
         validatableResponse.statusCode(403);
     }
 
     @Test
-    public void movieControllerDeleteMovieThatIsNotInTheDatabaseTestNegative() {
-        String accessToken = this.loginToAccount(new UserInputDTO(staffUser.getUserLogin(), passwordNotHashed), TestConstants.staffLoginURL);
+    void movieControllerDeleteMovieThatIsNotInTheDatabaseTestNegative() {
+        String accessToken = loginToAccount(new LoginAccountRequest(staffUser.getLogin(), passwordNotHashed), TestConstants.staffLoginURL);
 
         UUID removedMovieID = UUID.randomUUID();
         String path = TestConstants.moviesURL + "/" + removedMovieID + "/delete";
 
-        assertThrows(MovieServiceReadException.class, () -> movieService.findByUUID(removedMovieID));
+        assertThrows(MovieNotFoundException.class, () -> movieService.findByUUID(removedMovieID));
 
         RequestSpecification requestSpecification = RestAssured.given();
-        requestSpecification.header("Authorization", "Bearer " + accessToken);
+        requestSpecification.header(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken);
         Response response = requestSpecification.delete(path);
-        logger.debug("Response: " + response);
         ValidatableResponse validatableResponse = response.then();
 
         validatableResponse.statusCode(400);
     }
 
-    private String loginToAccount(UserInputDTO userInputDTO, String loginURL) {
+    private String loginToAccount(LoginAccountRequest loginDto, String loginURL) {
         RequestSpecification requestSpecification = RestAssured.given();
         requestSpecification.contentType(ContentType.JSON);
         requestSpecification.accept(ContentType.JSON);
-        requestSpecification.body(new UserInputDTO(userInputDTO.getUserLogin(), userInputDTO.getUserPassword()));
+        requestSpecification.body(new LoginAccountRequest(loginDto.login(), loginDto.password()));
 
         Response response = requestSpecification.post(loginURL);
         ValidatableResponse validatableResponse = response.then();

@@ -16,15 +16,15 @@ public class MovieDTO {
 
     @JsonProperty("movie-id")
     @JsonbProperty("movie-id")
-    private UUID movieID;
+    private UUID id;
 
     @JsonProperty("movie-title")
     @JsonbProperty("movie-title")
-    private String movieTitle;
+    private String title;
 
     @JsonProperty("movie-base-price")
     @JsonbProperty("movie-base-price")
-    private double movieBasePrice;
+    private double basePrice;
 
     @JsonProperty("scr-room-number")
     @JsonbProperty("scr-room-number")
@@ -32,19 +32,19 @@ public class MovieDTO {
 
     @JsonProperty("number-of-available-seats")
     @JsonbProperty("number-of-available-seats")
-    private int numberOfAvailableSeats;
+    private int availableSeats;
 
     @JsonCreator
     @JsonbCreator
-    public MovieDTO(@JsonProperty("movie-id") @JsonbProperty("movie-id") UUID movieID,
-                    @JsonProperty("movie-title") @JsonbProperty("movie-title") String movieTitle,
-                    @JsonProperty("movie-base-price") @JsonbProperty("movie-base-price") double movieBasePrice,
+    public MovieDTO(@JsonProperty("movie-id") @JsonbProperty("movie-id") UUID id,
+                    @JsonProperty("movie-title") @JsonbProperty("movie-title") String title,
+                    @JsonProperty("movie-base-price") @JsonbProperty("movie-base-price") double basePrice,
                     @JsonProperty("scr-room-number") @JsonbProperty("scr-room-number") int scrRoomNumber,
-                    @JsonProperty("number-of-available-seats") @JsonbProperty("number-of-available-seats") int numberOfAvailableSeats) {
-        this.movieID = movieID;
-        this.movieTitle = movieTitle;
-        this.movieBasePrice = movieBasePrice;
+                    @JsonProperty("number-of-available-seats") @JsonbProperty("number-of-available-seats") int availableSeats) {
+        this.id = id;
+        this.title = title;
+        this.basePrice = basePrice;
         this.scrRoomNumber = scrRoomNumber;
-        this.numberOfAvailableSeats = numberOfAvailableSeats;
+        this.availableSeats = availableSeats;
     }
 }

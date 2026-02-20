@@ -1,8 +1,0 @@
-package pl.pas.gr3.cinema.exception.services;
-
-public class GeneralServiceException extends Exception {
-
-    public GeneralServiceException(String message, Throwable cause) {
-        super(message, cause);
-    }
-}

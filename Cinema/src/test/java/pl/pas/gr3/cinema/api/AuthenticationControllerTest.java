@@ -7,34 +7,32 @@ import io.restassured.http.ContentType;
 import io.restassured.response.Response;
 import io.restassured.response.ValidatableResponse;
 import io.restassured.specification.RequestSpecification;
+import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.springframework.http.HttpHeaders;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import pl.pas.gr3.cinema.TestConstants;
-import pl.pas.gr3.cinema.consts.model.UserConstants;
-import pl.pas.gr3.cinema.exception.repositories.UserRepositoryException;
-import pl.pas.gr3.cinema.model.users.Admin;
-import pl.pas.gr3.cinema.model.users.Client;
-import pl.pas.gr3.cinema.model.users.Staff;
-import pl.pas.gr3.cinema.repositories.impl.UserRepository;
-import pl.pas.gr3.cinema.dto.auth.UserInputDTO;
-import pl.pas.gr3.cinema.dto.auth.UserOutputDTO;
+import pl.pas.gr3.cinema.util.consts.model.UserConstants;
+import pl.pas.gr3.cinema.entity.account.Admin;
+import pl.pas.gr3.cinema.entity.account.Client;
+import pl.pas.gr3.cinema.entity.account.Staff;
+import pl.pas.gr3.cinema.repository.impl.AccountRepositoryImpl;
+import pl.pas.gr3.cinema.dto.auth.LoginAccountRequest;
+import pl.pas.gr3.cinema.dto.auth.AccountResponse;
 
 import java.net.URL;
 import java.util.List;
 
-import org.slf4j.*;
-
 import static org.junit.jupiter.api.Assertions.*;
 
-public class AuthenticationControllerTest {
+@Slf4j
+class AuthenticationControllerTest {
 
-    private final static Logger logger = LoggerFactory.getLogger(AuthenticationControllerTest.class);
-
-    private static UserRepository userRepository;
+    private static AccountRepositoryImpl accountRepository;
 
     private static PasswordEncoder passwordEncoder;
 
@@ -44,8 +42,8 @@ public class AuthenticationControllerTest {
     private static String passwordNotHashed;
 
     @BeforeAll
-    public static void init() {
-        userRepository = new UserRepository();
+    static void init() {
+        accountRepository = new AccountRepositoryImpl();
 
         passwordEncoder = new BCryptPasswordEncoder();
 
@@ -53,50 +51,44 @@ public class AuthenticationControllerTest {
         URL resourceURL = classLoader.getResource("pas-truststore.jks");
 
         RestAssured.config = RestAssuredConfig.newConfig().sslConfig(
-                new SSLConfig().trustStore(resourceURL.getPath(), "password")
-                        .and()
-                        .port(8000)
-                        .and()
-                        .allowAllHostnames()
+            new SSLConfig().trustStore(resourceURL.getPath(), "password")
+                .and()
+                .port(8000)
+                .and()
+                .allowAllHostnames()
         );
 
         passwordNotHashed = "password";
     }
 
     @BeforeEach
-    public void initializeSampleData() {
-        this.clearCollection();
+    void initializeSampleData() {
+        clearCollection();
         try {
-            clientUser = userRepository.createClient("ClientLoginX", passwordEncoder.encode(passwordNotHashed));
-            adminUser = userRepository.createAdmin("AdminLoginX", passwordEncoder.encode(passwordNotHashed));
-            staffUser = userRepository.createStaff("StaffLoginX", passwordEncoder.encode(passwordNotHashed));
-        } catch (UserRepositoryException exception) {
+            clientUser = accountRepository.createClient("ClientLoginX", passwordEncoder.encode(passwordNotHashed));
+            adminUser = accountRepository.createAdmin("AdminLoginX", passwordEncoder.encode(passwordNotHashed));
+            staffUser = accountRepository.createStaff("StaffLoginX", passwordEncoder.encode(passwordNotHashed));
+        } catch (Exception exception) {
             throw new RuntimeException("Could not create sample users with userRepository object.", exception);
         }
     }
 
     @AfterEach
-    public void destroySampleData() {
-        this.clearCollection();
+    void destroySampleData() {
+        clearCollection();
     }
 
     private void clearCollection() {
         try {
-            List<Client> listOfClients = userRepository.findAllClients();
-            for (Client client : listOfClients) {
-                userRepository.delete(client.getUserID(), UserConstants.CLIENT_DISCRIMINATOR);
-            }
+            List<Client> clients = accountRepository.findAllClients();
+            clients.forEach(client -> accountRepository.delete(client.getId(), UserConstants.CLIENT_DISCRIMINATOR));
 
-            List<Admin> listOfAdmins = userRepository.findAllAdmins();
-            for (Admin admin : listOfAdmins) {
-                userRepository.delete(admin.getUserID(), UserConstants.ADMIN_DISCRIMINATOR);
-            }
+            List<Admin> admins = accountRepository.findAllAdmins();
+            admins.forEach(admin -> accountRepository.delete(admin.getId(), UserConstants.ADMIN_DISCRIMINATOR));
 
-            List<Staff> listOfStaffs = userRepository.findAllStaffs();
-            for (Staff staff : listOfStaffs) {
-                userRepository.delete(staff.getUserID(), UserConstants.STAFF_DISCRIMINATOR);
-            }
-        } catch (UserRepositoryException exception) {
+            List<Staff> staffs = accountRepository.findAllStaffs();
+            staffs.forEach(staff -> accountRepository.delete(staff.getId(), UserConstants.STAFF_DISCRIMINATOR));
+        } catch (Exception exception) {
             throw new RuntimeException("Could not delete sample users with userRepository object.", exception);
         }
     }
@@ -107,11 +99,11 @@ public class AuthenticationControllerTest {
     // Authorization tests.
 
     @Test
-    public void authorizationControllerRegisterClientAsAnUnauthenticatedUserTestPositive() {
+    void authorizationControllerRegisterClientAsAnUnauthenticatedUserTestPositive() {
         String clientLogin = "x1ClientLogin";
         String clientPassword = "password";
 
-        UserInputDTO userInputDTO = new UserInputDTO(clientLogin, clientPassword);
+        LoginAccountRequest userInputDTO = new LoginAccountRequest(clientLogin, clientPassword);
 
         RequestSpecification requestSpecification = RestAssured.given();
         requestSpecification.contentType(ContentType.JSON);
@@ -119,22 +111,21 @@ public class AuthenticationControllerTest {
         requestSpecification.body(userInputDTO);
 
         Response response = requestSpecification.post(TestConstants.clientRegisterURL);
-        logger.debug("Response: " + response.getBody().asString());
         ValidatableResponse validatableResponse = response.then();
 
         validatableResponse.statusCode(201);
 
-        UserOutputDTO userOutputDTO = response.getBody().as(UserOutputDTO.class);
+        AccountResponse accountResponse = response.getBody().as(AccountResponse.class);
 
-        assertEquals(clientLogin, userOutputDTO.getUserLogin());
+        assertEquals(clientLogin, accountResponse.login());
     }
 
     @Test
-    public void authorizationControllerRegisterStaffAsAnUnauthenticatedUserTestNegative() {
+    void authorizationControllerRegisterStaffAsAnUnauthenticatedUserTestNegative() {
         String staffLogin = "x1StaffLogin";
         String staffPassword = "password";
 
-        UserInputDTO userInputDTO = new UserInputDTO(staffLogin, staffPassword);
+        LoginAccountRequest userInputDTO = new LoginAccountRequest(staffLogin, staffPassword);
 
         RequestSpecification requestSpecification = RestAssured.given();
         requestSpecification.contentType(ContentType.JSON);
@@ -142,18 +133,17 @@ public class AuthenticationControllerTest {
         requestSpecification.body(userInputDTO);
 
         Response response = requestSpecification.post(TestConstants.staffRegisterURL);
-        logger.debug("Response: " + response.getBody().asString());
         ValidatableResponse validatableResponse = response.then();
 
         validatableResponse.statusCode(403);
     }
 
     @Test
-    public void authorizationControllerRegisterAdminAsAnUnauthenticatedUserTestNegative() {
+    void authorizationControllerRegisterAdminAsAnUnauthenticatedUserTestNegative() {
         String adminLogin = "x1AdminLogin";
         String adminPassword = "password";
 
-        UserInputDTO userInputDTO = new UserInputDTO(adminLogin, adminPassword);
+        LoginAccountRequest userInputDTO = new LoginAccountRequest(adminLogin, adminPassword);
 
         RequestSpecification requestSpecification = RestAssured.given();
         requestSpecification.contentType(ContentType.JSON);
@@ -161,7 +151,6 @@ public class AuthenticationControllerTest {
         requestSpecification.body(userInputDTO);
 
         Response response = requestSpecification.post(TestConstants.adminRegisterURL);
-        logger.debug("Response: " + response.getBody().asString());
         ValidatableResponse validatableResponse = response.then();
 
         validatableResponse.statusCode(403);
@@ -172,11 +161,11 @@ public class AuthenticationControllerTest {
     // Login errors.
 
     @Test
-    public void authorizationControllerRegisterClientWithNullLoginAsAnUnauthenticatedUserTestNegative() {
+    void authorizationControllerRegisterClientWithNullLoginAsAnUnauthenticatedUserTestNegative() {
         String clientLogin = null;
         String clientPassword = "password";
 
-        UserInputDTO userInputDTO = new UserInputDTO(clientLogin, clientPassword);
+        LoginAccountRequest userInputDTO = new LoginAccountRequest(clientLogin, clientPassword);
 
         RequestSpecification requestSpecification = RestAssured.given();
         requestSpecification.contentType(ContentType.JSON);
@@ -184,18 +173,17 @@ public class AuthenticationControllerTest {
         requestSpecification.body(userInputDTO);
 
         Response response = requestSpecification.post(TestConstants.clientRegisterURL);
-        logger.debug("Response: " + response.getBody().asString());
         ValidatableResponse validatableResponse = response.then();
 
         validatableResponse.statusCode(400);
     }
 
     @Test
-    public void authorizationControllerRegisterClientWithEmptyLoginAsAnUnauthenticatedUserTestNegative() {
+    void authorizationControllerRegisterClientWithEmptyLoginAsAnUnauthenticatedUserTestNegative() {
         String clientLogin = "";
         String clientPassword = "password";
 
-        UserInputDTO userInputDTO = new UserInputDTO(clientLogin, clientPassword);
+        LoginAccountRequest userInputDTO = new LoginAccountRequest(clientLogin, clientPassword);
 
         RequestSpecification requestSpecification = RestAssured.given();
         requestSpecification.contentType(ContentType.JSON);
@@ -203,18 +191,17 @@ public class AuthenticationControllerTest {
         requestSpecification.body(userInputDTO);
 
         Response response = requestSpecification.post(TestConstants.clientRegisterURL);
-        logger.debug("Response: " + response.getBody().asString());
         ValidatableResponse validatableResponse = response.then();
 
         validatableResponse.statusCode(400);
     }
 
     @Test
-    public void authorizationControllerRegisterClientWithLoginTooShortAsAnUnauthenticatedUserTestNegative() {
+    void authorizationControllerRegisterClientWithLoginTooShortAsAnUnauthenticatedUserTestNegative() {
         String clientLogin = "ddddfdd";
         String clientPassword = "password";
 
-        UserInputDTO userInputDTO = new UserInputDTO(clientLogin, clientPassword);
+        LoginAccountRequest userInputDTO = new LoginAccountRequest(clientLogin, clientPassword);
 
         RequestSpecification requestSpecification = RestAssured.given();
         requestSpecification.contentType(ContentType.JSON);
@@ -222,18 +209,17 @@ public class AuthenticationControllerTest {
         requestSpecification.body(userInputDTO);
 
         Response response = requestSpecification.post(TestConstants.clientRegisterURL);
-        logger.debug("Response: " + response.getBody().asString());
         ValidatableResponse validatableResponse = response.then();
 
         validatableResponse.statusCode(400);
     }
 
     @Test
-    public void authorizationControllerRegisterClientWithLoginTooLongAsAnUnauthenticatedUserTestNegative() {
+    void authorizationControllerRegisterClientWithLoginTooLongAsAnUnauthenticatedUserTestNegative() {
         String clientLogin = "ddddfddddfddddfddddfd";
         String clientPassword = "password";
 
-        UserInputDTO userInputDTO = new UserInputDTO(clientLogin, clientPassword);
+        LoginAccountRequest userInputDTO = new LoginAccountRequest(clientLogin, clientPassword);
 
         RequestSpecification requestSpecification = RestAssured.given();
         requestSpecification.contentType(ContentType.JSON);
@@ -241,18 +227,17 @@ public class AuthenticationControllerTest {
         requestSpecification.body(userInputDTO);
 
         Response response = requestSpecification.post(TestConstants.clientRegisterURL);
-        logger.debug("Response: " + response.getBody().asString());
         ValidatableResponse validatableResponse = response.then();
 
         validatableResponse.statusCode(400);
     }
 
     @Test
-    public void authorizationControllerRegisterClientWithLoginOfLengthEqualTo8AsAnUnauthenticatedClientTestPositive() {
+    void authorizationControllerRegisterClientWithLoginOfLengthEqualTo8AsAnUnauthenticatedClientTestPositive() {
         String clientLogin = "ddddfddd";
         String clientPassword = "password";
 
-        UserInputDTO userInputDTO = new UserInputDTO(clientLogin, clientPassword);
+        LoginAccountRequest userInputDTO = new LoginAccountRequest(clientLogin, clientPassword);
 
         RequestSpecification requestSpecification = RestAssured.given();
         requestSpecification.contentType(ContentType.JSON);
@@ -260,22 +245,21 @@ public class AuthenticationControllerTest {
         requestSpecification.body(userInputDTO);
 
         Response response = requestSpecification.post(TestConstants.clientRegisterURL);
-        logger.debug("Response: " + response.getBody().asString());
         ValidatableResponse validatableResponse = response.then();
 
         validatableResponse.statusCode(201);
 
-        UserOutputDTO userOutputDTO = response.getBody().as(UserOutputDTO.class);
+        AccountResponse accountResponse = response.getBody().as(AccountResponse.class);
 
-        assertEquals(clientLogin, userOutputDTO.getUserLogin());
+        assertEquals(clientLogin, accountResponse.login());
     }
 
     @Test
-    public void authorizationControllerRegisterClientWithLoginOfLengthEqualTo20AsAnUnauthenticatedClientTestPositive() {
+    void authorizationControllerRegisterClientWithLoginOfLengthEqualTo20AsAnUnauthenticatedClientTestPositive() {
         String clientLogin = "ddddfddddfddddfddddf";
         String clientPassword = "password";
 
-        UserInputDTO userInputDTO = new UserInputDTO(clientLogin, clientPassword);
+        LoginAccountRequest userInputDTO = new LoginAccountRequest(clientLogin, clientPassword);
 
         RequestSpecification requestSpecification = RestAssured.given();
         requestSpecification.contentType(ContentType.JSON);
@@ -283,22 +267,21 @@ public class AuthenticationControllerTest {
         requestSpecification.body(userInputDTO);
 
         Response response = requestSpecification.post(TestConstants.clientRegisterURL);
-        logger.debug("Response: " + response.getBody().asString());
         ValidatableResponse validatableResponse = response.then();
 
         validatableResponse.statusCode(201);
 
-        UserOutputDTO userOutputDTO = response.getBody().as(UserOutputDTO.class);
+        AccountResponse accountResponse = response.getBody().as(AccountResponse.class);
 
-        assertEquals(clientLogin, userOutputDTO.getUserLogin());
+        assertEquals(clientLogin, accountResponse.login());
     }
 
     @Test
-    public void authorizationControllerRegisterClientWithLoginThatDoesNotMatchRegexAsAnUnauthenticatedUserTestNegative() {
+    void authorizationControllerRegisterClientWithLoginThatDoesNotMatchRegexAsAnUnauthenticatedUserTestNegative() {
         String clientLogin = "Some Login";
         String clientPassword = "password";
 
-        UserInputDTO userInputDTO = new UserInputDTO(clientLogin, clientPassword);
+        LoginAccountRequest userInputDTO = new LoginAccountRequest(clientLogin, clientPassword);
 
         RequestSpecification requestSpecification = RestAssured.given();
         requestSpecification.contentType(ContentType.JSON);
@@ -306,18 +289,17 @@ public class AuthenticationControllerTest {
         requestSpecification.body(userInputDTO);
 
         Response response = requestSpecification.post(TestConstants.clientRegisterURL);
-        logger.debug("Response: " + response.getBody().asString());
         ValidatableResponse validatableResponse = response.then();
 
         validatableResponse.statusCode(400);
     }
 
     @Test
-    public void authorizationControllerRegisterClientWithLoginThatIsAlreadyInTheDatabaseAsAnUnauthenticatedUserTestNegative() {
-        String clientLogin = clientUser.getUserLogin();
+    void authorizationControllerRegisterClientWithLoginThatIsAlreadyInTheDatabaseAsAnUnauthenticatedUserTestNegative() {
+        String clientLogin = clientUser.getLogin();
         String clientPassword = "password";
 
-        UserInputDTO userInputDTO = new UserInputDTO(clientLogin, clientPassword);
+        LoginAccountRequest userInputDTO = new LoginAccountRequest(clientLogin, clientPassword);
 
         RequestSpecification requestSpecification = RestAssured.given();
         requestSpecification.contentType(ContentType.JSON);
@@ -325,7 +307,6 @@ public class AuthenticationControllerTest {
         requestSpecification.body(userInputDTO);
 
         Response response = requestSpecification.post(TestConstants.clientRegisterURL);
-        logger.debug("Response: " + response.getBody().asString());
         ValidatableResponse validatableResponse = response.then();
 
         validatableResponse.statusCode(409);
@@ -336,70 +317,67 @@ public class AuthenticationControllerTest {
     // Authorization tests.
 
     @Test
-    public void authorizationControllerRegisterClientAsAnAuthenticatedClientTestPositive() {
-        String accessToken = this.loginToAccount(new UserInputDTO(clientUser.getUserLogin(), passwordNotHashed), TestConstants.clientLoginURL);
+    void authorizationControllerRegisterClientAsAnAuthenticatedClientTestPositive() {
+        String accessToken = loginToAccount(new LoginAccountRequest(clientUser.getLogin(), passwordNotHashed), TestConstants.clientLoginURL);
 
         String clientLogin = "x2ClientLogin";
         String clientPassword = "password";
 
-        UserInputDTO userInputDTO = new UserInputDTO(clientLogin, clientPassword);
+        LoginAccountRequest userInputDTO = new LoginAccountRequest(clientLogin, clientPassword);
 
         RequestSpecification requestSpecification = RestAssured.given();
-        requestSpecification.header("Authorization", "Bearer " + accessToken);
+        requestSpecification.header(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken);
         requestSpecification.contentType(ContentType.JSON);
         requestSpecification.accept(ContentType.JSON);
         requestSpecification.body(userInputDTO);
 
         Response response = requestSpecification.post(TestConstants.clientRegisterURL);
-        logger.debug("Response: " + response.getBody().asString());
         ValidatableResponse validatableResponse = response.then();
 
         validatableResponse.statusCode(201);
 
-        UserOutputDTO userOutputDTO = response.getBody().as(UserOutputDTO.class);
+        AccountResponse accountResponse = response.getBody().as(AccountResponse.class);
 
-        assertEquals(clientLogin, userOutputDTO.getUserLogin());
+        assertEquals(clientLogin, accountResponse.login());
     }
 
     @Test
-    public void authorizationControllerRegisterStaffAsAnAuthenticatedClientTestNegative() {
-        String accessToken = this.loginToAccount(new UserInputDTO(clientUser.getUserLogin(), passwordNotHashed), TestConstants.clientLoginURL);
+    void authorizationControllerRegisterStaffAsAnAuthenticatedClientTestNegative() {
+        String accessToken = loginToAccount(new LoginAccountRequest(clientUser.getLogin(), passwordNotHashed), TestConstants.clientLoginURL);
 
         String staffLogin = "x2StaffLogin";
         String staffPassword = "password";
 
-        UserInputDTO userInputDTO = new UserInputDTO(staffLogin, staffPassword);
+        LoginAccountRequest userInputDTO = new LoginAccountRequest(staffLogin, staffPassword);
 
         RequestSpecification requestSpecification = RestAssured.given();
-        requestSpecification.header("Authorization", "Bearer " + accessToken);
+        requestSpecification.header(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken);
         requestSpecification.contentType(ContentType.JSON);
         requestSpecification.accept(ContentType.JSON);
         requestSpecification.body(userInputDTO);
 
         Response response = requestSpecification.post(TestConstants.staffRegisterURL);
-        logger.debug("Response: " + response.getBody().asString());
         ValidatableResponse validatableResponse = response.then();
 
         validatableResponse.statusCode(403);
     }
 
     @Test
-    public void authorizationControllerRegisterAdminAsAnAuthenticatedClientTestNegative() {
-        String accessToken = this.loginToAccount(new UserInputDTO(clientUser.getUserLogin(), passwordNotHashed), TestConstants.clientLoginURL);
+    void authorizationControllerRegisterAdminAsAnAuthenticatedClientTestNegative() {
+        String accessToken = loginToAccount(new LoginAccountRequest(clientUser.getLogin(), passwordNotHashed), TestConstants.clientLoginURL);
 
         String adminLogin = "x2AdminLogin";
         String adminPassword = "password";
 
-        UserInputDTO userInputDTO = new UserInputDTO(adminLogin, adminPassword);
+        LoginAccountRequest userInputDTO = new LoginAccountRequest(adminLogin, adminPassword);
 
         RequestSpecification requestSpecification = RestAssured.given();
-        requestSpecification.header("Authorization", "Bearer " + accessToken);
+        requestSpecification.header(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken);
         requestSpecification.contentType(ContentType.JSON);
         requestSpecification.accept(ContentType.JSON);
         requestSpecification.body(userInputDTO);
 
         Response response = requestSpecification.post(TestConstants.adminRegisterURL);
-        logger.debug("Response: " + response.getBody().asString());
         ValidatableResponse validatableResponse = response.then();
 
         validatableResponse.statusCode(403);
@@ -410,184 +388,176 @@ public class AuthenticationControllerTest {
     // Login errors.
 
     @Test
-    public void authorizationControllerRegisterClientWithNullLoginAsAnAuthenticatedClientTestNegative() {
-        String accessToken = this.loginToAccount(new UserInputDTO(clientUser.getUserLogin(), passwordNotHashed), TestConstants.clientLoginURL);
+    void authorizationControllerRegisterClientWithNullLoginAsAnAuthenticatedClientTestNegative() {
+        String accessToken = loginToAccount(new LoginAccountRequest(clientUser.getLogin(), passwordNotHashed), TestConstants.clientLoginURL);
 
         String clientLogin = null;
         String clientPassword = "password";
 
-        UserInputDTO userInputDTO = new UserInputDTO(clientLogin, clientPassword);
+        LoginAccountRequest userInputDTO = new LoginAccountRequest(clientLogin, clientPassword);
 
         RequestSpecification requestSpecification = RestAssured.given();
-        requestSpecification.header("Authorization", "Bearer " + accessToken);
+        requestSpecification.header(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken);
         requestSpecification.contentType(ContentType.JSON);
         requestSpecification.accept(ContentType.JSON);
         requestSpecification.body(userInputDTO);
 
         Response response = requestSpecification.post(TestConstants.clientRegisterURL);
-        logger.debug("Response: " + response.getBody().asString());
         ValidatableResponse validatableResponse = response.then();
 
         validatableResponse.statusCode(400);
     }
 
     @Test
-    public void authorizationControllerRegisterClientWithEmptyLoginAsAnAuthenticatedClientTestNegative() {
-        String accessToken = this.loginToAccount(new UserInputDTO(clientUser.getUserLogin(), passwordNotHashed), TestConstants.clientLoginURL);
+    void authorizationControllerRegisterClientWithEmptyLoginAsAnAuthenticatedClientTestNegative() {
+        String accessToken = loginToAccount(new LoginAccountRequest(clientUser.getLogin(), passwordNotHashed), TestConstants.clientLoginURL);
 
         String clientLogin = "";
         String clientPassword = "password";
 
-        UserInputDTO userInputDTO = new UserInputDTO(clientLogin, clientPassword);
+        LoginAccountRequest userInputDTO = new LoginAccountRequest(clientLogin, clientPassword);
 
         RequestSpecification requestSpecification = RestAssured.given();
-        requestSpecification.header("Authorization", "Bearer " + accessToken);
+        requestSpecification.header(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken);
         requestSpecification.contentType(ContentType.JSON);
         requestSpecification.accept(ContentType.JSON);
         requestSpecification.body(userInputDTO);
 
         Response response = requestSpecification.post(TestConstants.clientRegisterURL);
-        logger.debug("Response: " + response.getBody().asString());
         ValidatableResponse validatableResponse = response.then();
 
         validatableResponse.statusCode(400);
     }
 
     @Test
-    public void authorizationControllerRegisterClientWithLoginTooShortAsAnAuthenticatedClientTestNegative() {
-        String accessToken = this.loginToAccount(new UserInputDTO(clientUser.getUserLogin(), passwordNotHashed), TestConstants.clientLoginURL);
+    void authorizationControllerRegisterClientWithLoginTooShortAsAnAuthenticatedClientTestNegative() {
+        String accessToken = loginToAccount(new LoginAccountRequest(clientUser.getLogin(), passwordNotHashed), TestConstants.clientLoginURL);
 
         String clientLogin = "ddddfdd";
         String clientPassword = "password";
 
-        UserInputDTO userInputDTO = new UserInputDTO(clientLogin, clientPassword);
+        LoginAccountRequest userInputDTO = new LoginAccountRequest(clientLogin, clientPassword);
 
         RequestSpecification requestSpecification = RestAssured.given();
-        requestSpecification.header("Authorization", "Bearer " + accessToken);
+        requestSpecification.header(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken);
         requestSpecification.contentType(ContentType.JSON);
         requestSpecification.accept(ContentType.JSON);
         requestSpecification.body(userInputDTO);
 
         Response response = requestSpecification.post(TestConstants.clientRegisterURL);
-        logger.debug("Response: " + response.getBody().asString());
         ValidatableResponse validatableResponse = response.then();
 
         validatableResponse.statusCode(400);
     }
 
     @Test
-    public void authorizationControllerRegisterClientWithLoginTooLongAsAnAuthenticatedClientTestNegative() {
-        String accessToken = this.loginToAccount(new UserInputDTO(clientUser.getUserLogin(), passwordNotHashed), TestConstants.clientLoginURL);
+    void authorizationControllerRegisterClientWithLoginTooLongAsAnAuthenticatedClientTestNegative() {
+        String accessToken = loginToAccount(new LoginAccountRequest(clientUser.getLogin(), passwordNotHashed), TestConstants.clientLoginURL);
 
         String clientLogin = "ddddfddddfddddfddddfd";
         String clientPassword = "password";
 
-        UserInputDTO userInputDTO = new UserInputDTO(clientLogin, clientPassword);
+        LoginAccountRequest userInputDTO = new LoginAccountRequest(clientLogin, clientPassword);
 
         RequestSpecification requestSpecification = RestAssured.given();
-        requestSpecification.header("Authorization", "Bearer " + accessToken);
+        requestSpecification.header(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken);
         requestSpecification.contentType(ContentType.JSON);
         requestSpecification.accept(ContentType.JSON);
         requestSpecification.body(userInputDTO);
 
         Response response = requestSpecification.post(TestConstants.clientRegisterURL);
-        logger.debug("Response: " + response.getBody().asString());
         ValidatableResponse validatableResponse = response.then();
 
         validatableResponse.statusCode(400);
     }
 
     @Test
-    public void authorizationControllerRegisterClientWithLoginOfLengthEqualTo8AsAnAuthenticatedClientTestPositive() {
-        String accessToken = this.loginToAccount(new UserInputDTO(clientUser.getUserLogin(), passwordNotHashed), TestConstants.clientLoginURL);
+    void authorizationControllerRegisterClientWithLoginOfLengthEqualTo8AsAnAuthenticatedClientTestPositive() {
+        String accessToken = loginToAccount(new LoginAccountRequest(clientUser.getLogin(), passwordNotHashed), TestConstants.clientLoginURL);
 
         String clientLogin = "ddddfddd";
         String clientPassword = "password";
 
-        UserInputDTO userInputDTO = new UserInputDTO(clientLogin, clientPassword);
+        LoginAccountRequest userInputDTO = new LoginAccountRequest(clientLogin, clientPassword);
 
         RequestSpecification requestSpecification = RestAssured.given();
-        requestSpecification.header("Authorization", "Bearer " + accessToken);
+        requestSpecification.header(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken);
         requestSpecification.contentType(ContentType.JSON);
         requestSpecification.accept(ContentType.JSON);
         requestSpecification.body(userInputDTO);
 
         Response response = requestSpecification.post(TestConstants.clientRegisterURL);
-        logger.debug("Response: " + response.getBody().asString());
         ValidatableResponse validatableResponse = response.then();
 
         validatableResponse.statusCode(201);
 
-        UserOutputDTO userOutputDTO = response.getBody().as(UserOutputDTO.class);
+        AccountResponse accountResponse = response.getBody().as(AccountResponse.class);
 
-        assertEquals(clientLogin, userOutputDTO.getUserLogin());
+        assertEquals(clientLogin, accountResponse.login());
     }
 
     @Test
-    public void authorizationControllerRegisterClientWithLoginOfLengthEqualTo20AsAnAuthenticatedClientTestPositive() {
-        String accessToken = this.loginToAccount(new UserInputDTO(clientUser.getUserLogin(), passwordNotHashed), TestConstants.clientLoginURL);
+    void authorizationControllerRegisterClientWithLoginOfLengthEqualTo20AsAnAuthenticatedClientTestPositive() {
+        String accessToken = loginToAccount(new LoginAccountRequest(clientUser.getLogin(), passwordNotHashed), TestConstants.clientLoginURL);
 
         String clientLogin = "ddddfddddfddddfddddf";
         String clientPassword = "password";
 
-        UserInputDTO userInputDTO = new UserInputDTO(clientLogin, clientPassword);
+        LoginAccountRequest userInputDTO = new LoginAccountRequest(clientLogin, clientPassword);
 
         RequestSpecification requestSpecification = RestAssured.given();
-        requestSpecification.header("Authorization", "Bearer " + accessToken);
+        requestSpecification.header(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken);
         requestSpecification.contentType(ContentType.JSON);
         requestSpecification.accept(ContentType.JSON);
         requestSpecification.body(userInputDTO);
 
         Response response = requestSpecification.post(TestConstants.clientRegisterURL);
-        logger.debug("Response: " + response.getBody().asString());
         ValidatableResponse validatableResponse = response.then();
 
         validatableResponse.statusCode(201);
 
-        UserOutputDTO userOutputDTO = response.getBody().as(UserOutputDTO.class);
+        AccountResponse accountResponse = response.getBody().as(AccountResponse.class);
 
-        assertEquals(clientLogin, userOutputDTO.getUserLogin());
+        assertEquals(clientLogin, accountResponse.login());
     }
 
     @Test
-    public void authorizationControllerRegisterClientWithLoginThatDoesNotMatchRegexAsAnAuthenticatedClientTestNegative() {
-        String accessToken = this.loginToAccount(new UserInputDTO(clientUser.getUserLogin(), passwordNotHashed), TestConstants.clientLoginURL);
+    void authorizationControllerRegisterClientWithLoginThatDoesNotMatchRegexAsAnAuthenticatedClientTestNegative() {
+        String accessToken = loginToAccount(new LoginAccountRequest(clientUser.getLogin(), passwordNotHashed), TestConstants.clientLoginURL);
 
         String clientLogin = "Test Login";
         String clientPassword = "password";
 
-        UserInputDTO userInputDTO = new UserInputDTO(clientLogin, clientPassword);
+        LoginAccountRequest userInputDTO = new LoginAccountRequest(clientLogin, clientPassword);
 
         RequestSpecification requestSpecification = RestAssured.given();
-        requestSpecification.header("Authorization", "Bearer " + accessToken);
+        requestSpecification.header(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken);
         requestSpecification.contentType(ContentType.JSON);
         requestSpecification.accept(ContentType.JSON);
         requestSpecification.body(userInputDTO);
 
         Response response = requestSpecification.post(TestConstants.clientRegisterURL);
-        logger.debug("Response: " + response.getBody().asString());
         ValidatableResponse validatableResponse = response.then();
 
         validatableResponse.statusCode(400);
     }
 
     @Test
-    public void authorizationControllerRegisterClientWithLoginThatIsAlreadyInTheDatabaseAsAnAuthenticatedClientTestNegative() {
-        String accessToken = this.loginToAccount(new UserInputDTO(clientUser.getUserLogin(), passwordNotHashed), TestConstants.clientLoginURL);
+    void authorizationControllerRegisterClientWithLoginThatIsAlreadyInTheDatabaseAsAnAuthenticatedClientTestNegative() {
+        String accessToken = loginToAccount(new LoginAccountRequest(clientUser.getLogin(), passwordNotHashed), TestConstants.clientLoginURL);
 
-        String clientLogin = clientUser.getUserLogin();
+        String clientLogin = clientUser.getLogin();
         String clientPassword = "password";
 
-        UserInputDTO userInputDTO = new UserInputDTO(clientLogin, clientPassword);
+        LoginAccountRequest userInputDTO = new LoginAccountRequest(clientLogin, clientPassword);
 
         RequestSpecification requestSpecification = RestAssured.given();
-        requestSpecification.header("Authorization", "Bearer " + accessToken);
+        requestSpecification.header(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken);
         requestSpecification.contentType(ContentType.JSON);
         requestSpecification.accept(ContentType.JSON);
         requestSpecification.body(userInputDTO);
 
         Response response = requestSpecification.post(TestConstants.clientRegisterURL);
-        logger.debug("Response: " + response.getBody().asString());
         ValidatableResponse validatableResponse = response.then();
 
         validatableResponse.statusCode(409);
@@ -598,70 +568,67 @@ public class AuthenticationControllerTest {
     // Authorization tests.
 
     @Test
-    public void authorizationControllerRegisterClientAsAnAuthenticatedStaffTestPositive() {
-        String accessToken = this.loginToAccount(new UserInputDTO(staffUser.getUserLogin(), passwordNotHashed), TestConstants.staffLoginURL);
+    void authorizationControllerRegisterClientAsAnAuthenticatedStaffTestPositive() {
+        String accessToken = loginToAccount(new LoginAccountRequest(staffUser.getLogin(), passwordNotHashed), TestConstants.staffLoginURL);
 
         String clientLogin = "x3ClientLogin";
         String clientPassword = "password";
 
-        UserInputDTO userInputDTO = new UserInputDTO(clientLogin, clientPassword);
+        LoginAccountRequest userInputDTO = new LoginAccountRequest(clientLogin, clientPassword);
 
         RequestSpecification requestSpecification = RestAssured.given();
-        requestSpecification.header("Authorization", "Bearer " + accessToken);
+        requestSpecification.header(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken);
         requestSpecification.contentType(ContentType.JSON);
         requestSpecification.accept(ContentType.JSON);
         requestSpecification.body(userInputDTO);
 
         Response response = requestSpecification.post(TestConstants.clientRegisterURL);
-        logger.debug("Response: " + response.getBody().asString());
         ValidatableResponse validatableResponse = response.then();
 
         validatableResponse.statusCode(201);
 
-        UserOutputDTO userOutputDTO = response.getBody().as(UserOutputDTO.class);
+        AccountResponse accountResponse = response.getBody().as(AccountResponse.class);
 
-        assertEquals(clientLogin, userOutputDTO.getUserLogin());
+        assertEquals(clientLogin, accountResponse.login());
     }
 
     @Test
-    public void authorizationControllerRegisterStaffAsAnAuthenticatedStaffTestNegative() {
-        String accessToken = this.loginToAccount(new UserInputDTO(staffUser.getUserLogin(), passwordNotHashed), TestConstants.staffLoginURL);
+    void authorizationControllerRegisterStaffAsAnAuthenticatedStaffTestNegative() {
+        String accessToken = loginToAccount(new LoginAccountRequest(staffUser.getLogin(), passwordNotHashed), TestConstants.staffLoginURL);
 
         String staffLogin = "x3StaffLogin";
         String staffPassword = "password";
 
-        UserInputDTO userInputDTO = new UserInputDTO(staffLogin, staffPassword);
+        LoginAccountRequest userInputDTO = new LoginAccountRequest(staffLogin, staffPassword);
 
         RequestSpecification requestSpecification = RestAssured.given();
-        requestSpecification.header("Authorization", "Bearer " + accessToken);
+        requestSpecification.header(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken);
         requestSpecification.contentType(ContentType.JSON);
         requestSpecification.accept(ContentType.JSON);
         requestSpecification.body(userInputDTO);
 
         Response response = requestSpecification.post(TestConstants.staffRegisterURL);
-        logger.debug("Response: " + response.getBody().asString());
         ValidatableResponse validatableResponse = response.then();
 
         validatableResponse.statusCode(403);
     }
 
     @Test
-    public void authorizationControllerRegisterAdminAsAnAuthenticatedStaffTestNegative() {
-        String accessToken = this.loginToAccount(new UserInputDTO(staffUser.getUserLogin(), passwordNotHashed), TestConstants.staffLoginURL);
+    void authorizationControllerRegisterAdminAsAnAuthenticatedStaffTestNegative() {
+        String accessToken = loginToAccount(new LoginAccountRequest(staffUser.getLogin(), passwordNotHashed), TestConstants.staffLoginURL);
 
         String adminLogin = "x3AdminLogin";
         String adminPassword = "password";
 
-        UserInputDTO userInputDTO = new UserInputDTO(adminLogin, adminPassword);
+        LoginAccountRequest userInputDTO = new LoginAccountRequest(adminLogin, adminPassword);
 
         RequestSpecification requestSpecification = RestAssured.given();
-        requestSpecification.header("Authorization", "Bearer " + accessToken);
+        requestSpecification.header(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken);
         requestSpecification.contentType(ContentType.JSON);
         requestSpecification.accept(ContentType.JSON);
         requestSpecification.body(userInputDTO);
 
         Response response = requestSpecification.post(TestConstants.adminRegisterURL);
-        logger.debug("Response: " + response.getBody().asString());
         ValidatableResponse validatableResponse = response.then();
 
         validatableResponse.statusCode(403);
@@ -672,184 +639,176 @@ public class AuthenticationControllerTest {
     // Login errors.
 
     @Test
-    public void authorizationControllerRegisterClientWithNullLoginAsAnAuthenticatedStaffTestNegative() {
-        String accessToken = this.loginToAccount(new UserInputDTO(staffUser.getUserLogin(), passwordNotHashed), TestConstants.staffLoginURL);
+    void authorizationControllerRegisterClientWithNullLoginAsAnAuthenticatedStaffTestNegative() {
+        String accessToken = loginToAccount(new LoginAccountRequest(staffUser.getLogin(), passwordNotHashed), TestConstants.staffLoginURL);
 
         String clientLogin = null;
         String clientPassword = "password";
 
-        UserInputDTO userInputDTO = new UserInputDTO(clientLogin, clientPassword);
+        LoginAccountRequest userInputDTO = new LoginAccountRequest(clientLogin, clientPassword);
 
         RequestSpecification requestSpecification = RestAssured.given();
-        requestSpecification.header("Authorization", "Bearer " + accessToken);
+        requestSpecification.header(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken);
         requestSpecification.contentType(ContentType.JSON);
         requestSpecification.accept(ContentType.JSON);
         requestSpecification.body(userInputDTO);
 
         Response response = requestSpecification.post(TestConstants.clientRegisterURL);
-        logger.debug("Response: " + response.getBody().asString());
         ValidatableResponse validatableResponse = response.then();
 
         validatableResponse.statusCode(400);
     }
 
     @Test
-    public void authorizationControllerRegisterClientWithEmptyLoginAsAnAuthenticatedStaffTestNegative() {
-        String accessToken = this.loginToAccount(new UserInputDTO(staffUser.getUserLogin(), passwordNotHashed), TestConstants.staffLoginURL);
+    void authorizationControllerRegisterClientWithEmptyLoginAsAnAuthenticatedStaffTestNegative() {
+        String accessToken = loginToAccount(new LoginAccountRequest(staffUser.getLogin(), passwordNotHashed), TestConstants.staffLoginURL);
 
         String clientLogin = "";
         String clientPassword = "password";
 
-        UserInputDTO userInputDTO = new UserInputDTO(clientLogin, clientPassword);
+        LoginAccountRequest userInputDTO = new LoginAccountRequest(clientLogin, clientPassword);
 
         RequestSpecification requestSpecification = RestAssured.given();
-        requestSpecification.header("Authorization", "Bearer " + accessToken);
+        requestSpecification.header(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken);
         requestSpecification.contentType(ContentType.JSON);
         requestSpecification.accept(ContentType.JSON);
         requestSpecification.body(userInputDTO);
 
         Response response = requestSpecification.post(TestConstants.clientRegisterURL);
-        logger.debug("Response: " + response.getBody().asString());
         ValidatableResponse validatableResponse = response.then();
 
         validatableResponse.statusCode(400);
     }
 
     @Test
-    public void authorizationControllerRegisterClientWithLoginTooShortAsAnAuthenticatedStaffTestNegative() {
-        String accessToken = this.loginToAccount(new UserInputDTO(staffUser.getUserLogin(), passwordNotHashed), TestConstants.staffLoginURL);
+    void authorizationControllerRegisterClientWithLoginTooShortAsAnAuthenticatedStaffTestNegative() {
+        String accessToken = loginToAccount(new LoginAccountRequest(staffUser.getLogin(), passwordNotHashed), TestConstants.staffLoginURL);
 
         String clientLogin = "ddddfdd";
         String clientPassword = "password";
 
-        UserInputDTO userInputDTO = new UserInputDTO(clientLogin, clientPassword);
+        LoginAccountRequest userInputDTO = new LoginAccountRequest(clientLogin, clientPassword);
 
         RequestSpecification requestSpecification = RestAssured.given();
-        requestSpecification.header("Authorization", "Bearer " + accessToken);
+        requestSpecification.header(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken);
         requestSpecification.contentType(ContentType.JSON);
         requestSpecification.accept(ContentType.JSON);
         requestSpecification.body(userInputDTO);
 
         Response response = requestSpecification.post(TestConstants.clientRegisterURL);
-        logger.debug("Response: " + response.getBody().asString());
         ValidatableResponse validatableResponse = response.then();
 
         validatableResponse.statusCode(400);
     }
 
     @Test
-    public void authorizationControllerRegisterClientWithLoginTooLongAsAnAuthenticatedStaffTestNegative() {
-        String accessToken = this.loginToAccount(new UserInputDTO(staffUser.getUserLogin(), passwordNotHashed), TestConstants.staffLoginURL);
+    void authorizationControllerRegisterClientWithLoginTooLongAsAnAuthenticatedStaffTestNegative() {
+        String accessToken = loginToAccount(new LoginAccountRequest(staffUser.getLogin(), passwordNotHashed), TestConstants.staffLoginURL);
 
         String clientLogin = "ddddfddddfddddfddddfd";
         String clientPassword = "password";
 
-        UserInputDTO userInputDTO = new UserInputDTO(clientLogin, clientPassword);
+        LoginAccountRequest userInputDTO = new LoginAccountRequest(clientLogin, clientPassword);
 
         RequestSpecification requestSpecification = RestAssured.given();
-        requestSpecification.header("Authorization", "Bearer " + accessToken);
+        requestSpecification.header(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken);
         requestSpecification.contentType(ContentType.JSON);
         requestSpecification.accept(ContentType.JSON);
         requestSpecification.body(userInputDTO);
 
         Response response = requestSpecification.post(TestConstants.clientRegisterURL);
-        logger.debug("Response: " + response.getBody().asString());
         ValidatableResponse validatableResponse = response.then();
 
         validatableResponse.statusCode(400);
     }
 
     @Test
-    public void authorizationControllerRegisterClientWithLoginOfLengthEqualTo8AsAnAuthenticatedStaffTestPositive() {
-        String accessToken = this.loginToAccount(new UserInputDTO(staffUser.getUserLogin(), passwordNotHashed), TestConstants.staffLoginURL);
+    void authorizationControllerRegisterClientWithLoginOfLengthEqualTo8AsAnAuthenticatedStaffTestPositive() {
+        String accessToken = loginToAccount(new LoginAccountRequest(staffUser.getLogin(), passwordNotHashed), TestConstants.staffLoginURL);
 
         String clientLogin = "ddddfddd";
         String clientPassword = "password";
 
-        UserInputDTO userInputDTO = new UserInputDTO(clientLogin, clientPassword);
+        LoginAccountRequest userInputDTO = new LoginAccountRequest(clientLogin, clientPassword);
 
         RequestSpecification requestSpecification = RestAssured.given();
-        requestSpecification.header("Authorization", "Bearer " + accessToken);
+        requestSpecification.header(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken);
         requestSpecification.contentType(ContentType.JSON);
         requestSpecification.accept(ContentType.JSON);
         requestSpecification.body(userInputDTO);
 
         Response response = requestSpecification.post(TestConstants.clientRegisterURL);
-        logger.debug("Response: " + response.getBody().asString());
         ValidatableResponse validatableResponse = response.then();
 
         validatableResponse.statusCode(201);
 
-        UserOutputDTO userOutputDTO = response.getBody().as(UserOutputDTO.class);
+        AccountResponse accountResponse = response.getBody().as(AccountResponse.class);
 
-        assertEquals(clientLogin, userOutputDTO.getUserLogin());
+        assertEquals(clientLogin, accountResponse.login());
     }
 
     @Test
-    public void authorizationControllerRegisterClientWithLoginOfLengthEqualTo20AsAnAuthenticatedStaffTestPositive() {
-        String accessToken = this.loginToAccount(new UserInputDTO(staffUser.getUserLogin(), passwordNotHashed), TestConstants.staffLoginURL);
+    void authorizationControllerRegisterClientWithLoginOfLengthEqualTo20AsAnAuthenticatedStaffTestPositive() {
+        String accessToken = loginToAccount(new LoginAccountRequest(staffUser.getLogin(), passwordNotHashed), TestConstants.staffLoginURL);
 
         String clientLogin = "ddddfddddfddddfddddf";
         String clientPassword = "password";
 
-        UserInputDTO userInputDTO = new UserInputDTO(clientLogin, clientPassword);
+        LoginAccountRequest userInputDTO = new LoginAccountRequest(clientLogin, clientPassword);
 
         RequestSpecification requestSpecification = RestAssured.given();
-        requestSpecification.header("Authorization", "Bearer " + accessToken);
+        requestSpecification.header(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken);
         requestSpecification.contentType(ContentType.JSON);
         requestSpecification.accept(ContentType.JSON);
         requestSpecification.body(userInputDTO);
 
         Response response = requestSpecification.post(TestConstants.clientRegisterURL);
-        logger.debug("Response: " + response.getBody().asString());
         ValidatableResponse validatableResponse = response.then();
 
         validatableResponse.statusCode(201);
 
-        UserOutputDTO userOutputDTO = response.getBody().as(UserOutputDTO.class);
+        AccountResponse userOutputDTO = response.getBody().as(AccountResponse.class);
 
-        assertEquals(clientLogin, userOutputDTO.getUserLogin());
+        assertEquals(clientLogin, userOutputDTO.login());
     }
 
     @Test
-    public void authorizationControllerRegisterClientWithLoginThatDoesNotMatchRegexAsAnAuthenticatedStaffTestNegative() {
-        String accessToken = this.loginToAccount(new UserInputDTO(staffUser.getUserLogin(), passwordNotHashed), TestConstants.staffLoginURL);
+    void authorizationControllerRegisterClientWithLoginThatDoesNotMatchRegexAsAnAuthenticatedStaffTestNegative() {
+        String accessToken = loginToAccount(new LoginAccountRequest(staffUser.getLogin(), passwordNotHashed), TestConstants.staffLoginURL);
 
         String clientLogin = "Test Login";
         String clientPassword = "password";
 
-        UserInputDTO userInputDTO = new UserInputDTO(clientLogin, clientPassword);
+        LoginAccountRequest userInputDTO = new LoginAccountRequest(clientLogin, clientPassword);
 
         RequestSpecification requestSpecification = RestAssured.given();
-        requestSpecification.header("Authorization", "Bearer " + accessToken);
+        requestSpecification.header(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken);
         requestSpecification.contentType(ContentType.JSON);
         requestSpecification.accept(ContentType.JSON);
         requestSpecification.body(userInputDTO);
 
         Response response = requestSpecification.post(TestConstants.clientRegisterURL);
-        logger.debug("Response: " + response.getBody().asString());
         ValidatableResponse validatableResponse = response.then();
 
         validatableResponse.statusCode(400);
     }
 
     @Test
-    public void authorizationControllerRegisterClientWithLoginThatIsAlreadyInTheDatabaseAsAnAuthenticatedStaffTestNegative() {
-        String accessToken = this.loginToAccount(new UserInputDTO(staffUser.getUserLogin(), passwordNotHashed), TestConstants.staffLoginURL);
+    void authorizationControllerRegisterClientWithLoginThatIsAlreadyInTheDatabaseAsAnAuthenticatedStaffTestNegative() {
+        String accessToken = loginToAccount(new LoginAccountRequest(staffUser.getLogin(), passwordNotHashed), TestConstants.staffLoginURL);
 
-        String clientLogin = clientUser.getUserLogin();
+        String clientLogin = clientUser.getLogin();
         String clientPassword = "password";
 
-        UserInputDTO userInputDTO = new UserInputDTO(clientLogin, clientPassword);
+        LoginAccountRequest userInputDTO = new LoginAccountRequest(clientLogin, clientPassword);
 
         RequestSpecification requestSpecification = RestAssured.given();
-        requestSpecification.header("Authorization", "Bearer " + accessToken);
+        requestSpecification.header(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken);
         requestSpecification.contentType(ContentType.JSON);
         requestSpecification.accept(ContentType.JSON);
         requestSpecification.body(userInputDTO);
 
         Response response = requestSpecification.post(TestConstants.clientRegisterURL);
-        logger.debug("Response: " + response.getBody().asString());
         ValidatableResponse validatableResponse = response.then();
 
         validatableResponse.statusCode(409);
@@ -860,81 +819,78 @@ public class AuthenticationControllerTest {
     // Authorization tests.
 
     @Test
-    public void authorizationControllerRegisterClientAsAnAuthenticatedAdminTestPositive() {
-        String accessToken = this.loginToAccount(new UserInputDTO(adminUser.getUserLogin(), passwordNotHashed), TestConstants.adminLoginURL);
+    void authorizationControllerRegisterClientAsAnAuthenticatedAdminTestPositive() {
+        String accessToken = loginToAccount(new LoginAccountRequest(adminUser.getLogin(), passwordNotHashed), TestConstants.adminLoginURL);
 
         String clientLogin = "x4ClientLogin";
         String clientPassword = "password";
 
-        UserInputDTO userInputDTO = new UserInputDTO(clientLogin, clientPassword);
+        LoginAccountRequest userInputDTO = new LoginAccountRequest(clientLogin, clientPassword);
 
         RequestSpecification requestSpecification = RestAssured.given();
-        requestSpecification.header("Authorization", "Bearer " + accessToken);
+        requestSpecification.header(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken);
         requestSpecification.contentType(ContentType.JSON);
         requestSpecification.accept(ContentType.JSON);
         requestSpecification.body(userInputDTO);
 
         Response response = requestSpecification.post(TestConstants.clientRegisterURL);
-        logger.debug("Response: " + response.getBody().asString());
         ValidatableResponse validatableResponse = response.then();
 
         validatableResponse.statusCode(201);
 
-        UserOutputDTO userOutputDTO = response.getBody().as(UserOutputDTO.class);
+        AccountResponse accountResponse = response.getBody().as(AccountResponse.class);
 
-        assertEquals(clientLogin, userOutputDTO.getUserLogin());
+        assertEquals(clientLogin, accountResponse.login());
     }
 
     @Test
-    public void authorizationControllerRegisterStaffAsAnAuthenticatedStaffTestPositive() {
-        String accessToken = this.loginToAccount(new UserInputDTO(adminUser.getUserLogin(), passwordNotHashed), TestConstants.adminLoginURL);
+    void authorizationControllerRegisterStaffAsAnAuthenticatedStaffTestPositive() {
+        String accessToken = loginToAccount(new LoginAccountRequest(adminUser.getLogin(), passwordNotHashed), TestConstants.adminLoginURL);
 
         String staffLogin = "x4StaffLogin";
         String staffPassword = "password";
 
-        UserInputDTO userInputDTO = new UserInputDTO(staffLogin, staffPassword);
+        LoginAccountRequest userInputDTO = new LoginAccountRequest(staffLogin, staffPassword);
 
         RequestSpecification requestSpecification = RestAssured.given();
-        requestSpecification.header("Authorization", "Bearer " + accessToken);
+        requestSpecification.header(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken);
         requestSpecification.contentType(ContentType.JSON);
         requestSpecification.accept(ContentType.JSON);
         requestSpecification.body(userInputDTO);
 
         Response response = requestSpecification.post(TestConstants.staffRegisterURL);
-        logger.debug("Response: " + response.getBody().asString());
         ValidatableResponse validatableResponse = response.then();
 
         validatableResponse.statusCode(201);
 
-        UserOutputDTO userOutputDTO = response.getBody().as(UserOutputDTO.class);
+        AccountResponse accountResponse = response.getBody().as(AccountResponse.class);
 
-        assertEquals(staffLogin, userOutputDTO.getUserLogin());
+        assertEquals(staffLogin, accountResponse.login());
     }
 
     @Test
-    public void authorizationControllerRegisterAdminAsAnAuthenticatedStaffTestPositive() {
-        String accessToken = this.loginToAccount(new UserInputDTO(adminUser.getUserLogin(), passwordNotHashed), TestConstants.adminLoginURL);
+    void authorizationControllerRegisterAdminAsAnAuthenticatedStaffTestPositive() {
+        String accessToken = loginToAccount(new LoginAccountRequest(adminUser.getLogin(), passwordNotHashed), TestConstants.adminLoginURL);
 
         String adminLogin = "x4AdminLogin";
         String adminPassword = "password";
 
-        UserInputDTO userInputDTO = new UserInputDTO(adminLogin, adminPassword);
+        LoginAccountRequest userInputDTO = new LoginAccountRequest(adminLogin, adminPassword);
 
         RequestSpecification requestSpecification = RestAssured.given();
-        requestSpecification.header("Authorization", "Bearer " + accessToken);
+        requestSpecification.header(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken);
         requestSpecification.contentType(ContentType.JSON);
         requestSpecification.accept(ContentType.JSON);
         requestSpecification.body(userInputDTO);
 
         Response response = requestSpecification.post(TestConstants.adminRegisterURL);
-        logger.debug("Response: " + response.getBody().asString());
         ValidatableResponse validatableResponse = response.then();
 
         validatableResponse.statusCode(201);
 
-        UserOutputDTO userOutputDTO = response.getBody().as(UserOutputDTO.class);
+        AccountResponse accountResponse = response.getBody().as(AccountResponse.class);
 
-        assertEquals(adminLogin, userOutputDTO.getUserLogin());
+        assertEquals(adminLogin, accountResponse.login());
     }
 
     // Data incorrect tests.
@@ -944,184 +900,176 @@ public class AuthenticationControllerTest {
     // Client
 
     @Test
-    public void authorizationControllerRegisterClientWithNullLoginAsAnAuthenticatedAdminTestNegative() {
-        String accessToken = this.loginToAccount(new UserInputDTO(adminUser.getUserLogin(), passwordNotHashed), TestConstants.adminLoginURL);
+    void authorizationControllerRegisterClientWithNullLoginAsAnAuthenticatedAdminTestNegative() {
+        String accessToken = loginToAccount(new LoginAccountRequest(adminUser.getLogin(), passwordNotHashed), TestConstants.adminLoginURL);
 
         String clientLogin = null;
         String clientPassword = "password";
 
-        UserInputDTO userInputDTO = new UserInputDTO(clientLogin, clientPassword);
+        LoginAccountRequest userInputDTO = new LoginAccountRequest(clientLogin, clientPassword);
 
         RequestSpecification requestSpecification = RestAssured.given();
-        requestSpecification.header("Authorization", "Bearer " + accessToken);
+        requestSpecification.header(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken);
         requestSpecification.contentType(ContentType.JSON);
         requestSpecification.accept(ContentType.JSON);
         requestSpecification.body(userInputDTO);
 
         Response response = requestSpecification.post(TestConstants.clientRegisterURL);
-        logger.debug("Response: " + response.getBody().asString());
         ValidatableResponse validatableResponse = response.then();
 
         validatableResponse.statusCode(400);
     }
 
     @Test
-    public void authorizationControllerRegisterClientWithEmptyLoginAsAnAuthenticatedAdminTestNegative() {
-        String accessToken = this.loginToAccount(new UserInputDTO(adminUser.getUserLogin(), passwordNotHashed), TestConstants.adminLoginURL);
+    void authorizationControllerRegisterClientWithEmptyLoginAsAnAuthenticatedAdminTestNegative() {
+        String accessToken = loginToAccount(new LoginAccountRequest(adminUser.getLogin(), passwordNotHashed), TestConstants.adminLoginURL);
 
         String clientLogin = "";
         String clientPassword = "password";
 
-        UserInputDTO userInputDTO = new UserInputDTO(clientLogin, clientPassword);
+        LoginAccountRequest userInputDTO = new LoginAccountRequest(clientLogin, clientPassword);
 
         RequestSpecification requestSpecification = RestAssured.given();
-        requestSpecification.header("Authorization", "Bearer " + accessToken);
+        requestSpecification.header(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken);
         requestSpecification.contentType(ContentType.JSON);
         requestSpecification.accept(ContentType.JSON);
         requestSpecification.body(userInputDTO);
 
         Response response = requestSpecification.post(TestConstants.clientRegisterURL);
-        logger.debug("Response: " + response.getBody().asString());
         ValidatableResponse validatableResponse = response.then();
 
         validatableResponse.statusCode(400);
     }
 
     @Test
-    public void authorizationControllerRegisterClientWithLoginTooShortAsAnAuthenticatedAdminTestNegative() {
-        String accessToken = this.loginToAccount(new UserInputDTO(adminUser.getUserLogin(), passwordNotHashed), TestConstants.adminLoginURL);
+    void authorizationControllerRegisterClientWithLoginTooShortAsAnAuthenticatedAdminTestNegative() {
+        String accessToken = loginToAccount(new LoginAccountRequest(adminUser.getLogin(), passwordNotHashed), TestConstants.adminLoginURL);
 
         String clientLogin = "ddddfdd";
         String clientPassword = "password";
 
-        UserInputDTO userInputDTO = new UserInputDTO(clientLogin, clientPassword);
+        LoginAccountRequest userInputDTO = new LoginAccountRequest(clientLogin, clientPassword);
 
         RequestSpecification requestSpecification = RestAssured.given();
-        requestSpecification.header("Authorization", "Bearer " + accessToken);
+        requestSpecification.header(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken);
         requestSpecification.contentType(ContentType.JSON);
         requestSpecification.accept(ContentType.JSON);
         requestSpecification.body(userInputDTO);
 
         Response response = requestSpecification.post(TestConstants.clientRegisterURL);
-        logger.debug("Response: " + response.getBody().asString());
         ValidatableResponse validatableResponse = response.then();
 
         validatableResponse.statusCode(400);
     }
 
     @Test
-    public void authorizationControllerRegisterClientWithLoginTooLongAsAnAuthenticatedAdminTestNegative() {
-        String accessToken = this.loginToAccount(new UserInputDTO(adminUser.getUserLogin(), passwordNotHashed), TestConstants.adminLoginURL);
+    void authorizationControllerRegisterClientWithLoginTooLongAsAnAuthenticatedAdminTestNegative() {
+        String accessToken = loginToAccount(new LoginAccountRequest(adminUser.getLogin(), passwordNotHashed), TestConstants.adminLoginURL);
 
         String clientLogin = "ddddfddddfddddfddddfddddfddddfddddfddddfd";
         String clientPassword = "password";
 
-        UserInputDTO userInputDTO = new UserInputDTO(clientLogin, clientPassword);
+        LoginAccountRequest userInputDTO = new LoginAccountRequest(clientLogin, clientPassword);
 
         RequestSpecification requestSpecification = RestAssured.given();
-        requestSpecification.header("Authorization", "Bearer " + accessToken);
+        requestSpecification.header(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken);
         requestSpecification.contentType(ContentType.JSON);
         requestSpecification.accept(ContentType.JSON);
         requestSpecification.body(userInputDTO);
 
         Response response = requestSpecification.post(TestConstants.clientRegisterURL);
-        logger.debug("Response: " + response.getBody().asString());
         ValidatableResponse validatableResponse = response.then();
 
         validatableResponse.statusCode(400);
     }
 
     @Test
-    public void authorizationControllerRegisterClientWithLoginOfLengthEqualTo8AsAnAuthenticatedAdminTestPositive() {
-        String accessToken = this.loginToAccount(new UserInputDTO(adminUser.getUserLogin(), passwordNotHashed), TestConstants.adminLoginURL);
+    void authorizationControllerRegisterClientWithLoginOfLengthEqualTo8AsAnAuthenticatedAdminTestPositive() {
+        String accessToken = loginToAccount(new LoginAccountRequest(adminUser.getLogin(), passwordNotHashed), TestConstants.adminLoginURL);
 
         String clientLogin = "ddddfddd";
         String clientPassword = "password";
 
-        UserInputDTO userInputDTO = new UserInputDTO(clientLogin, clientPassword);
+        LoginAccountRequest userInputDTO = new LoginAccountRequest(clientLogin, clientPassword);
 
         RequestSpecification requestSpecification = RestAssured.given();
-        requestSpecification.header("Authorization", "Bearer " + accessToken);
+        requestSpecification.header(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken);
         requestSpecification.contentType(ContentType.JSON);
         requestSpecification.accept(ContentType.JSON);
         requestSpecification.body(userInputDTO);
 
         Response response = requestSpecification.post(TestConstants.clientRegisterURL);
-        logger.debug("Response: " + response.getBody().asString());
         ValidatableResponse validatableResponse = response.then();
 
         validatableResponse.statusCode(201);
 
-        UserOutputDTO userOutputDTO = response.getBody().as(UserOutputDTO.class);
+        AccountResponse accountResponse = response.getBody().as(AccountResponse.class);
 
-        assertEquals(clientLogin, userOutputDTO.getUserLogin());
+        assertEquals(clientLogin, accountResponse.login());
     }
 
     @Test
-    public void authorizationControllerRegisterClientWithLoginOfLengthEqualTo20AsAnAuthenticatedAdminTestPositive() {
-        String accessToken = this.loginToAccount(new UserInputDTO(adminUser.getUserLogin(), passwordNotHashed), TestConstants.adminLoginURL);
+    void authorizationControllerRegisterClientWithLoginOfLengthEqualTo20AsAnAuthenticatedAdminTestPositive() {
+        String accessToken = loginToAccount(new LoginAccountRequest(adminUser.getLogin(), passwordNotHashed), TestConstants.adminLoginURL);
 
         String clientLogin = "ddddfddddfddddfddddf";
         String clientPassword = "password";
 
-        UserInputDTO userInputDTO = new UserInputDTO(clientLogin, clientPassword);
+        LoginAccountRequest userInputDTO = new LoginAccountRequest(clientLogin, clientPassword);
 
         RequestSpecification requestSpecification = RestAssured.given();
-        requestSpecification.header("Authorization", "Bearer " + accessToken);
+        requestSpecification.header(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken);
         requestSpecification.contentType(ContentType.JSON);
         requestSpecification.accept(ContentType.JSON);
         requestSpecification.body(userInputDTO);
 
         Response response = requestSpecification.post(TestConstants.clientRegisterURL);
-        logger.debug("Response: " + response.getBody().asString());
         ValidatableResponse validatableResponse = response.then();
 
         validatableResponse.statusCode(201);
 
-        UserOutputDTO userOutputDTO = response.getBody().as(UserOutputDTO.class);
+        AccountResponse accountResponse = response.getBody().as(AccountResponse.class);
 
-        assertEquals(clientLogin, userOutputDTO.getUserLogin());
+        assertEquals(clientLogin, accountResponse.login());
     }
 
     @Test
-    public void authorizationControllerRegisterClientWithLoginThatDoesNotMatchRegexAsAnAuthenticatedAdminTestNegative() {
-        String accessToken = this.loginToAccount(new UserInputDTO(adminUser.getUserLogin(), passwordNotHashed), TestConstants.adminLoginURL);
+    void authorizationControllerRegisterClientWithLoginThatDoesNotMatchRegexAsAnAuthenticatedAdminTestNegative() {
+        String accessToken = loginToAccount(new LoginAccountRequest(adminUser.getLogin(), passwordNotHashed), TestConstants.adminLoginURL);
 
         String clientLogin = "Test Login";
         String clientPassword = "password";
 
-        UserInputDTO userInputDTO = new UserInputDTO(clientLogin, clientPassword);
+        LoginAccountRequest userInputDTO = new LoginAccountRequest(clientLogin, clientPassword);
 
         RequestSpecification requestSpecification = RestAssured.given();
-        requestSpecification.header("Authorization", "Bearer " + accessToken);
+        requestSpecification.header(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken);
         requestSpecification.contentType(ContentType.JSON);
         requestSpecification.accept(ContentType.JSON);
         requestSpecification.body(userInputDTO);
 
         Response response = requestSpecification.post(TestConstants.clientRegisterURL);
-        logger.debug("Response: " + response.getBody().asString());
         ValidatableResponse validatableResponse = response.then();
 
         validatableResponse.statusCode(400);
     }
 
     @Test
-    public void authorizationControllerRegisterClientWithLoginThatIsAlreadyInTheDatabaseAsAnAuthenticatedAdminTestNegative() {
-        String accessToken = this.loginToAccount(new UserInputDTO(adminUser.getUserLogin(), passwordNotHashed), TestConstants.adminLoginURL);
+    void authorizationControllerRegisterClientWithLoginThatIsAlreadyInTheDatabaseAsAnAuthenticatedAdminTestNegative() {
+        String accessToken = loginToAccount(new LoginAccountRequest(adminUser.getLogin(), passwordNotHashed), TestConstants.adminLoginURL);
 
-        String clientLogin = clientUser.getUserLogin();
+        String clientLogin = clientUser.getLogin();
         String clientPassword = "password";
 
-        UserInputDTO userInputDTO = new UserInputDTO(clientLogin, clientPassword);
+        LoginAccountRequest userInputDTO = new LoginAccountRequest(clientLogin, clientPassword);
 
         RequestSpecification requestSpecification = RestAssured.given();
-        requestSpecification.header("Authorization", "Bearer " + accessToken);
+        requestSpecification.header(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken);
         requestSpecification.contentType(ContentType.JSON);
         requestSpecification.accept(ContentType.JSON);
         requestSpecification.body(userInputDTO);
 
         Response response = requestSpecification.post(TestConstants.clientRegisterURL);
-        logger.debug("Response: " + response.getBody().asString());
         ValidatableResponse validatableResponse = response.then();
 
         validatableResponse.statusCode(409);
@@ -1130,184 +1078,176 @@ public class AuthenticationControllerTest {
     // Staff
 
     @Test
-    public void authorizationControllerRegisterStaffWithNullLoginAsAnAuthenticatedAdminTestNegative() {
-        String accessToken = this.loginToAccount(new UserInputDTO(adminUser.getUserLogin(), passwordNotHashed), TestConstants.adminLoginURL);
+    void authorizationControllerRegisterStaffWithNullLoginAsAnAuthenticatedAdminTestNegative() {
+        String accessToken = loginToAccount(new LoginAccountRequest(adminUser.getLogin(), passwordNotHashed), TestConstants.adminLoginURL);
 
         String staffLogin = null;
         String staffPassword = "password";
 
-        UserInputDTO userInputDTO = new UserInputDTO(staffLogin, staffPassword);
+        LoginAccountRequest userInputDTO = new LoginAccountRequest(staffLogin, staffPassword);
 
         RequestSpecification requestSpecification = RestAssured.given();
-        requestSpecification.header("Authorization", "Bearer " + accessToken);
+        requestSpecification.header(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken);
         requestSpecification.contentType(ContentType.JSON);
         requestSpecification.accept(ContentType.JSON);
         requestSpecification.body(userInputDTO);
 
         Response response = requestSpecification.post(TestConstants.staffRegisterURL);
-        logger.debug("Response: " + response.getBody().asString());
         ValidatableResponse validatableResponse = response.then();
 
         validatableResponse.statusCode(400);
     }
 
     @Test
-    public void authorizationControllerRegisterStaffWithEmptyLoginAsAnAuthenticatedAdminTestNegative() {
-        String accessToken = this.loginToAccount(new UserInputDTO(adminUser.getUserLogin(), passwordNotHashed), TestConstants.adminLoginURL);
+    void authorizationControllerRegisterStaffWithEmptyLoginAsAnAuthenticatedAdminTestNegative() {
+        String accessToken = loginToAccount(new LoginAccountRequest(adminUser.getLogin(), passwordNotHashed), TestConstants.adminLoginURL);
 
         String staffLogin = "";
         String staffPassword = "password";
 
-        UserInputDTO userInputDTO = new UserInputDTO(staffLogin, staffPassword);
+        LoginAccountRequest userInputDTO = new LoginAccountRequest(staffLogin, staffPassword);
 
         RequestSpecification requestSpecification = RestAssured.given();
-        requestSpecification.header("Authorization", "Bearer " + accessToken);
+        requestSpecification.header(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken);
         requestSpecification.contentType(ContentType.JSON);
         requestSpecification.accept(ContentType.JSON);
         requestSpecification.body(userInputDTO);
 
         Response response = requestSpecification.post(TestConstants.staffRegisterURL);
-        logger.debug("Response: " + response.getBody().asString());
         ValidatableResponse validatableResponse = response.then();
 
         validatableResponse.statusCode(400);
     }
 
     @Test
-    public void authorizationControllerRegisterStaffWithLoginTooShortAsAnAuthenticatedAdminTestNegative() {
-        String accessToken = this.loginToAccount(new UserInputDTO(adminUser.getUserLogin(), passwordNotHashed), TestConstants.adminLoginURL);
+    void authorizationControllerRegisterStaffWithLoginTooShortAsAnAuthenticatedAdminTestNegative() {
+        String accessToken = loginToAccount(new LoginAccountRequest(adminUser.getLogin(), passwordNotHashed), TestConstants.adminLoginURL);
 
         String staffLogin = "ddddfdd";
         String staffPassword = "password";
 
-        UserInputDTO userInputDTO = new UserInputDTO(staffLogin, staffPassword);
+        LoginAccountRequest userInputDTO = new LoginAccountRequest(staffLogin, staffPassword);
 
         RequestSpecification requestSpecification = RestAssured.given();
-        requestSpecification.header("Authorization", "Bearer " + accessToken);
+        requestSpecification.header(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken);
         requestSpecification.contentType(ContentType.JSON);
         requestSpecification.accept(ContentType.JSON);
         requestSpecification.body(userInputDTO);
 
         Response response = requestSpecification.post(TestConstants.staffRegisterURL);
-        logger.debug("Response: " + response.getBody().asString());
         ValidatableResponse validatableResponse = response.then();
 
         validatableResponse.statusCode(400);
     }
 
     @Test
-    public void authorizationControllerRegisterStaffWithLoginTooLongAsAnAuthenticatedAdminTestNegative() {
-        String accessToken = this.loginToAccount(new UserInputDTO(adminUser.getUserLogin(), passwordNotHashed), TestConstants.adminLoginURL);
+    void authorizationControllerRegisterStaffWithLoginTooLongAsAnAuthenticatedAdminTestNegative() {
+        String accessToken = loginToAccount(new LoginAccountRequest(adminUser.getLogin(), passwordNotHashed), TestConstants.adminLoginURL);
 
         String staffLogin = "ddddfddddfddddfddddfd";
         String staffPassword = "password";
 
-        UserInputDTO userInputDTO = new UserInputDTO(staffLogin, staffPassword);
+        LoginAccountRequest userInputDTO = new LoginAccountRequest(staffLogin, staffPassword);
 
         RequestSpecification requestSpecification = RestAssured.given();
-        requestSpecification.header("Authorization", "Bearer " + accessToken);
+        requestSpecification.header(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken);
         requestSpecification.contentType(ContentType.JSON);
         requestSpecification.accept(ContentType.JSON);
         requestSpecification.body(userInputDTO);
 
         Response response = requestSpecification.post(TestConstants.staffRegisterURL);
-        logger.debug("Response: " + response.getBody().asString());
         ValidatableResponse validatableResponse = response.then();
 
         validatableResponse.statusCode(400);
     }
 
     @Test
-    public void authorizationControllerRegisterStaffWithLoginOfLengthEqualTo8AsAnAuthenticatedAdminTestPositive() {
-        String accessToken = this.loginToAccount(new UserInputDTO(adminUser.getUserLogin(), passwordNotHashed), TestConstants.adminLoginURL);
+    void authorizationControllerRegisterStaffWithLoginOfLengthEqualTo8AsAnAuthenticatedAdminTestPositive() {
+        String accessToken = loginToAccount(new LoginAccountRequest(adminUser.getLogin(), passwordNotHashed), TestConstants.adminLoginURL);
 
         String staffLogin = "ddddfddd";
         String staffPassword = "password";
 
-        UserInputDTO userInputDTO = new UserInputDTO(staffLogin, staffPassword);
+        LoginAccountRequest userInputDTO = new LoginAccountRequest(staffLogin, staffPassword);
 
         RequestSpecification requestSpecification = RestAssured.given();
-        requestSpecification.header("Authorization", "Bearer " + accessToken);
+        requestSpecification.header(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken);
         requestSpecification.contentType(ContentType.JSON);
         requestSpecification.accept(ContentType.JSON);
         requestSpecification.body(userInputDTO);
 
         Response response = requestSpecification.post(TestConstants.staffRegisterURL);
-        logger.debug("Response: " + response.getBody().asString());
         ValidatableResponse validatableResponse = response.then();
 
         validatableResponse.statusCode(201);
 
-        UserOutputDTO userOutputDTO = response.getBody().as(UserOutputDTO.class);
+        AccountResponse accountResponse = response.getBody().as(AccountResponse.class);
 
-        assertEquals(staffLogin, userOutputDTO.getUserLogin());
+        assertEquals(staffLogin, accountResponse.login());
     }
 
     @Test
-    public void authorizationControllerRegisterStaffWithLoginOfLengthEqualTo20AsAnAuthenticatedAdminTestPositive() {
-        String accessToken = this.loginToAccount(new UserInputDTO(adminUser.getUserLogin(), passwordNotHashed), TestConstants.adminLoginURL);
+    void authorizationControllerRegisterStaffWithLoginOfLengthEqualTo20AsAnAuthenticatedAdminTestPositive() {
+        String accessToken = loginToAccount(new LoginAccountRequest(adminUser.getLogin(), passwordNotHashed), TestConstants.adminLoginURL);
 
         String staffLogin = "ddddfddddfddddfddddf";
         String staffPassword = "password";
 
-        UserInputDTO userInputDTO = new UserInputDTO(staffLogin, staffPassword);
+        LoginAccountRequest userInputDTO = new LoginAccountRequest(staffLogin, staffPassword);
 
         RequestSpecification requestSpecification = RestAssured.given();
-        requestSpecification.header("Authorization", "Bearer " + accessToken);
+        requestSpecification.header(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken);
         requestSpecification.contentType(ContentType.JSON);
         requestSpecification.accept(ContentType.JSON);
         requestSpecification.body(userInputDTO);
 
         Response response = requestSpecification.post(TestConstants.staffRegisterURL);
-        logger.debug("Response: " + response.getBody().asString());
         ValidatableResponse validatableResponse = response.then();
 
         validatableResponse.statusCode(201);
 
-        UserOutputDTO userOutputDTO = response.getBody().as(UserOutputDTO.class);
+        AccountResponse accountResponse = response.getBody().as(AccountResponse.class);
 
-        assertEquals(staffLogin, userOutputDTO.getUserLogin());
+        assertEquals(staffLogin, accountResponse.login());
     }
 
     @Test
-    public void authorizationControllerRegisterStaffWithLoginThatDoesNotMatchRegexAsAnAuthenticatedAdminTestNegative() {
-        String accessToken = this.loginToAccount(new UserInputDTO(adminUser.getUserLogin(), passwordNotHashed), TestConstants.adminLoginURL);
+    void authorizationControllerRegisterStaffWithLoginThatDoesNotMatchRegexAsAnAuthenticatedAdminTestNegative() {
+        String accessToken = loginToAccount(new LoginAccountRequest(adminUser.getLogin(), passwordNotHashed), TestConstants.adminLoginURL);
 
         String staffLogin = "Test Login";
         String staffPassword = "password";
 
-        UserInputDTO userInputDTO = new UserInputDTO(staffLogin, staffPassword);
+        LoginAccountRequest userInputDTO = new LoginAccountRequest(staffLogin, staffPassword);
 
         RequestSpecification requestSpecification = RestAssured.given();
-        requestSpecification.header("Authorization", "Bearer " + accessToken);
+        requestSpecification.header(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken);
         requestSpecification.contentType(ContentType.JSON);
         requestSpecification.accept(ContentType.JSON);
         requestSpecification.body(userInputDTO);
 
         Response response = requestSpecification.post(TestConstants.staffRegisterURL);
-        logger.debug("Response: " + response.getBody().asString());
         ValidatableResponse validatableResponse = response.then();
 
         validatableResponse.statusCode(400);
     }
 
     @Test
-    public void authorizationControllerRegisterStaffWithLoginThatIsAlreadyInTheDatabaseAsAnAuthenticatedAdminTestNegative() {
-        String accessToken = this.loginToAccount(new UserInputDTO(adminUser.getUserLogin(), passwordNotHashed), TestConstants.adminLoginURL);
+    void authorizationControllerRegisterStaffWithLoginThatIsAlreadyInTheDatabaseAsAnAuthenticatedAdminTestNegative() {
+        String accessToken = loginToAccount(new LoginAccountRequest(adminUser.getLogin(), passwordNotHashed), TestConstants.adminLoginURL);
 
-        String staffLogin = staffUser.getUserLogin();
+        String staffLogin = staffUser.getLogin();
         String staffPassword = "password";
 
-        UserInputDTO userInputDTO = new UserInputDTO(staffLogin, staffPassword);
+        LoginAccountRequest userInputDTO = new LoginAccountRequest(staffLogin, staffPassword);
 
         RequestSpecification requestSpecification = RestAssured.given();
-        requestSpecification.header("Authorization", "Bearer " + accessToken);
+        requestSpecification.header(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken);
         requestSpecification.contentType(ContentType.JSON);
         requestSpecification.accept(ContentType.JSON);
         requestSpecification.body(userInputDTO);
 
         Response response = requestSpecification.post(TestConstants.staffRegisterURL);
-        logger.debug("Response: " + response.getBody().asString());
         ValidatableResponse validatableResponse = response.then();
 
         validatableResponse.statusCode(409);
@@ -1316,184 +1256,176 @@ public class AuthenticationControllerTest {
     // Admin
 
     @Test
-    public void authorizationControllerRegisterAdminWithNullLoginAsAnAuthenticatedAdminTestNegative() {
-        String accessToken = this.loginToAccount(new UserInputDTO(adminUser.getUserLogin(), passwordNotHashed), TestConstants.adminLoginURL);
+    void authorizationControllerRegisterAdminWithNullLoginAsAnAuthenticatedAdminTestNegative() {
+        String accessToken = loginToAccount(new LoginAccountRequest(adminUser.getLogin(), passwordNotHashed), TestConstants.adminLoginURL);
 
         String adminLogin = null;
         String adminPassword = "password";
 
-        UserInputDTO userInputDTO = new UserInputDTO(adminLogin, adminPassword);
+        LoginAccountRequest userInputDTO = new LoginAccountRequest(adminLogin, adminPassword);
 
         RequestSpecification requestSpecification = RestAssured.given();
-        requestSpecification.header("Authorization", "Bearer " + accessToken);
+        requestSpecification.header(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken);
         requestSpecification.contentType(ContentType.JSON);
         requestSpecification.accept(ContentType.JSON);
         requestSpecification.body(userInputDTO);
 
         Response response = requestSpecification.post(TestConstants.adminRegisterURL);
-        logger.debug("Response: " + response.getBody().asString());
         ValidatableResponse validatableResponse = response.then();
 
         validatableResponse.statusCode(400);
     }
 
     @Test
-    public void authorizationControllerRegisterAdminWithEmptyLoginAsAnAuthenticatedAdminTestNegative() {
-        String accessToken = this.loginToAccount(new UserInputDTO(adminUser.getUserLogin(), passwordNotHashed), TestConstants.adminLoginURL);
+    void authorizationControllerRegisterAdminWithEmptyLoginAsAnAuthenticatedAdminTestNegative() {
+        String accessToken = loginToAccount(new LoginAccountRequest(adminUser.getLogin(), passwordNotHashed), TestConstants.adminLoginURL);
 
         String adminLogin = "";
         String adminPassword = "password";
 
-        UserInputDTO userInputDTO = new UserInputDTO(adminLogin, adminPassword);
+        LoginAccountRequest userInputDTO = new LoginAccountRequest(adminLogin, adminPassword);
 
         RequestSpecification requestSpecification = RestAssured.given();
-        requestSpecification.header("Authorization", "Bearer " + accessToken);
+        requestSpecification.header(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken);
         requestSpecification.contentType(ContentType.JSON);
         requestSpecification.accept(ContentType.JSON);
         requestSpecification.body(userInputDTO);
 
         Response response = requestSpecification.post(TestConstants.adminRegisterURL);
-        logger.debug("Response: " + response.getBody().asString());
         ValidatableResponse validatableResponse = response.then();
 
         validatableResponse.statusCode(400);
     }
 
     @Test
-    public void authorizationControllerRegisterAdminWithLoginTooShortAsAnAuthenticatedAdminTestNegative() {
-        String accessToken = this.loginToAccount(new UserInputDTO(adminUser.getUserLogin(), passwordNotHashed), TestConstants.adminLoginURL);
+    void authorizationControllerRegisterAdminWithLoginTooShortAsAnAuthenticatedAdminTestNegative() {
+        String accessToken = loginToAccount(new LoginAccountRequest(adminUser.getLogin(), passwordNotHashed), TestConstants.adminLoginURL);
 
         String adminLogin = "ddddfdd";
         String adminPassword = "password";
 
-        UserInputDTO userInputDTO = new UserInputDTO(adminLogin, adminPassword);
+        LoginAccountRequest userInputDTO = new LoginAccountRequest(adminLogin, adminPassword);
 
         RequestSpecification requestSpecification = RestAssured.given();
-        requestSpecification.header("Authorization", "Bearer " + accessToken);
+        requestSpecification.header(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken);
         requestSpecification.contentType(ContentType.JSON);
         requestSpecification.accept(ContentType.JSON);
         requestSpecification.body(userInputDTO);
 
         Response response = requestSpecification.post(TestConstants.adminRegisterURL);
-        logger.debug("Response: " + response.getBody().asString());
         ValidatableResponse validatableResponse = response.then();
 
         validatableResponse.statusCode(400);
     }
 
     @Test
-    public void authorizationControllerRegisterAdminWithLoginTooLongAsAnAuthenticatedAdminTestNegative() {
-        String accessToken = this.loginToAccount(new UserInputDTO(adminUser.getUserLogin(), passwordNotHashed), TestConstants.adminLoginURL);
+    void authorizationControllerRegisterAdminWithLoginTooLongAsAnAuthenticatedAdminTestNegative() {
+        String accessToken = loginToAccount(new LoginAccountRequest(adminUser.getLogin(), passwordNotHashed), TestConstants.adminLoginURL);
 
         String adminLogin = "ddddfddddfddddfddddfd";
         String adminPassword = "password";
 
-        UserInputDTO userInputDTO = new UserInputDTO(adminLogin, adminPassword);
+        LoginAccountRequest userInputDTO = new LoginAccountRequest(adminLogin, adminPassword);
 
         RequestSpecification requestSpecification = RestAssured.given();
-        requestSpecification.header("Authorization", "Bearer " + accessToken);
+        requestSpecification.header(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken);
         requestSpecification.contentType(ContentType.JSON);
         requestSpecification.accept(ContentType.JSON);
         requestSpecification.body(userInputDTO);
 
         Response response = requestSpecification.post(TestConstants.adminRegisterURL);
-        logger.debug("Response: " + response.getBody().asString());
         ValidatableResponse validatableResponse = response.then();
 
         validatableResponse.statusCode(400);
     }
 
     @Test
-    public void authorizationControllerRegisterAdminWithLoginOfLengthEqualTo8AsAnAuthenticatedAdminTestPositive() {
-        String accessToken = this.loginToAccount(new UserInputDTO(adminUser.getUserLogin(), passwordNotHashed), TestConstants.adminLoginURL);
+    void authorizationControllerRegisterAdminWithLoginOfLengthEqualTo8AsAnAuthenticatedAdminTestPositive() {
+        String accessToken = loginToAccount(new LoginAccountRequest(adminUser.getLogin(), passwordNotHashed), TestConstants.adminLoginURL);
 
         String adminLogin = "ddddfddd";
         String adminPassword = "password";
 
-        UserInputDTO userInputDTO = new UserInputDTO(adminLogin, adminPassword);
+        LoginAccountRequest userInputDTO = new LoginAccountRequest(adminLogin, adminPassword);
 
         RequestSpecification requestSpecification = RestAssured.given();
-        requestSpecification.header("Authorization", "Bearer " + accessToken);
+        requestSpecification.header(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken);
         requestSpecification.contentType(ContentType.JSON);
         requestSpecification.accept(ContentType.JSON);
         requestSpecification.body(userInputDTO);
 
         Response response = requestSpecification.post(TestConstants.adminRegisterURL);
-        logger.debug("Response: " + response.getBody().asString());
         ValidatableResponse validatableResponse = response.then();
 
         validatableResponse.statusCode(201);
 
-        UserOutputDTO userOutputDTO = response.getBody().as(UserOutputDTO.class);
+        AccountResponse accountResponse = response.getBody().as(AccountResponse.class);
 
-        assertEquals(adminLogin, userOutputDTO.getUserLogin());
+        assertEquals(adminLogin, accountResponse.login());
     }
 
     @Test
-    public void authorizationControllerRegisterAdminWithLoginOfLengthEqualTo20AsAnAuthenticatedAdminTestPositive() {
-        String accessToken = this.loginToAccount(new UserInputDTO(adminUser.getUserLogin(), passwordNotHashed), TestConstants.adminLoginURL);
+    void authorizationControllerRegisterAdminWithLoginOfLengthEqualTo20AsAnAuthenticatedAdminTestPositive() {
+        String accessToken = loginToAccount(new LoginAccountRequest(adminUser.getLogin(), passwordNotHashed), TestConstants.adminLoginURL);
 
         String adminLogin = "ddddfddddfddddfddddf";
         String adminPassword = "password";
 
-        UserInputDTO userInputDTO = new UserInputDTO(adminLogin, adminPassword);
+        LoginAccountRequest userInputDTO = new LoginAccountRequest(adminLogin, adminPassword);
 
         RequestSpecification requestSpecification = RestAssured.given();
-        requestSpecification.header("Authorization", "Bearer " + accessToken);
+        requestSpecification.header(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken);
         requestSpecification.contentType(ContentType.JSON);
         requestSpecification.accept(ContentType.JSON);
         requestSpecification.body(userInputDTO);
 
         Response response = requestSpecification.post(TestConstants.adminRegisterURL);
-        logger.debug("Response: " + response.getBody().asString());
         ValidatableResponse validatableResponse = response.then();
 
         validatableResponse.statusCode(201);
 
-        UserOutputDTO userOutputDTO = response.getBody().as(UserOutputDTO.class);
+        AccountResponse accountResponse = response.getBody().as(AccountResponse.class);
 
-        assertEquals(adminLogin, userOutputDTO.getUserLogin());
+        assertEquals(adminLogin, accountResponse.login());
     }
 
     @Test
-    public void authorizationControllerRegisterAdminWithLoginThatDoesNotMatchRegexAsAnAuthenticatedAdminTestNegative() {
-        String accessToken = this.loginToAccount(new UserInputDTO(adminUser.getUserLogin(), passwordNotHashed), TestConstants.adminLoginURL);
+    void authorizationControllerRegisterAdminWithLoginThatDoesNotMatchRegexAsAnAuthenticatedAdminTestNegative() {
+        String accessToken = loginToAccount(new LoginAccountRequest(adminUser.getLogin(), passwordNotHashed), TestConstants.adminLoginURL);
 
         String adminLogin = "Test Login";
         String adminPassword = "password";
 
-        UserInputDTO userInputDTO = new UserInputDTO(adminLogin, adminPassword);
+        LoginAccountRequest userInputDTO = new LoginAccountRequest(adminLogin, adminPassword);
 
         RequestSpecification requestSpecification = RestAssured.given();
-        requestSpecification.header("Authorization", "Bearer " + accessToken);
+        requestSpecification.header(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken);
         requestSpecification.contentType(ContentType.JSON);
         requestSpecification.accept(ContentType.JSON);
         requestSpecification.body(userInputDTO);
 
         Response response = requestSpecification.post(TestConstants.adminRegisterURL);
-        logger.debug("Response: " + response.getBody().asString());
         ValidatableResponse validatableResponse = response.then();
 
         validatableResponse.statusCode(400);
     }
 
     @Test
-    public void authorizationControllerRegisterAdminWithLoginThatIsAlreadyInTheDatabaseAsAnAuthenticatedAdminTestNegative() {
-        String accessToken = this.loginToAccount(new UserInputDTO(adminUser.getUserLogin(), passwordNotHashed), TestConstants.adminLoginURL);
+    void authorizationControllerRegisterAdminWithLoginThatIsAlreadyInTheDatabaseAsAnAuthenticatedAdminTestNegative() {
+        String accessToken = loginToAccount(new LoginAccountRequest(adminUser.getLogin(), passwordNotHashed), TestConstants.adminLoginURL);
 
-        String adminLogin = adminUser.getUserLogin();
+        String adminLogin = adminUser.getLogin();
         String adminPassword = "password";
 
-        UserInputDTO userInputDTO = new UserInputDTO(adminLogin, adminPassword);
+        LoginAccountRequest userInputDTO = new LoginAccountRequest(adminLogin, adminPassword);
 
         RequestSpecification requestSpecification = RestAssured.given();
-        requestSpecification.header("Authorization", "Bearer " + accessToken);
+        requestSpecification.header(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken);
         requestSpecification.contentType(ContentType.JSON);
         requestSpecification.accept(ContentType.JSON);
         requestSpecification.body(userInputDTO);
 
         Response response = requestSpecification.post(TestConstants.adminRegisterURL);
-        logger.debug("Response: " + response.getBody().asString());
         ValidatableResponse validatableResponse = response.then();
 
         validatableResponse.statusCode(409);
@@ -1504,14 +1436,13 @@ public class AuthenticationControllerTest {
     // Client
 
     @Test
-    public void authorizationControllerLoginToClientAccountTestPositive() {
+    void authorizationControllerLoginToClientAccountTestPositive() {
         RequestSpecification requestSpecification = RestAssured.given();
         requestSpecification.contentType(ContentType.JSON);
         requestSpecification.accept(ContentType.JSON);
-        requestSpecification.body(new UserInputDTO(clientUser.getUserLogin(), passwordNotHashed));
+        requestSpecification.body(new LoginAccountRequest(clientUser.getLogin(), passwordNotHashed));
 
         Response response = requestSpecification.post(TestConstants.clientLoginURL);
-        logger.debug("Response: " + response.getBody().asString());
         ValidatableResponse validatableResponse = response.then();
 
         validatableResponse.statusCode(200);
@@ -1519,14 +1450,13 @@ public class AuthenticationControllerTest {
     }
 
     @Test
-    public void authorizationControllerLoginToClientAccountWithWrongLoginTestPositive() {
+    void authorizationControllerLoginToClientAccountWithWrongLoginTestPositive() {
         RequestSpecification requestSpecification = RestAssured.given();
         requestSpecification.contentType(ContentType.JSON);
         requestSpecification.accept(ContentType.JSON);
-        requestSpecification.body(new UserInputDTO(clientUser.getUserLogin() + "1", passwordNotHashed));
+        requestSpecification.body(new LoginAccountRequest(clientUser.getLogin() + "1", passwordNotHashed));
 
         Response response = requestSpecification.post(TestConstants.clientLoginURL);
-        logger.debug("Response: " + response.getBody().asString());
         ValidatableResponse validatableResponse = response.then();
 
         validatableResponse.statusCode(403);
@@ -1534,14 +1464,13 @@ public class AuthenticationControllerTest {
     }
 
     @Test
-    public void authorizationControllerLoginToClientAccountWithWrongPasswordTestPositive() {
+    void authorizationControllerLoginToClientAccountWithWrongPasswordTestPositive() {
         RequestSpecification requestSpecification = RestAssured.given();
         requestSpecification.contentType(ContentType.JSON);
         requestSpecification.accept(ContentType.JSON);
-        requestSpecification.body(new UserInputDTO(clientUser.getUserLogin(), passwordNotHashed + "1"));
+        requestSpecification.body(new LoginAccountRequest(clientUser.getLogin(), passwordNotHashed + "1"));
 
         Response response = requestSpecification.post(TestConstants.clientLoginURL);
-        logger.debug("Response: " + response.getBody().asString());
         ValidatableResponse validatableResponse = response.then();
 
         validatableResponse.statusCode(403);
@@ -1549,23 +1478,21 @@ public class AuthenticationControllerTest {
     }
 
     @Test
-    public void authorizationControllerLoginToClientAccountThatIsDisabledTestNegative() {
-        String accessToken = this.loginToAccount(new UserInputDTO(adminUser.getUserLogin(), passwordNotHashed), TestConstants.adminLoginURL);
+    void authorizationControllerLoginToClientAccountThatIsDisabledTestNegative() {
+        String accessToken = loginToAccount(new LoginAccountRequest(adminUser.getLogin(), passwordNotHashed), TestConstants.adminLoginURL);
 
         RequestSpecification requestSpecification = RestAssured.given();
-        requestSpecification.header("Authorization", "Bearer " + accessToken);
+        requestSpecification.header(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken);
 
-        Response response = requestSpecification.post(TestConstants.clientsURL + "/" + clientUser.getUserID() + "/deactivate");
-        logger.debug("Response: " + response.getBody().asString());
+        Response response = requestSpecification.post(TestConstants.clientsURL + "/" + clientUser.getId() + "/deactivate");
         ValidatableResponse validatableResponse = response.then();
         validatableResponse.statusCode(204);
 
         requestSpecification = RestAssured.given();
         requestSpecification.contentType(ContentType.JSON);
-        requestSpecification.body(new UserInputDTO(clientUser.getUserLogin(), passwordNotHashed));
+        requestSpecification.body(new LoginAccountRequest(clientUser.getLogin(), passwordNotHashed));
 
         response = requestSpecification.post(TestConstants.clientLoginURL);
-        logger.debug("Response: " + response.getBody().asString());
         validatableResponse = response.then();
 
         validatableResponse.statusCode(403);
@@ -1574,14 +1501,13 @@ public class AuthenticationControllerTest {
     // Staff
 
     @Test
-    public void authorizationControllerLoginToStaffAccountTestPositive() {
+    void authorizationControllerLoginToStaffAccountTestPositive() {
         RequestSpecification requestSpecification = RestAssured.given();
         requestSpecification.contentType(ContentType.JSON);
         requestSpecification.accept(ContentType.JSON);
-        requestSpecification.body(new UserInputDTO(staffUser.getUserLogin(), passwordNotHashed));
+        requestSpecification.body(new LoginAccountRequest(staffUser.getLogin(), passwordNotHashed));
 
         Response response = requestSpecification.post(TestConstants.staffLoginURL);
-        logger.debug("Response: " + response.getBody().asString());
         ValidatableResponse validatableResponse = response.then();
 
         validatableResponse.statusCode(200);
@@ -1589,14 +1515,13 @@ public class AuthenticationControllerTest {
     }
 
     @Test
-    public void authorizationControllerLoginToStaffAccountWithWrongLoginTestPositive() {
+    void authorizationControllerLoginToStaffAccountWithWrongLoginTestPositive() {
         RequestSpecification requestSpecification = RestAssured.given();
         requestSpecification.contentType(ContentType.JSON);
         requestSpecification.accept(ContentType.JSON);
-        requestSpecification.body(new UserInputDTO(staffUser.getUserLogin() + "1", passwordNotHashed));
+        requestSpecification.body(new LoginAccountRequest(staffUser.getLogin() + "1", passwordNotHashed));
 
         Response response = requestSpecification.post(TestConstants.staffLoginURL);
-        logger.debug("Response: " + response.getBody().asString());
         ValidatableResponse validatableResponse = response.then();
 
         validatableResponse.statusCode(403);
@@ -1604,14 +1529,13 @@ public class AuthenticationControllerTest {
     }
 
     @Test
-    public void authorizationControllerLoginToStaffAccountWithWrongPasswordTestPositive() {
+    void authorizationControllerLoginToStaffAccountWithWrongPasswordTestPositive() {
         RequestSpecification requestSpecification = RestAssured.given();
         requestSpecification.contentType(ContentType.JSON);
         requestSpecification.accept(ContentType.JSON);
-        requestSpecification.body(new UserInputDTO(staffUser.getUserLogin(), passwordNotHashed + "1"));
+        requestSpecification.body(new LoginAccountRequest(staffUser.getLogin(), passwordNotHashed + "1"));
 
         Response response = requestSpecification.post(TestConstants.staffLoginURL);
-        logger.debug("Response: " + response.getBody().asString());
         ValidatableResponse validatableResponse = response.then();
 
         validatableResponse.statusCode(403);
@@ -1619,23 +1543,21 @@ public class AuthenticationControllerTest {
     }
 
     @Test
-    public void authorizationControllerLoginToStaffAccountThatIsDisabledTestNegative() {
-        String accessToken = this.loginToAccount(new UserInputDTO(adminUser.getUserLogin(), passwordNotHashed), TestConstants.adminLoginURL);
+    void authorizationControllerLoginToStaffAccountThatIsDisabledTestNegative() {
+        String accessToken = loginToAccount(new LoginAccountRequest(adminUser.getLogin(), passwordNotHashed), TestConstants.adminLoginURL);
 
         RequestSpecification requestSpecification = RestAssured.given();
-        requestSpecification.header("Authorization", "Bearer " + accessToken);
+        requestSpecification.header(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken);
 
-        Response response = requestSpecification.post(TestConstants.staffsURL + "/" + staffUser.getUserID() + "/deactivate");
-        logger.debug("Response: " + response.getBody().asString());
+        Response response = requestSpecification.post(TestConstants.staffsURL + "/" + staffUser.getId() + "/deactivate");
         ValidatableResponse validatableResponse = response.then();
         validatableResponse.statusCode(204);
 
         requestSpecification = RestAssured.given();
         requestSpecification.contentType(ContentType.JSON);
-        requestSpecification.body(new UserInputDTO(staffUser.getUserLogin(), passwordNotHashed));
+        requestSpecification.body(new LoginAccountRequest(staffUser.getLogin(), passwordNotHashed));
 
         response = requestSpecification.post(TestConstants.staffLoginURL);
-        logger.debug("Response: " + response.getBody().asString());
         validatableResponse = response.then();
 
         validatableResponse.statusCode(403);
@@ -1644,14 +1566,13 @@ public class AuthenticationControllerTest {
     // Admin
 
     @Test
-    public void authorizationControllerLoginToAdminAccountTestPositive() {
+    void authorizationControllerLoginToAdminAccountTestPositive() {
         RequestSpecification requestSpecification = RestAssured.given();
         requestSpecification.contentType(ContentType.JSON);
         requestSpecification.accept(ContentType.JSON);
-        requestSpecification.body(new UserInputDTO(adminUser.getUserLogin(), passwordNotHashed));
+        requestSpecification.body(new LoginAccountRequest(adminUser.getLogin(), passwordNotHashed));
 
         Response response = requestSpecification.post(TestConstants.adminLoginURL);
-        logger.debug("Response: " + response.getBody().asString());
         ValidatableResponse validatableResponse = response.then();
 
         validatableResponse.statusCode(200);
@@ -1659,14 +1580,13 @@ public class AuthenticationControllerTest {
     }
 
     @Test
-    public void authorizationControllerLoginToAdminAccountWithWrongPasswordTestPositive() {
+    void authorizationControllerLoginToAdminAccountWithWrongPasswordTestPositive() {
         RequestSpecification requestSpecification = RestAssured.given();
         requestSpecification.contentType(ContentType.JSON);
         requestSpecification.accept(ContentType.JSON);
-        requestSpecification.body(new UserInputDTO(adminUser.getUserLogin() +"1", passwordNotHashed));
+        requestSpecification.body(new LoginAccountRequest(adminUser.getLogin() + "1", passwordNotHashed));
 
         Response response = requestSpecification.post(TestConstants.adminLoginURL);
-        logger.debug("Response: " + response.getBody().asString());
         ValidatableResponse validatableResponse = response.then();
 
         validatableResponse.statusCode(403);
@@ -1674,25 +1594,45 @@ public class AuthenticationControllerTest {
     }
 
     @Test
-    public void authorizationControllerLoginToAdminAccountWithWrongLoginTestPositive() {
+    void authorizationControllerLoginToAdminAccountWithWrongLoginTestPositive() {
         RequestSpecification requestSpecification = RestAssured.given();
         requestSpecification.contentType(ContentType.JSON);
         requestSpecification.accept(ContentType.JSON);
-        requestSpecification.body(new UserInputDTO(adminUser.getUserLogin(), passwordNotHashed + "1"));
+        requestSpecification.body(new LoginAccountRequest(adminUser.getLogin(), passwordNotHashed + "1"));
 
         Response response = requestSpecification.post(TestConstants.adminLoginURL);
-        logger.debug("Response: " + response.getBody().asString());
         ValidatableResponse validatableResponse = response.then();
 
         validatableResponse.statusCode(403);
         assertTrue(response.getBody().asString().isEmpty());
     }
 
-    private String loginToAccount(UserInputDTO userInputDTO, String loginURL) {
+    @Test
+    void authorizationControllerLoginToAdminAccountThatIsDisabledTestNegative() {
+        String accessToken = loginToAccount(new LoginAccountRequest(adminUser.getLogin(), passwordNotHashed), TestConstants.adminLoginURL);
+
+        RequestSpecification requestSpecification = RestAssured.given();
+        requestSpecification.header(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken);
+
+        Response response = requestSpecification.post(TestConstants.staffsURL + "/" + adminUser.getId() + "/deactivate");
+        ValidatableResponse validatableResponse = response.then();
+        validatableResponse.statusCode(204);
+
+        requestSpecification = RestAssured.given();
+        requestSpecification.contentType(ContentType.JSON);
+        requestSpecification.body(new LoginAccountRequest(adminUser.getLogin(), passwordNotHashed));
+
+        response = requestSpecification.post(TestConstants.adminLoginURL);
+        validatableResponse = response.then();
+
+        validatableResponse.statusCode(403);
+    }
+
+    private String loginToAccount(LoginAccountRequest loginDto, String loginURL) {
         RequestSpecification requestSpecification = RestAssured.given();
         requestSpecification.contentType(ContentType.JSON);
         requestSpecification.accept(ContentType.JSON);
-        requestSpecification.body(new UserInputDTO(userInputDTO.getUserLogin(), userInputDTO.getUserPassword()));
+        requestSpecification.body(new LoginAccountRequest(loginDto.login(), loginDto.password()));
 
         Response response = requestSpecification.post(loginURL);
         ValidatableResponse validatableResponse = response.then();
@@ -1700,28 +1640,5 @@ public class AuthenticationControllerTest {
         validatableResponse.statusCode(200);
 
         return response.getBody().asString();
-    }
-
-    @Test
-    public void authorizationControllerLoginToAdminAccountThatIsDisabledTestNegative() {
-        String accessToken = this.loginToAccount(new UserInputDTO(adminUser.getUserLogin(), passwordNotHashed), TestConstants.adminLoginURL);
-
-        RequestSpecification requestSpecification = RestAssured.given();
-        requestSpecification.header("Authorization", "Bearer " + accessToken);
-
-        Response response = requestSpecification.post(TestConstants.staffsURL + "/" + adminUser.getUserID() + "/deactivate");
-        logger.debug("Response: " + response.getBody().asString());
-        ValidatableResponse validatableResponse = response.then();
-        validatableResponse.statusCode(204);
-
-        requestSpecification = RestAssured.given();
-        requestSpecification.contentType(ContentType.JSON);
-        requestSpecification.body(new UserInputDTO(adminUser.getUserLogin(), passwordNotHashed));
-
-        response = requestSpecification.post(TestConstants.adminLoginURL);
-        logger.debug("Response: " + response.getBody().asString());
-        validatableResponse = response.then();
-
-        validatableResponse.statusCode(403);
     }
 }

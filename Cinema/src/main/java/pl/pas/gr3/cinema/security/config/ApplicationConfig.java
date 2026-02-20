@@ -12,9 +12,9 @@ import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
-import pl.pas.gr3.cinema.exception.repositories.crud.user.UserRepositoryReadException;
-import pl.pas.gr3.cinema.model.users.User;
-import pl.pas.gr3.cinema.repositories.impl.UserRepository;
+import pl.pas.gr3.cinema.entity.account.Account;
+import pl.pas.gr3.cinema.exception.not_found.AccountNotFoundException;
+import pl.pas.gr3.cinema.repository.impl.AccountRepositoryImpl;
 import pl.pas.gr3.cinema.security.SecurityMessages;
 
 import java.util.List;
@@ -23,21 +23,21 @@ import java.util.List;
 @RequiredArgsConstructor
 public class ApplicationConfig {
 
-    private final UserRepository userRepository;
+    private final AccountRepositoryImpl accountRepository;
 
     @Bean
     public UserDetailsService userDetailsService() {
         return username -> {
             try {
-                User user = userRepository.findByLogin(username);
-                return new org.springframework.security.core.userdetails.User(user.getUserLogin(),
-                        user.getUserPassword(),
-                        user.isUserStatusActive(),
-                        true,
-                        true,
-                        true,
-                        List.of(new SimpleGrantedAuthority("ROLE_" + user.getUserRole().name())));
-            } catch (UserRepositoryReadException exception) {
+                Account account = accountRepository.findByLogin(username);
+                return new org.springframework.security.core.userdetails.User(account.getLogin(),
+                    account.getPassword(),
+                    account.isActive(),
+                    true,
+                    true,
+                    true,
+                    List.of(new SimpleGrantedAuthority("ROLE_" + account.getRole().name())));
+            } catch (AccountNotFoundException exception) {
                 throw new UsernameNotFoundException(SecurityMessages.USER_NOT_FOUND);
             }
         };
@@ -56,7 +56,7 @@ public class ApplicationConfig {
     }
 
     @Bean
-    public AuthenticationManager authenticationManager(AuthenticationConfiguration authenticationConfiguration) throws Exception {
+    public AuthenticationManager authenticationManager(AuthenticationConfiguration authenticationConfiguration) {
         return authenticationConfiguration.getAuthenticationManager();
     }
 }

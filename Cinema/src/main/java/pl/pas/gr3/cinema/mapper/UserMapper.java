@@ -1,30 +1,33 @@
 package pl.pas.gr3.cinema.mapper;
 
-import pl.pas.gr3.cinema.model.users.Admin;
-import pl.pas.gr3.cinema.model.users.Staff;
-import pl.pas.gr3.cinema.model.users.User;
-import pl.pas.gr3.cinema.model.users.Client;
+import pl.pas.gr3.cinema.entity.account.Account;
+import pl.pas.gr3.cinema.entity.account.Admin;
+import pl.pas.gr3.cinema.entity.account.Staff;
+import pl.pas.gr3.cinema.entity.account.Client;
 
 public class UserMapper {
 
-    public static Client toClient(User user) {
-        return new Client(user.getUserID(),
-                user.getUserLogin(),
-                user.getUserPassword(),
-                user.isUserStatusActive());
+    public static Client toClient(Account account) {
+        return new Client(account.getId(),
+            account.getLogin(),
+            account.getPassword(),
+            account.isActive()
+        );
     }
 
-    public static Admin toAdmin(User user) {
-        return new Admin(user.getUserID(),
-                user.getUserLogin(),
-                user.getUserPassword(),
-                user.isUserStatusActive());
+    public static Admin toAdmin(Account account) {
+        return new Admin(account.getId(),
+            account.getLogin(),
+            account.getPassword(),
+            account.isActive()
+        );
     }
 
-    public static Staff toStaff(User user) {
-        return new Staff(user.getUserID(),
-                user.getUserLogin(),
-                user.getUserPassword(),
-                user.isUserStatusActive());
+    public static Staff toStaff(Account account) {
+        return new Staff(account.getId(),
+            account.getLogin(),
+            account.getPassword(),
+            account.isActive()
+        );
     }
 }

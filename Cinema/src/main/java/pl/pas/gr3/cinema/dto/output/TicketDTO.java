@@ -17,7 +17,7 @@ public class TicketDTO {
 
     @JsonProperty("ticket-id")
     @JsonbProperty("ticket-id")
-    private UUID ticketID;
+    private UUID id;
 
     @JsonProperty("movie-time")
     @JsonbProperty("movie-time")
@@ -25,27 +25,27 @@ public class TicketDTO {
 
     @JsonProperty("ticket-final-price")
     @JsonbProperty("ticket-final-price")
-    private double ticketFinalPrice;
+    private double finalPrice;
 
     @JsonProperty("client-id")
     @JsonbProperty("client-id")
-    private UUID clientID;
+    private UUID clientId;
 
     @JsonProperty("movie-id")
     @JsonbProperty("movie-id")
-    private UUID movieID;
+    private UUID movieId;
 
     @JsonCreator
     @JsonbCreator
-    public TicketDTO(@JsonProperty("ticket-id") @JsonbProperty("ticket-id") UUID ticketID,
+    public TicketDTO(@JsonProperty("ticket-id") @JsonbProperty("ticket-id") UUID id,
                      @JsonProperty("movie-time") @JsonbProperty("movie-time") LocalDateTime movieTime,
-                     @JsonProperty("ticket-final-price") @JsonbProperty("ticket-final-price") double ticketFinalPrice,
-                     @JsonProperty("client-id") @JsonbProperty("client-id") UUID clientID,
-                     @JsonProperty("movie-id") @JsonbProperty("movie-id") UUID movieID) {
-        this.ticketID = ticketID;
+                     @JsonProperty("ticket-final-price") @JsonbProperty("ticket-final-price") double finalPrice,
+                     @JsonProperty("client-id") @JsonbProperty("client-id") UUID clientId,
+                     @JsonProperty("movie-id") @JsonbProperty("movie-id") UUID movieId) {
+        this.id = id;
         this.movieTime = movieTime;
-        this.ticketFinalPrice = ticketFinalPrice;
-        this.clientID = clientID;
-        this.movieID = movieID;
+        this.finalPrice = finalPrice;
+        this.clientId = clientId;
+        this.movieId = movieId;
     }
 }

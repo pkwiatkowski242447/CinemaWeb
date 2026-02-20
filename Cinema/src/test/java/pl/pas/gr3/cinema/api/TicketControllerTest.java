@@ -8,39 +8,29 @@ import io.restassured.http.ContentType;
 import io.restassured.response.Response;
 import io.restassured.response.ValidatableResponse;
 import io.restassured.specification.RequestSpecification;
+import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.*;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.springframework.http.HttpHeaders;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import pl.pas.gr3.cinema.TestConstants;
-import pl.pas.gr3.cinema.services.impl.*;
-import pl.pas.gr3.cinema.dto.auth.UserInputDTO;
+import pl.pas.gr3.cinema.exception.not_found.TicketNotFoundException;
+import pl.pas.gr3.cinema.service.impl.AdminServiceImpl;
+import pl.pas.gr3.cinema.service.impl.ClientServiceImpl;
+import pl.pas.gr3.cinema.service.impl.MovieServiceImpl;
+import pl.pas.gr3.cinema.service.impl.StaffServiceImpl;
+import pl.pas.gr3.cinema.service.impl.TicketServiceImpl;
+import pl.pas.gr3.cinema.dto.auth.LoginAccountRequest;
 import pl.pas.gr3.cinema.dto.input.TicketSelfInputDTO;
 import pl.pas.gr3.cinema.dto.output.TicketDTO;
-import pl.pas.gr3.cinema.exception.services.crud.admin.AdminServiceCreateException;
-import pl.pas.gr3.cinema.exception.services.crud.admin.AdminServiceDeleteException;
-import pl.pas.gr3.cinema.exception.services.crud.admin.AdminServiceReadException;
-import pl.pas.gr3.cinema.exception.services.crud.client.ClientServiceCreateException;
-import pl.pas.gr3.cinema.exception.services.crud.client.ClientServiceDeleteException;
-import pl.pas.gr3.cinema.exception.services.crud.client.ClientServiceReadException;
-import pl.pas.gr3.cinema.exception.services.crud.movie.MovieServiceCreateException;
-import pl.pas.gr3.cinema.exception.services.crud.movie.MovieServiceDeleteException;
-import pl.pas.gr3.cinema.exception.services.crud.movie.MovieServiceReadException;
-import pl.pas.gr3.cinema.exception.services.crud.staff.StaffServiceCreateException;
-import pl.pas.gr3.cinema.exception.services.crud.staff.StaffServiceDeleteException;
-import pl.pas.gr3.cinema.exception.services.crud.staff.StaffServiceReadException;
-import pl.pas.gr3.cinema.exception.services.crud.ticket.TicketServiceCreateException;
-import pl.pas.gr3.cinema.exception.services.crud.ticket.TicketServiceDeleteException;
-import pl.pas.gr3.cinema.exception.services.crud.ticket.TicketServiceReadException;
-import pl.pas.gr3.cinema.model.Movie;
-import pl.pas.gr3.cinema.model.Ticket;
-import pl.pas.gr3.cinema.model.users.Admin;
-import pl.pas.gr3.cinema.model.users.Client;
-import pl.pas.gr3.cinema.model.users.Staff;
-import pl.pas.gr3.cinema.repositories.impl.UserRepository;
-import pl.pas.gr3.cinema.repositories.impl.MovieRepository;
-import pl.pas.gr3.cinema.repositories.impl.TicketRepository;
+import pl.pas.gr3.cinema.entity.Movie;
+import pl.pas.gr3.cinema.entity.Ticket;
+import pl.pas.gr3.cinema.entity.account.Admin;
+import pl.pas.gr3.cinema.entity.account.Client;
+import pl.pas.gr3.cinema.entity.account.Staff;
+import pl.pas.gr3.cinema.repository.impl.AccountRepositoryImpl;
+import pl.pas.gr3.cinema.repository.impl.MovieRepositoryImpl;
+import pl.pas.gr3.cinema.repository.impl.TicketRepositoryImpl;
 
 import java.net.URL;
 import java.time.LocalDateTime;
@@ -50,19 +40,18 @@ import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-public class TicketControllerTest {
+@Slf4j
+class TicketControllerTest {
 
-    private static final Logger logger = LoggerFactory.getLogger(TicketControllerTest.class);
+    private static TicketRepositoryImpl ticketRepository;
+    private static AccountRepositoryImpl accountRepository;
+    private static MovieRepositoryImpl movieRepository;
 
-    private static TicketRepository ticketRepository;
-    private static UserRepository userRepository;
-    private static MovieRepository movieRepository;
-
-    private static TicketService ticketService;
-    private static ClientService clientService;
-    private static AdminService adminService;
-    private static StaffService staffService;
-    private static MovieService movieService;
+    private static TicketServiceImpl ticketService;
+    private static ClientServiceImpl clientService;
+    private static AdminServiceImpl adminService;
+    private static StaffServiceImpl staffService;
+    private static MovieServiceImpl movieService;
     private static PasswordEncoder passwordEncoder;
 
     private Client clientNo1;
@@ -89,16 +78,16 @@ public class TicketControllerTest {
     private static String passwordNotHashed;
 
     @BeforeAll
-    public static void init() {
-        ticketRepository = new TicketRepository(TestConstants.databaseName);
-        userRepository = new UserRepository(TestConstants.databaseName);
-        movieRepository = new MovieRepository(TestConstants.databaseName);
+    static void init() {
+        ticketRepository = new TicketRepositoryImpl(TestConstants.databaseName);
+        accountRepository = new AccountRepositoryImpl(TestConstants.databaseName);
+        movieRepository = new MovieRepositoryImpl(TestConstants.databaseName);
 
-        ticketService = new TicketService(ticketRepository);
-        clientService = new ClientService(userRepository);
-        adminService = new AdminService(userRepository);
-        staffService = new StaffService(userRepository);
-        movieService = new MovieService(movieRepository);
+        ticketService = new TicketServiceImpl(ticketRepository);
+        clientService = new ClientServiceImpl(accountRepository);
+        adminService = new AdminServiceImpl(accountRepository);
+        staffService = new StaffServiceImpl(accountRepository);
+        movieService = new MovieServiceImpl(movieRepository);
 
         passwordEncoder = new BCryptPasswordEncoder();
 
@@ -106,123 +95,78 @@ public class TicketControllerTest {
         URL resourceURL = classLoader.getResource("pas-truststore.jks");
 
         RestAssured.config = RestAssuredConfig.newConfig().sslConfig(
-                new SSLConfig().trustStore(resourceURL.getPath(), "password")
-                        .and()
-                        .port(8000)
-                        .and()
-                        .allowAllHostnames()
+            new SSLConfig().trustStore(resourceURL.getPath(), "password")
+                .and()
+                .port(8000)
+                .and()
+                .allowAllHostnames()
         );
 
         passwordNotHashed = "password";
     }
 
     @BeforeEach
-    public void initializeSampleData() {
+    void initializeSampleData() {
         try {
             clientNo1 = clientService.create("ClientLoginNo1", passwordEncoder.encode(passwordNotHashed));
             clientNo2 = clientService.create("ClientLoginNo2", passwordEncoder.encode(passwordNotHashed));
-        } catch (ClientServiceCreateException exception) {
-            logger.error(exception.getMessage());
-        }
-
-        try {
+            
             adminNo1 = adminService.create("AdminLoginNo1", passwordEncoder.encode(passwordNotHashed));
             adminNo2 = adminService.create("AdminLoginNo2", passwordEncoder.encode(passwordNotHashed));
-        } catch (AdminServiceCreateException exception) {
-            logger.error(exception.getMessage());
-        }
 
-        try {
             staffNo1 = staffService.create("StaffLoginNo1", passwordEncoder.encode(passwordNotHashed));
             staffNo2 = staffService.create("StaffLoginNo2", passwordEncoder.encode(passwordNotHashed));
-        } catch (StaffServiceCreateException exception) {
-            logger.error(exception.getMessage());
-        }
 
-        try {
             movieNo1 = movieService.create("ExampleMovieTitleNo1", 35.74, 4, 75);
             movieNo2 = movieService.create("ExampleMovieTitleNo1", 28.60, 5, 50);
-        } catch (MovieServiceCreateException exception) {
-            logger.error(exception.getMessage());
-        }
 
-        movieTimeNo1 = LocalDateTime.now().plusDays(2).plusHours(3).truncatedTo(ChronoUnit.SECONDS);
-        movieTimeNo2 = LocalDateTime.now().plusDays(3).plusHours(6).truncatedTo(ChronoUnit.SECONDS);
+            ticketNo1 = ticketService.create(movieTimeNo1.toString(), clientNo1.getId(), movieNo1.getId());
+            ticketNo2 = ticketService.create(movieTimeNo2.toString(), clientNo1.getId(), movieNo2.getId());
 
-        try {
-            ticketNo1 = ticketService.create(movieTimeNo1.toString(), clientNo1.getUserID(), movieNo1.getMovieID());
-            ticketNo2 = ticketService.create(movieTimeNo2.toString(), clientNo1.getUserID(), movieNo2.getMovieID());
+            ticketNo3 = ticketService.create(movieTimeNo1.toString(), clientNo1.getId(), movieNo1.getId());
+            ticketNo4 = ticketService.create(movieTimeNo2.toString(), clientNo2.getId(), movieNo2.getId());
 
-            ticketNo3 = ticketService.create(movieTimeNo1.toString(), clientNo1.getUserID(), movieNo1.getMovieID());
-            ticketNo4 = ticketService.create(movieTimeNo2.toString(), clientNo2.getUserID(), movieNo2.getMovieID());
-
-            ticketNo5 = ticketService.create(movieTimeNo1.toString(), clientNo1.getUserID(), movieNo1.getMovieID());
-            ticketNo6 = ticketService.create(movieTimeNo2.toString(), clientNo2.getUserID(), movieNo2.getMovieID());
-        } catch (TicketServiceCreateException exception) {
-            logger.error(exception.getMessage());
+            ticketNo5 = ticketService.create(movieTimeNo1.toString(), clientNo1.getId(), movieNo1.getId());
+            ticketNo6 = ticketService.create(movieTimeNo2.toString(), clientNo2.getId(), movieNo2.getId());
+        } catch (Exception exception) {
+            log.error(exception.getMessage());
         }
     }
 
     @AfterEach
-    public void destroySampleData() {
+    void destroySampleData() {
         try {
-            List<Ticket> listOfTickets = ticketService.findAll();
-            for (Ticket ticket : listOfTickets) {
-                ticketService.delete(ticket.getTicketID());
-            }
-        } catch (TicketServiceReadException | TicketServiceDeleteException exception) {
-            logger.error(exception.getMessage());
-        }
+            List<Ticket> tickets = ticketService.findAll();
+            tickets.forEach(ticket -> ticketService.delete(ticket.getId()));
 
-        try {
-            List<Movie> listOfMovies = movieService.findAll();
-            for (Movie movie : listOfMovies) {
-                movieService.delete(movie.getMovieID());
-            }
-        } catch (MovieServiceReadException | MovieServiceDeleteException exception) {
-            logger.error(exception.getMessage());
-        }
+            List<Movie> movies = movieService.findAll();
+            movies.forEach(movie -> movieService.delete(movie.getId()));
 
-        try {
-            List<Client> listOfClients = clientService.findAll();
-            for (Client client : listOfClients) {
-                clientService.delete(client.getUserID());
-            }
-        } catch (ClientServiceReadException | ClientServiceDeleteException exception) {
-            logger.error(exception.getMessage());
-        }
+            List<Client> clients = clientService.findAll();
+            clients.forEach(client -> clientService.delete(client.getId()));
 
-        try {
-            List<Admin> listOfAdmins = adminService.findAll();
-            for (Admin admin : listOfAdmins) {
-                adminService.delete(admin.getUserID());
-            }
-        } catch (AdminServiceReadException | AdminServiceDeleteException exception) {
-            logger.error(exception.getMessage());
-        }
+            List<Admin> admins = adminService.findAll();
+            admins.forEach(admin -> adminService.delete(admin.getId()));
 
-        try {
-            List<Staff> listOfStaffs = staffService.findAll();
-            for (Staff staff : listOfStaffs) {
-                staffService.delete(staff.getUserID());
-            }
-        } catch (StaffServiceReadException | StaffServiceDeleteException exception) {
-            logger.error(exception.getMessage());
+            List<Staff> staffs = staffService.findAll();
+            staffs.forEach(staff -> staffService.delete(staff.getId()));
+        } catch (Exception exception) {
+            log.error(exception.getMessage());
         }
     }
 
     @AfterAll
-    public static void destroy() {
+    static void destroy() {
         ticketRepository.close();
-        userRepository.close();
+        accountRepository.close();
         movieRepository.close();
     }
 
     // Create tests
 
     @Test
-    public void ticketControllerCreateTicketAsAnUnauthenticatedUserTestNegative() {
-        TicketSelfInputDTO ticketSelfInputDTO = new TicketSelfInputDTO(movieTimeNo1.toString(), movieNo1.getMovieID());
+    void ticketControllerCreateTicketAsAnUnauthenticatedUserTestNegative() {
+        TicketSelfInputDTO ticketSelfInputDTO = new TicketSelfInputDTO(movieTimeNo1.toString(), movieNo1.getId());
 
         RequestSpecification requestSpecification = RestAssured.given();
         requestSpecification.contentType(ContentType.JSON);
@@ -230,26 +174,24 @@ public class TicketControllerTest {
         requestSpecification.body(ticketSelfInputDTO);
 
         Response response = requestSpecification.post(TestConstants.ticketsURL + "/self");
-        logger.debug("Response: " + response.getBody().asString());
         ValidatableResponse validatableResponse = response.then();
 
         validatableResponse.statusCode(403);
     }
 
     @Test
-    public void ticketControllerCreateTicketAsAnAuthenticatedClientTestPositive() {
-        String accessToken = this.loginToAccount(new UserInputDTO(clientNo1.getUserLogin(), passwordNotHashed), TestConstants.clientLoginURL);
+    void ticketControllerCreateTicketAsAnAuthenticatedClientTestPositive() {
+        String accessToken = loginToAccount(new LoginAccountRequest(clientNo1.getLogin(), passwordNotHashed), TestConstants.clientLoginURL);
 
-        TicketSelfInputDTO ticketSelfInputDTO = new TicketSelfInputDTO(movieTimeNo1.toString(), movieNo1.getMovieID());
+        TicketSelfInputDTO ticketSelfInputDTO = new TicketSelfInputDTO(movieTimeNo1.toString(), movieNo1.getId());
 
         RequestSpecification requestSpecification = RestAssured.given();
         requestSpecification.contentType(ContentType.JSON);
-        requestSpecification.header("Authorization", "Bearer " + accessToken);
+        requestSpecification.header(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken);
         requestSpecification.accept(ContentType.JSON);
         requestSpecification.body(ticketSelfInputDTO);
 
         Response response = requestSpecification.post(TestConstants.ticketsURL + "/self");
-        logger.debug("Response: " + response.getBody().asString());
         ValidatableResponse validatableResponse = response.then();
 
         validatableResponse.statusCode(201);
@@ -257,54 +199,52 @@ public class TicketControllerTest {
         TicketDTO ticketDTO = response.getBody().as(TicketDTO.class);
 
         assertNotNull(ticketDTO);
-        assertNotNull(ticketDTO.getTicketID());
+        assertNotNull(ticketDTO.getId());
         assertEquals(movieTimeNo1, ticketDTO.getMovieTime());
-        assertEquals(clientNo1.getUserID(), ticketDTO.getClientID());
-        assertEquals(movieNo1.getMovieID(), ticketDTO.getMovieID());
-        assertEquals(movieNo1.getMovieBasePrice(), ticketDTO.getTicketFinalPrice());
+        assertEquals(clientNo1.getId(), ticketDTO.getClientId());
+        assertEquals(movieNo1.getId(), ticketDTO.getMovieId());
+        assertEquals(movieNo1.getBasePrice(), ticketDTO.getFinalPrice());
     }
 
     @Test
-    public void ticketControllerCreateTicketAsAnAuthenticatedStaffTestNegative() {
-        String accessToken = this.loginToAccount(new UserInputDTO(staffNo1.getUserLogin(), passwordNotHashed), TestConstants.staffLoginURL);
+    void ticketControllerCreateTicketAsAnAuthenticatedStaffTestNegative() {
+        String accessToken = loginToAccount(new LoginAccountRequest(staffNo1.getLogin(), passwordNotHashed), TestConstants.staffLoginURL);
 
-        TicketSelfInputDTO ticketSelfInputDTO = new TicketSelfInputDTO(movieTimeNo1.toString(), movieNo1.getMovieID());
+        TicketSelfInputDTO ticketSelfInputDTO = new TicketSelfInputDTO(movieTimeNo1.toString(), movieNo1.getId());
 
         RequestSpecification requestSpecification = RestAssured.given();
         requestSpecification.contentType(ContentType.JSON);
-        requestSpecification.header("Authorization", "Bearer " + accessToken);
+        requestSpecification.header(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken);
         requestSpecification.accept(ContentType.JSON);
         requestSpecification.body(ticketSelfInputDTO);
 
         Response response = requestSpecification.post(TestConstants.ticketsURL + "/self");
-        logger.debug("Response: " + response.getBody().asString());
         ValidatableResponse validatableResponse = response.then();
 
         validatableResponse.statusCode(403);
     }
 
     @Test
-    public void ticketControllerCreateTicketAsAnAuthenticatedAdminTestNegative() {
-        String accessToken = this.loginToAccount(new UserInputDTO(adminNo1.getUserLogin(), passwordNotHashed), TestConstants.adminLoginURL);
+    void ticketControllerCreateTicketAsAnAuthenticatedAdminTestNegative() {
+        String accessToken = loginToAccount(new LoginAccountRequest(adminNo1.getLogin(), passwordNotHashed), TestConstants.adminLoginURL);
 
-        TicketSelfInputDTO ticketSelfInputDTO = new TicketSelfInputDTO(movieTimeNo1.toString(), movieNo1.getMovieID());
+        TicketSelfInputDTO ticketSelfInputDTO = new TicketSelfInputDTO(movieTimeNo1.toString(), movieNo1.getId());
 
         RequestSpecification requestSpecification = RestAssured.given();
         requestSpecification.contentType(ContentType.JSON);
-        requestSpecification.header("Authorization", "Bearer " + accessToken);
+        requestSpecification.header(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken);
         requestSpecification.accept(ContentType.JSON);
         requestSpecification.body(ticketSelfInputDTO);
 
         Response response = requestSpecification.post(TestConstants.ticketsURL + "/self");
-        logger.debug("Response: " + response.getBody().asString());
         ValidatableResponse validatableResponse = response.then();
 
         validatableResponse.statusCode(403);
     }
 
     @Test
-    public void ticketControllerCreateTicketWithNullMovieAsAnAuthenticatedClientTestNegative() {
-        String accessToken = this.loginToAccount(new UserInputDTO(clientNo1.getUserLogin(), passwordNotHashed), TestConstants.clientLoginURL);
+    void ticketControllerCreateTicketWithNullMovieAsAnAuthenticatedClientTestNegative() {
+        String accessToken = loginToAccount(new LoginAccountRequest(clientNo1.getLogin(), passwordNotHashed), TestConstants.clientLoginURL);
 
         UUID movieID = null;
 
@@ -312,12 +252,11 @@ public class TicketControllerTest {
 
         RequestSpecification requestSpecification = RestAssured.given();
         requestSpecification.contentType(ContentType.JSON);
-        requestSpecification.header("Authorization", "Bearer " + accessToken);
+        requestSpecification.header(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken);
         requestSpecification.accept(ContentType.JSON);
         requestSpecification.body(ticketSelfInputDTO);
 
         Response response = requestSpecification.post(TestConstants.ticketsURL + "/self");
-        logger.debug("Response: " + response.asString());
         ValidatableResponse validatableResponse = response.then();
 
         validatableResponse.statusCode(400);
@@ -326,29 +265,27 @@ public class TicketControllerTest {
     // Read tests
 
     @Test
-    public void ticketControllerFindTicketByIDAsAnUnauthenticatedUserTestNegative() {
-        UUID searchedTicketID = ticketNo1.getTicketID();
+    void ticketControllerFindTicketByIDAsAnUnauthenticatedUserTestNegative() {
+        UUID searchedTicketID = ticketNo1.getId();
         String path = TestConstants.ticketsURL + "/" + searchedTicketID;
 
         RequestSpecification requestSpecification = RestAssured.given();
         Response response = requestSpecification.get(path);
-        logger.debug("Response: " + response.asString());
         ValidatableResponse validatableResponse = response.then();
 
         validatableResponse.statusCode(403);
     }
 
     @Test
-    public void ticketControllerFindTicketByIDAsAnAuthenticatedClientTestNegative() {
-        String accessToken = this.loginToAccount(new UserInputDTO(clientNo1.getUserLogin(), passwordNotHashed), TestConstants.clientLoginURL);
+    void ticketControllerFindTicketByIDAsAnAuthenticatedClientTestNegative() {
+        String accessToken = loginToAccount(new LoginAccountRequest(clientNo1.getLogin(), passwordNotHashed), TestConstants.clientLoginURL);
 
-        UUID searchedTicketID = ticketNo1.getTicketID();
+        UUID searchedTicketID = ticketNo1.getId();
         String path = TestConstants.ticketsURL + "/" + searchedTicketID;
 
         RequestSpecification requestSpecification = RestAssured.given();
-        requestSpecification.header("Authorization", "Bearer " + accessToken);
+        requestSpecification.header(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken);
         Response response = requestSpecification.get(path);
-        logger.debug("Response: " + response.asString());
         ValidatableResponse validatableResponse = response.then();
 
         validatableResponse.statusCode(200);
@@ -356,24 +293,23 @@ public class TicketControllerTest {
         TicketDTO ticketDTO = response.getBody().as(TicketDTO.class);
 
         assertNotNull(ticketDTO);
-        assertEquals(ticketNo1.getTicketID(), ticketDTO.getTicketID());
+        assertEquals(ticketNo1.getId(), ticketDTO.getId());
         assertEquals(ticketNo1.getMovieTime(), ticketDTO.getMovieTime());
-        assertEquals(ticketNo1.getUserID(), ticketDTO.getClientID());
-        assertEquals(ticketNo1.getMovieID(), ticketDTO.getMovieID());
-        assertEquals(ticketNo1.getTicketPrice(), ticketDTO.getTicketFinalPrice());
+        assertEquals(ticketNo1.getUserId(), ticketDTO.getClientId());
+        assertEquals(ticketNo1.getMovieId(), ticketDTO.getMovieId());
+        assertEquals(ticketNo1.getPrice(), ticketDTO.getFinalPrice());
     }
 
     @Test
-    public void ticketControllerFindTicketByIDAsAnAuthenticatedStaffTestPositive() {
-        String accessToken = this.loginToAccount(new UserInputDTO(staffNo1.getUserLogin(), passwordNotHashed), TestConstants.staffLoginURL);
+    void ticketControllerFindTicketByIDAsAnAuthenticatedStaffTestPositive() {
+        String accessToken = loginToAccount(new LoginAccountRequest(staffNo1.getLogin(), passwordNotHashed), TestConstants.staffLoginURL);
 
-        UUID searchedTicketID = ticketNo1.getTicketID();
+        UUID searchedTicketID = ticketNo1.getId();
         String path = TestConstants.ticketsURL + "/" + searchedTicketID;
 
         RequestSpecification requestSpecification = RestAssured.given();
-        requestSpecification.header("Authorization", "Bearer " + accessToken);
+        requestSpecification.header(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken);
         Response response = requestSpecification.get(path);
-        logger.debug("Response: " + response.asString());
         ValidatableResponse validatableResponse = response.then();
 
         validatableResponse.statusCode(200);
@@ -381,105 +317,98 @@ public class TicketControllerTest {
         TicketDTO ticketDTO = response.getBody().as(TicketDTO.class);
 
         assertNotNull(ticketDTO);
-        assertEquals(ticketNo1.getTicketID(), ticketDTO.getTicketID());
+        assertEquals(ticketNo1.getId(), ticketDTO.getId());
         assertEquals(ticketNo1.getMovieTime(), ticketDTO.getMovieTime());
-        assertEquals(ticketNo1.getUserID(), ticketDTO.getClientID());
-        assertEquals(ticketNo1.getMovieID(), ticketDTO.getMovieID());
-        assertEquals(ticketNo1.getTicketPrice(), ticketDTO.getTicketFinalPrice());
+        assertEquals(ticketNo1.getUserId(), ticketDTO.getClientId());
+        assertEquals(ticketNo1.getMovieId(), ticketDTO.getMovieId());
+        assertEquals(ticketNo1.getPrice(), ticketDTO.getFinalPrice());
     }
 
     @Test
-    public void ticketControllerFindTicketByIDAsAnAuthenticatedAdminTestNegative() {
-        String accessToken = this.loginToAccount(new UserInputDTO(adminNo1.getUserLogin(), passwordNotHashed), TestConstants.adminLoginURL);
+    void ticketControllerFindTicketByIDAsAnAuthenticatedAdminTestNegative() {
+        String accessToken = loginToAccount(new LoginAccountRequest(adminNo1.getLogin(), passwordNotHashed), TestConstants.adminLoginURL);
 
-        UUID searchedTicketID = ticketNo1.getTicketID();
+        UUID searchedTicketID = ticketNo1.getId();
         String path = TestConstants.ticketsURL + "/" + searchedTicketID;
 
         RequestSpecification requestSpecification = RestAssured.given();
-        requestSpecification.header("Authorization", "Bearer " + accessToken);
+        requestSpecification.header(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken);
         Response response = requestSpecification.get(path);
-        logger.debug("Response: " + response.asString());
         ValidatableResponse validatableResponse = response.then();
 
         validatableResponse.statusCode(403);
     }
 
     @Test
-    public void ticketControllerFindTicketByIDThatIsNotInTheDatabaseAsAnAuthenticatedStaffTestPositive() {
-        String accessToken = this.loginToAccount(new UserInputDTO(staffNo1.getUserLogin(), passwordNotHashed), TestConstants.staffLoginURL);
+    void ticketControllerFindTicketByIDThatIsNotInTheDatabaseAsAnAuthenticatedStaffTestPositive() {
+        String accessToken = loginToAccount(new LoginAccountRequest(staffNo1.getLogin(), passwordNotHashed), TestConstants.staffLoginURL);
 
         UUID searchedTicketID = UUID.randomUUID();
         String path = TestConstants.ticketsURL + "/" + searchedTicketID;
 
         RequestSpecification requestSpecification = RestAssured.given();
-        requestSpecification.header("Authorization", "Bearer " + accessToken);
+        requestSpecification.header(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken);
         Response response = requestSpecification.get(path);
-        logger.debug("Response: " + response.asString());
         ValidatableResponse validatableResponse = response.then();
 
         validatableResponse.statusCode(404);
     }
 
     @Test
-    public void ticketControllerFindAllTicketsAsAnUnauthenticatedUserTestNegative() {
+    void ticketControllerFindAllTicketsAsAnUnauthenticatedUserTestNegative() {
         String path = TestConstants.ticketsURL + "/all";
 
         RequestSpecification requestSpecification = RestAssured.given();
         requestSpecification.accept(ContentType.JSON);
         Response response = requestSpecification.get(path);
-        logger.debug("Response: " + response.asString());
         ValidatableResponse validatableResponse = response.then();
 
         validatableResponse.statusCode(403);
     }
 
     @Test
-    public void ticketControllerFindAllTicketsAsAnAuthenticatedClientTestNegative() {
-        String accessToken = this.loginToAccount(new UserInputDTO(clientNo1.getUserLogin(), passwordNotHashed), TestConstants.clientLoginURL);
+    void ticketControllerFindAllTicketsAsAnAuthenticatedClientTestNegative() {
+        String accessToken = loginToAccount(new LoginAccountRequest(clientNo1.getLogin(), passwordNotHashed), TestConstants.clientLoginURL);
 
         String path = TestConstants.ticketsURL + "/all";
 
         RequestSpecification requestSpecification = RestAssured.given();
         requestSpecification.accept(ContentType.JSON);
-        requestSpecification.header("Authorization", "Bearer " + accessToken);
+        requestSpecification.header(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken);
         Response response = requestSpecification.get(path);
-        logger.debug("Response: " + response.asString());
         ValidatableResponse validatableResponse = response.then();
 
         validatableResponse.statusCode(403);
     }
 
     @Test
-    public void ticketControllerFindAllTicketsAsAnAuthenticatedStaffTestPositive() {
-        String accessToken = this.loginToAccount(new UserInputDTO(staffNo1.getUserLogin(), passwordNotHashed), TestConstants.staffLoginURL);
+    void ticketControllerFindAllTicketsAsAnAuthenticatedStaffTestPositive() {
+        String accessToken = loginToAccount(new LoginAccountRequest(staffNo1.getLogin(), passwordNotHashed), TestConstants.staffLoginURL);
 
         String path = TestConstants.ticketsURL + "/all";
 
         RequestSpecification requestSpecification = RestAssured.given();
         requestSpecification.accept(ContentType.JSON);
-        requestSpecification.header("Authorization", "Bearer " + accessToken);
+        requestSpecification.header(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken);
         Response response = requestSpecification.get(path);
-        logger.debug("Response: " + response.asString());
         ValidatableResponse validatableResponse = response.then();
 
         validatableResponse.statusCode(200);
 
-        List<TicketDTO> listOfTickets = response.getBody().as(new TypeRef<List<TicketDTO>>() {
-        });
+        List<TicketDTO> listOfTickets = response.getBody().as(new TypeRef<>() {});
         assertEquals(6, listOfTickets.size());
     }
 
     @Test
-    public void ticketControllerFindAllTicketsAsAnAuthenticatedAdminTestNegative() {
-        String accessToken = this.loginToAccount(new UserInputDTO(adminNo1.getUserLogin(), passwordNotHashed), TestConstants.adminLoginURL);
+    void ticketControllerFindAllTicketsAsAnAuthenticatedAdminTestNegative() {
+        String accessToken = loginToAccount(new LoginAccountRequest(adminNo1.getLogin(), passwordNotHashed), TestConstants.adminLoginURL);
 
         String path = TestConstants.ticketsURL + "/all";
 
         RequestSpecification requestSpecification = RestAssured.given();
         requestSpecification.accept(ContentType.JSON);
-        requestSpecification.header("Authorization", "Bearer " + accessToken);
+        requestSpecification.header(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken);
         Response response = requestSpecification.get(path);
-        logger.debug("Response: " + response.asString());
         ValidatableResponse validatableResponse = response.then();
 
         validatableResponse.statusCode(403);
@@ -488,52 +417,49 @@ public class TicketControllerTest {
     // Update tests
 
     @Test
-    public void ticketControllerUpdateTicketAsAnUnauthenticatedClientTestNegative() {
-        String accessToken = this.loginToAccount(new UserInputDTO(clientNo1.getUserLogin(), passwordNotHashed), TestConstants.clientLoginURL);
+    void ticketControllerUpdateTicketAsAnUnauthenticatedClientTestNegative() {
+        String accessToken = loginToAccount(new LoginAccountRequest(clientNo1.getLogin(), passwordNotHashed), TestConstants.clientLoginURL);
 
         RequestSpecification requestSpecification = RestAssured.given();
-        requestSpecification.header("Authorization", "Bearer " + accessToken);
+        requestSpecification.header(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken);
         requestSpecification.accept(ContentType.JSON);
 
-        Response response = requestSpecification.get(TestConstants.ticketsURL + "/" + ticketNo1.getTicketID());
-        logger.debug("Response: " + response.getBody().asString());
+        Response response = requestSpecification.get(TestConstants.ticketsURL + "/" + ticketNo1.getId());
         ValidatableResponse validatableResponse = response.then();
         validatableResponse.statusCode(200);
 
         TicketDTO ticketDTO = response.getBody().as(TicketDTO.class);
-        String etagContent = response.header("ETag");
+        String etagContent = response.header(HttpHeaders.ETAG);
 
         LocalDateTime newMovieTime = LocalDateTime.now().truncatedTo(ChronoUnit.SECONDS);
         ticketDTO.setMovieTime(newMovieTime);
 
         requestSpecification = RestAssured.given();
         requestSpecification.contentType(ContentType.JSON);
-        requestSpecification.header("If-Match", etagContent);
+        requestSpecification.header(HttpHeaders.IF_MATCH, etagContent);
         requestSpecification.body(ticketDTO);
 
         response = requestSpecification.put(TestConstants.ticketsURL + "/update");
-        logger.debug("Response: " + response.getBody().asString());
         validatableResponse = response.then();
         validatableResponse.statusCode(403);
     }
 
     @Test
-    public void ticketControllerUpdateTicketAsAnAuthenticatedClientThatIsOwnerOfTheTicketTestPositive() throws Exception {
-        String accessToken = this.loginToAccount(new UserInputDTO(clientNo1.getUserLogin(), passwordNotHashed), TestConstants.clientLoginURL);
+    void ticketControllerUpdateTicketAsAnAuthenticatedClientThatIsOwnerOfTheTicketTestPositive() {
+        String accessToken = loginToAccount(new LoginAccountRequest(clientNo1.getLogin(), passwordNotHashed), TestConstants.clientLoginURL);
 
         RequestSpecification requestSpecification = RestAssured.given();
-        requestSpecification.header("Authorization", "Bearer " + accessToken);
+        requestSpecification.header(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken);
         requestSpecification.accept(ContentType.JSON);
 
-        Response response = requestSpecification.get(TestConstants.ticketsURL + "/" + ticketNo1.getTicketID());
-        logger.debug("Response: " + response.getBody().asString());
+        Response response = requestSpecification.get(TestConstants.ticketsURL + "/" + ticketNo1.getId());
         ValidatableResponse validatableResponse = response.then();
         validatableResponse.statusCode(200);
 
         TicketDTO ticketDTO = response.getBody().as(TicketDTO.class);
-        String etagContent = response.header("ETag");
+        String etagContent = response.header(HttpHeaders.ETAG);
 
-        accessToken = this.loginToAccount(new UserInputDTO(clientNo1.getUserLogin(), passwordNotHashed), TestConstants.clientLoginURL);
+        accessToken = loginToAccount(new LoginAccountRequest(clientNo1.getLogin(), passwordNotHashed), TestConstants.clientLoginURL);
 
         LocalDateTime movieTimeBefore = ticketNo1.getMovieTime();
         LocalDateTime newMovieTime = LocalDateTime.now().truncatedTo(ChronoUnit.SECONDS);
@@ -541,16 +467,15 @@ public class TicketControllerTest {
 
         requestSpecification = RestAssured.given();
         requestSpecification.contentType(ContentType.JSON);
-        requestSpecification.header("Authorization", "Bearer " + accessToken);
-        requestSpecification.header("If-Match", etagContent);
+        requestSpecification.header(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken);
+        requestSpecification.header(HttpHeaders.IF_MATCH, etagContent);
         requestSpecification.body(ticketDTO);
 
         response = requestSpecification.put(TestConstants.ticketsURL + "/update");
-        logger.debug("Response: " + response.getBody().asString());
         validatableResponse = response.then();
         validatableResponse.statusCode(204);
 
-        Ticket foundTicket = ticketService.findByUUID(ticketNo1.getTicketID());
+        Ticket foundTicket = ticketService.findByUUID(ticketNo1.getId());
 
         LocalDateTime movieTimeAfter = foundTicket.getMovieTime();
 
@@ -559,200 +484,184 @@ public class TicketControllerTest {
     }
 
     @Test
-    public void ticketControllerUpdateTicketWithoutIfMatchHeaderAsAnAuthenticatedClientThatIsOwnerOfTheTicketTestPositive() throws Exception {
-        String accessToken = this.loginToAccount(new UserInputDTO(clientNo1.getUserLogin(), passwordNotHashed), TestConstants.clientLoginURL);
+    void ticketControllerUpdateTicketWithoutIfMatchHeaderAsAnAuthenticatedClientThatIsOwnerOfTheTicketTestPositive() {
+        String accessToken = loginToAccount(new LoginAccountRequest(clientNo1.getLogin(), passwordNotHashed), TestConstants.clientLoginURL);
 
         RequestSpecification requestSpecification = RestAssured.given();
-        requestSpecification.header("Authorization", "Bearer " + accessToken);
+        requestSpecification.header(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken);
         requestSpecification.accept(ContentType.JSON);
 
-        Response response = requestSpecification.get(TestConstants.ticketsURL + "/" + ticketNo1.getTicketID());
-        logger.debug("Response: " + response.getBody().asString());
+        Response response = requestSpecification.get(TestConstants.ticketsURL + "/" + ticketNo1.getId());
         ValidatableResponse validatableResponse = response.then();
         validatableResponse.statusCode(200);
 
         TicketDTO ticketDTO = response.getBody().as(TicketDTO.class);
 
-        accessToken = this.loginToAccount(new UserInputDTO(clientNo1.getUserLogin(), passwordNotHashed), TestConstants.clientLoginURL);
-
-        LocalDateTime movieTimeBefore = ticketNo1.getMovieTime();
+        accessToken = loginToAccount(new LoginAccountRequest(clientNo1.getLogin(), passwordNotHashed), TestConstants.clientLoginURL);
+        
         LocalDateTime newMovieTime = LocalDateTime.now().truncatedTo(ChronoUnit.SECONDS);
         ticketDTO.setMovieTime(newMovieTime);
 
         requestSpecification = RestAssured.given();
         requestSpecification.contentType(ContentType.JSON);
-        requestSpecification.header("Authorization", "Bearer " + accessToken);
+        requestSpecification.header(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken);
         requestSpecification.body(ticketDTO);
 
         response = requestSpecification.put(TestConstants.ticketsURL + "/update");
-        logger.debug("Response: " + response.getBody().asString());
         validatableResponse = response.then();
         validatableResponse.statusCode(412);
     }
 
     @Test
-    public void ticketControllerUpdateTicketWithChangedTicketIDAsAnAuthenticatedClientThatIsOwnerOfTheTicketTestPositive() {
-        String accessToken = this.loginToAccount(new UserInputDTO(clientNo1.getUserLogin(), passwordNotHashed), TestConstants.clientLoginURL);
+    void ticketControllerUpdateTicketWithChangedTicketIDAsAnAuthenticatedClientThatIsOwnerOfTheTicketTestPositive() {
+        String accessToken = loginToAccount(new LoginAccountRequest(clientNo1.getLogin(), passwordNotHashed), TestConstants.clientLoginURL);
 
         RequestSpecification requestSpecification = RestAssured.given();
-        requestSpecification.header("Authorization", "Bearer " + accessToken);
+        requestSpecification.header(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken);
         requestSpecification.accept(ContentType.JSON);
 
-        Response response = requestSpecification.get(TestConstants.ticketsURL + "/" + ticketNo1.getTicketID());
-        logger.debug("Response: " + response.getBody().asString());
+        Response response = requestSpecification.get(TestConstants.ticketsURL + "/" + ticketNo1.getId());
         ValidatableResponse validatableResponse = response.then();
         validatableResponse.statusCode(200);
 
         TicketDTO ticketDTO = response.getBody().as(TicketDTO.class);
-        String etagContent = response.getHeader("ETag");
+        String etagContent = response.getHeader(HttpHeaders.ETAG);
 
-        accessToken = this.loginToAccount(new UserInputDTO(clientNo1.getUserLogin(), passwordNotHashed), TestConstants.clientLoginURL);
+        accessToken = loginToAccount(new LoginAccountRequest(clientNo1.getLogin(), passwordNotHashed), TestConstants.clientLoginURL);
 
-        ticketDTO.setTicketID(UUID.randomUUID());
+        ticketDTO.setId(UUID.randomUUID());
 
         requestSpecification = RestAssured.given();
         requestSpecification.contentType(ContentType.JSON);
-        requestSpecification.header("Authorization", "Bearer " + accessToken);
-        requestSpecification.header("If-Match", etagContent);
+        requestSpecification.header(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken);
+        requestSpecification.header(HttpHeaders.IF_MATCH, etagContent);
         requestSpecification.body(ticketDTO);
 
         response = requestSpecification.put(TestConstants.ticketsURL + "/update");
-        logger.debug("Response: " + response.getBody().asString());
         validatableResponse = response.then();
         validatableResponse.statusCode(400);
     }
 
     @Test
-    public void ticketControllerUpdateTicketAsAnAuthenticatedClientThatIsNotTheOwnerOfTheTicketTestNegative() throws Exception {
-        String accessToken = this.loginToAccount(new UserInputDTO(clientNo1.getUserLogin(), passwordNotHashed), TestConstants.clientLoginURL);
+    void ticketControllerUpdateTicketAsAnAuthenticatedClientThatIsNotTheOwnerOfTheTicketTestNegative() {
+        String accessToken = loginToAccount(new LoginAccountRequest(clientNo1.getLogin(), passwordNotHashed), TestConstants.clientLoginURL);
 
         RequestSpecification requestSpecification = RestAssured.given();
-        requestSpecification.header("Authorization", "Bearer " + accessToken);
+        requestSpecification.header(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken);
         requestSpecification.accept(ContentType.JSON);
 
-        Response response = requestSpecification.get(TestConstants.ticketsURL + "/" + ticketNo1.getTicketID());
-        logger.debug("Response: " + response.getBody().asString());
+        Response response = requestSpecification.get(TestConstants.ticketsURL + "/" + ticketNo1.getId());
         ValidatableResponse validatableResponse = response.then();
         validatableResponse.statusCode(200);
 
         TicketDTO ticketDTO = response.getBody().as(TicketDTO.class);
-        String etagContent = response.header("ETag");
+        String etagContent = response.header(HttpHeaders.ETAG);
 
-        accessToken = this.loginToAccount(new UserInputDTO(clientNo2.getUserLogin(), passwordNotHashed), TestConstants.clientLoginURL);
-
-        LocalDateTime movieTimeBefore = ticketNo1.getMovieTime();
+        accessToken = loginToAccount(new LoginAccountRequest(clientNo2.getLogin(), passwordNotHashed), TestConstants.clientLoginURL);
+        
         LocalDateTime newMovieTime = LocalDateTime.now().truncatedTo(ChronoUnit.SECONDS);
         ticketDTO.setMovieTime(newMovieTime);
 
         requestSpecification = RestAssured.given();
         requestSpecification.contentType(ContentType.JSON);
-        requestSpecification.header("Authorization", "Bearer " + accessToken);
-        requestSpecification.header("If-Match", etagContent);
+        requestSpecification.header(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken);
+        requestSpecification.header(HttpHeaders.IF_MATCH, etagContent);
         requestSpecification.body(ticketDTO);
 
         response = requestSpecification.put(TestConstants.ticketsURL + "/update");
-        logger.debug("Response: " + response.getBody().asString());
         validatableResponse = response.then();
         validatableResponse.statusCode(403);
     }
 
     @Test
-    public void ticketControllerUpdateTicketAsAnAuthenticatedStaffTestNegative() {
-        String accessToken = this.loginToAccount(new UserInputDTO(clientNo1.getUserLogin(), passwordNotHashed), TestConstants.clientLoginURL);
+    void ticketControllerUpdateTicketAsAnAuthenticatedStaffTestNegative() {
+        String accessToken = loginToAccount(new LoginAccountRequest(clientNo1.getLogin(), passwordNotHashed), TestConstants.clientLoginURL);
 
         RequestSpecification requestSpecification = RestAssured.given();
-        requestSpecification.header("Authorization", "Bearer " + accessToken);
+        requestSpecification.header(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken);
         requestSpecification.accept(ContentType.JSON);
 
-        Response response = requestSpecification.get(TestConstants.ticketsURL + "/" + ticketNo1.getTicketID());
-        logger.debug("Response: " + response.getBody().asString());
+        Response response = requestSpecification.get(TestConstants.ticketsURL + "/" + ticketNo1.getId());
         ValidatableResponse validatableResponse = response.then();
         validatableResponse.statusCode(200);
 
         TicketDTO ticketDTO = response.getBody().as(TicketDTO.class);
-        String etagContent = response.header("ETag");
+        String etagContent = response.header(HttpHeaders.ETAG);
 
-        accessToken = this.loginToAccount(new UserInputDTO(staffNo1.getUserLogin(), passwordNotHashed), TestConstants.staffLoginURL);
+        accessToken = loginToAccount(new LoginAccountRequest(staffNo1.getLogin(), passwordNotHashed), TestConstants.staffLoginURL);
 
-        LocalDateTime movieTimeBefore = ticketNo1.getMovieTime();
         LocalDateTime newMovieTime = LocalDateTime.now().truncatedTo(ChronoUnit.SECONDS);
         ticketDTO.setMovieTime(newMovieTime);
 
         requestSpecification = RestAssured.given();
         requestSpecification.contentType(ContentType.JSON);
-        requestSpecification.header("Authorization", "Bearer " + accessToken);
-        requestSpecification.header("If-Match", etagContent);
+        requestSpecification.header(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken);
+        requestSpecification.header(HttpHeaders.IF_MATCH, etagContent);
         requestSpecification.body(ticketDTO);
 
         response = requestSpecification.put(TestConstants.ticketsURL + "/update");
-        logger.debug("Response: " + response.getBody().asString());
         validatableResponse = response.then();
         validatableResponse.statusCode(403);
     }
 
     @Test
-    public void ticketControllerUpdateTicketAsAnAuthenticatedAdminTestNegative() {
-        String accessToken = this.loginToAccount(new UserInputDTO(clientNo1.getUserLogin(), passwordNotHashed), TestConstants.clientLoginURL);
+    void ticketControllerUpdateTicketAsAnAuthenticatedAdminTestNegative() {
+        String accessToken = loginToAccount(new LoginAccountRequest(clientNo1.getLogin(), passwordNotHashed), TestConstants.clientLoginURL);
 
         RequestSpecification requestSpecification = RestAssured.given();
-        requestSpecification.header("Authorization", "Bearer " + accessToken);
+        requestSpecification.header(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken);
         requestSpecification.accept(ContentType.JSON);
 
-        Response response = requestSpecification.get(TestConstants.ticketsURL + "/" + ticketNo1.getTicketID());
-        logger.debug("Response: " + response.getBody().asString());
+        Response response = requestSpecification.get(TestConstants.ticketsURL + "/" + ticketNo1.getId());
         ValidatableResponse validatableResponse = response.then();
         validatableResponse.statusCode(200);
 
         TicketDTO ticketDTO = response.getBody().as(TicketDTO.class);
-        String etagContent = response.header("ETag");
+        String etagContent = response.header(HttpHeaders.ETAG);
 
-        accessToken = this.loginToAccount(new UserInputDTO(adminNo1.getUserLogin(), passwordNotHashed), TestConstants.adminLoginURL);
+        accessToken = loginToAccount(new LoginAccountRequest(adminNo1.getLogin(), passwordNotHashed), TestConstants.adminLoginURL);
 
-        LocalDateTime movieTimeBefore = ticketNo1.getMovieTime();
         LocalDateTime newMovieTime = LocalDateTime.now().truncatedTo(ChronoUnit.SECONDS);
         ticketDTO.setMovieTime(newMovieTime);
 
         requestSpecification = RestAssured.given();
         requestSpecification.contentType(ContentType.JSON);
-        requestSpecification.header("Authorization", "Bearer " + accessToken);
-        requestSpecification.header("If-Match", etagContent);
+        requestSpecification.header(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken);
+        requestSpecification.header(HttpHeaders.IF_MATCH, etagContent);
         requestSpecification.body(ticketDTO);
 
         response = requestSpecification.put(TestConstants.ticketsURL + "/update");
-        logger.debug("Response: " + response.getBody().asString());
         validatableResponse = response.then();
         validatableResponse.statusCode(403);
     }
 
     @Test
-    public void ticketControllerUpdateTicketWithNullMovieTimeAsAnAuthenticatedClientTestPositive() throws Exception {
-        String accessToken = this.loginToAccount(new UserInputDTO(clientNo1.getUserLogin(), passwordNotHashed), TestConstants.clientLoginURL);
+    void ticketControllerUpdateTicketWithNullMovieTimeAsAnAuthenticatedClientTestPositive() {
+        String accessToken = loginToAccount(new LoginAccountRequest(clientNo1.getLogin(), passwordNotHashed), TestConstants.clientLoginURL);
 
         RequestSpecification requestSpecification = RestAssured.given();
-        requestSpecification.header("Authorization", "Bearer " + accessToken);
+        requestSpecification.header(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken);
         requestSpecification.accept(ContentType.JSON);
 
-        Response response = requestSpecification.get(TestConstants.ticketsURL + "/" + ticketNo1.getTicketID());
-        logger.debug("Response: " + response.getBody().asString());
+        Response response = requestSpecification.get(TestConstants.ticketsURL + "/" + ticketNo1.getId());
         ValidatableResponse validatableResponse = response.then();
         validatableResponse.statusCode(200);
 
         TicketDTO ticketDTO = response.getBody().as(TicketDTO.class);
-        String etagContent = response.header("ETag");
+        String etagContent = response.header(HttpHeaders.ETAG);
 
-        accessToken = this.loginToAccount(new UserInputDTO(clientNo1.getUserLogin(), passwordNotHashed), TestConstants.clientLoginURL);
+        accessToken = loginToAccount(new LoginAccountRequest(clientNo1.getLogin(), passwordNotHashed), TestConstants.clientLoginURL);
 
         LocalDateTime newMovieTime = null;
         ticketDTO.setMovieTime(newMovieTime);
 
         requestSpecification = RestAssured.given();
         requestSpecification.contentType(ContentType.JSON);
-        requestSpecification.header("Authorization", "Bearer " + accessToken);
-        requestSpecification.header("If-Match", etagContent);
+        requestSpecification.header(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken);
+        requestSpecification.header(HttpHeaders.IF_MATCH, etagContent);
         requestSpecification.body(ticketDTO);
 
         response = requestSpecification.put(TestConstants.ticketsURL + "/update");
-        logger.debug("Response: " + response.getBody().asString());
         validatableResponse = response.then();
         validatableResponse.statusCode(400);
     }
@@ -760,8 +669,8 @@ public class TicketControllerTest {
     // Delete tests
 
     @Test
-    public void ticketControllerDeleteTicketAsAnUnauthenticatedUserTestNegative() throws Exception {
-        UUID removedTicketID = ticketNo1.getTicketID();
+    void ticketControllerDeleteTicketAsAnUnauthenticatedUserTestNegative() {
+        UUID removedTicketID = ticketNo1.getId();
         String path = TestConstants.ticketsURL + "/" + removedTicketID + "/delete";
 
         Ticket foundTicket = ticketService.findByUUID(removedTicketID);
@@ -769,119 +678,112 @@ public class TicketControllerTest {
 
         RequestSpecification requestSpecification = RestAssured.given();
         Response response = requestSpecification.delete(path);
-        logger.debug("Response: " + response.asString());
         ValidatableResponse validatableResponse = response.then();
         validatableResponse.statusCode(403);
     }
 
     @Test
-    public void ticketControllerDeleteTicketAsAnAuthenticatedClientThatIsOwnerOfTheTicketTestPositive() throws Exception {
-        String accessToken = this.loginToAccount(new UserInputDTO(clientNo1.getUserLogin(), passwordNotHashed), TestConstants.clientLoginURL);
+    void ticketControllerDeleteTicketAsAnAuthenticatedClientThatIsOwnerOfTheTicketTestPositive() {
+        String accessToken = loginToAccount(new LoginAccountRequest(clientNo1.getLogin(), passwordNotHashed), TestConstants.clientLoginURL);
 
-        UUID removedTicketID = ticketNo1.getTicketID();
+        UUID removedTicketID = ticketNo1.getId();
         String path = TestConstants.ticketsURL + "/" + removedTicketID + "/delete";
 
         Ticket foundTicket = ticketService.findByUUID(removedTicketID);
         assertNotNull(foundTicket);
 
         RequestSpecification requestSpecification = RestAssured.given();
-        requestSpecification.header("Authorization", "Bearer " + accessToken);
+        requestSpecification.header(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken);
         Response response = requestSpecification.delete(path);
-        logger.debug("Response: " + response.asString());
         ValidatableResponse validatableResponse = response.then();
         validatableResponse.statusCode(204);
 
-        assertThrows(TicketServiceReadException.class, () -> ticketService.findByUUID(removedTicketID));
+        assertThrows(TicketNotFoundException.class, () -> ticketService.findByUUID(removedTicketID));
     }
 
     @Test
-    public void ticketControllerDeleteTicketAsAnAuthenticatedClientThatIsNotTheOwnerOfTheTicketTestNegative() throws Exception {
-        String accessToken = this.loginToAccount(new UserInputDTO(clientNo2.getUserLogin(), passwordNotHashed), TestConstants.clientLoginURL);
+    void ticketControllerDeleteTicketAsAnAuthenticatedClientThatIsNotTheOwnerOfTheTicketTestNegative() {
+        String accessToken = loginToAccount(new LoginAccountRequest(clientNo2.getLogin(), passwordNotHashed), TestConstants.clientLoginURL);
 
-        UUID removedTicketID = ticketNo1.getTicketID();
+        UUID removedTicketID = ticketNo1.getId();
         String path = TestConstants.ticketsURL + "/" + removedTicketID + "/delete";
 
         Ticket foundTicket = ticketService.findByUUID(removedTicketID);
         assertNotNull(foundTicket);
 
         RequestSpecification requestSpecification = RestAssured.given();
-        requestSpecification.header("Authorization", "Bearer " + accessToken);
+        requestSpecification.header(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken);
         Response response = requestSpecification.delete(path);
-        logger.debug("Response: " + response.asString());
         ValidatableResponse validatableResponse = response.then();
         validatableResponse.statusCode(403);
     }
 
     @Test
-    public void ticketControllerDeleteTicketAsAnAuthenticatedStaffTestNegative() throws Exception {
-        String accessToken = this.loginToAccount(new UserInputDTO(staffNo1.getUserLogin(), passwordNotHashed), TestConstants.staffLoginURL);
+    void ticketControllerDeleteTicketAsAnAuthenticatedStaffTestNegative() {
+        String accessToken = loginToAccount(new LoginAccountRequest(staffNo1.getLogin(), passwordNotHashed), TestConstants.staffLoginURL);
 
-        UUID removedTicketID = ticketNo1.getTicketID();
+        UUID removedTicketID = ticketNo1.getId();
         String path = TestConstants.ticketsURL + "/" + removedTicketID + "/delete";
 
         Ticket foundTicket = ticketService.findByUUID(removedTicketID);
         assertNotNull(foundTicket);
 
         RequestSpecification requestSpecification = RestAssured.given();
-        requestSpecification.header("Authorization", "Bearer " + accessToken);
+        requestSpecification.header(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken);
         Response response = requestSpecification.delete(path);
-        logger.debug("Response: " + response.asString());
         ValidatableResponse validatableResponse = response.then();
         validatableResponse.statusCode(403);
     }
 
     @Test
-    public void ticketControllerDeleteTicketAsAnAuthenticatedAdminTestNegative() throws Exception {
-        String accessToken = this.loginToAccount(new UserInputDTO(adminNo1.getUserLogin(), passwordNotHashed), TestConstants.adminLoginURL);
+    void ticketControllerDeleteTicketAsAnAuthenticatedAdminTestNegative() {
+        String accessToken = loginToAccount(new LoginAccountRequest(adminNo1.getLogin(), passwordNotHashed), TestConstants.adminLoginURL);
 
-        UUID removedTicketID = ticketNo1.getTicketID();
+        UUID removedTicketID = ticketNo1.getId();
         String path = TestConstants.ticketsURL + "/" + removedTicketID + "/delete";
 
         Ticket foundTicket = ticketService.findByUUID(removedTicketID);
         assertNotNull(foundTicket);
 
         RequestSpecification requestSpecification = RestAssured.given();
-        requestSpecification.header("Authorization", "Bearer " + accessToken);
+        requestSpecification.header(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken);
         Response response = requestSpecification.delete(path);
-        logger.debug("Response: " + response.asString());
         ValidatableResponse validatableResponse = response.then();
         validatableResponse.statusCode(403);
     }
 
     @Test
-    public void ticketControllerDeleteTicketThatIsNotInTheDatabaseAsAnAuthenticatedClientTestNegative() {
-        String accessToken = this.loginToAccount(new UserInputDTO(clientNo1.getUserLogin(), passwordNotHashed), TestConstants.clientLoginURL);
+    void ticketControllerDeleteTicketThatIsNotInTheDatabaseAsAnAuthenticatedClientTestNegative() {
+        String accessToken = loginToAccount(new LoginAccountRequest(clientNo1.getLogin(), passwordNotHashed), TestConstants.clientLoginURL);
 
         UUID removedTicketID = UUID.randomUUID();
         String path = TestConstants.ticketsURL + "/" + removedTicketID + "/delete";
 
-        assertThrows(TicketServiceReadException.class, () -> ticketService.findByUUID(removedTicketID));
+        assertThrows(TicketNotFoundException.class, () -> ticketService.findByUUID(removedTicketID));
 
         RequestSpecification requestSpecification = RestAssured.given();
-        requestSpecification.header("Authorization", "Bearer " + accessToken);
+        requestSpecification.header(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken);
         Response response = requestSpecification.delete(path);
-        logger.debug("Response: " + response.asString());
         ValidatableResponse validatableResponse = response.then();
 
         validatableResponse.statusCode(400);
     }
 
     @Test
-    public void ticketControllerAllocateTwoTicketsOnePositiveAndOneNegativeTestPositive() throws Exception {
-        String accessToken = this.loginToAccount(new UserInputDTO(clientNo1.getUserLogin(), passwordNotHashed), TestConstants.clientLoginURL);
+    void ticketControllerAllocateTwoTicketsOnePositiveAndOneNegativeTestPositive() {
+        String accessToken = loginToAccount(new LoginAccountRequest(clientNo1.getLogin(), passwordNotHashed), TestConstants.clientLoginURL);
 
         Movie testMovie = movieService.create("SomeMovieTitleNo1", 31.20, 3, 1);
-        TicketSelfInputDTO ticketSelfInputDTONo1 = new TicketSelfInputDTO(movieTimeNo1.toString(), testMovie.getMovieID());
-        TicketSelfInputDTO ticketSelfInputDTONo2 = new TicketSelfInputDTO(movieTimeNo1.toString(), testMovie.getMovieID());
+        TicketSelfInputDTO ticketSelfInputDTONo1 = new TicketSelfInputDTO(movieTimeNo1.toString(), testMovie.getId());
+        TicketSelfInputDTO ticketSelfInputDTONo2 = new TicketSelfInputDTO(movieTimeNo1.toString(), testMovie.getId());
 
         RequestSpecification requestSpecification = RestAssured.given();
         requestSpecification.contentType(ContentType.JSON);
-        requestSpecification.header("Authorization", "Bearer " + accessToken);
+        requestSpecification.header(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken);
         requestSpecification.accept(ContentType.JSON);
         requestSpecification.body(ticketSelfInputDTONo1);
 
         Response response = requestSpecification.post(TestConstants.ticketsURL + "/self");
-        logger.debug("Response: " + response.getBody().asString());
         ValidatableResponse validatableResponse = response.then();
 
         validatableResponse.statusCode(201);
@@ -889,41 +791,39 @@ public class TicketControllerTest {
         TicketDTO ticketDTO = response.getBody().as(TicketDTO.class);
 
         assertNotNull(ticketDTO);
-        assertNotNull(ticketDTO.getTicketID());
+        assertNotNull(ticketDTO.getId());
         assertEquals(movieTimeNo1, ticketDTO.getMovieTime());
-        assertEquals(clientNo1.getUserID(), ticketDTO.getClientID());
-        assertEquals(testMovie.getMovieID(), ticketDTO.getMovieID());
-        assertEquals(testMovie.getMovieBasePrice(), ticketDTO.getTicketFinalPrice());
+        assertEquals(clientNo1.getId(), ticketDTO.getClientId());
+        assertEquals(testMovie.getId(), ticketDTO.getMovieId());
+        assertEquals(testMovie.getBasePrice(), ticketDTO.getFinalPrice());
 
         requestSpecification = RestAssured.given();
         requestSpecification.contentType(ContentType.JSON);
-        requestSpecification.header("Authorization", "Bearer " + accessToken);
+        requestSpecification.header(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken);
         requestSpecification.accept(ContentType.JSON);
         requestSpecification.body(ticketSelfInputDTONo2);
 
         response = requestSpecification.post(TestConstants.ticketsURL + "/self");
-        logger.debug("Response: " + response.asString());
         validatableResponse = response.then();
 
         validatableResponse.statusCode(400);
     }
 
     @Test
-    public void ticketControllerAllocateTwoTicketsTwoPositiveTestPositive() throws Exception {
-        String accessToken = this.loginToAccount(new UserInputDTO(clientNo1.getUserLogin(), passwordNotHashed), TestConstants.clientLoginURL);
+    void ticketControllerAllocateTwoTicketsTwoPositiveTestPositive() {
+        String accessToken = loginToAccount(new LoginAccountRequest(clientNo1.getLogin(), passwordNotHashed), TestConstants.clientLoginURL);
 
         Movie testMovie = movieService.create("SomeMovieTitleNo1", 31.20, 3, 1);
-        TicketSelfInputDTO ticketSelfInputDTONo1 = new TicketSelfInputDTO(movieTimeNo1.toString(), testMovie.getMovieID());
-        TicketSelfInputDTO ticketSelfInputDTONo2 = new TicketSelfInputDTO(movieTimeNo1.toString(), testMovie.getMovieID());
+        TicketSelfInputDTO ticketSelfInputDTONo1 = new TicketSelfInputDTO(movieTimeNo1.toString(), testMovie.getId());
+        TicketSelfInputDTO ticketSelfInputDTONo2 = new TicketSelfInputDTO(movieTimeNo1.toString(), testMovie.getId());
 
         RequestSpecification requestSpecification = RestAssured.given();
         requestSpecification.contentType(ContentType.JSON);
-        requestSpecification.header("Authorization", "Bearer " + accessToken);
+        requestSpecification.header(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken);
         requestSpecification.accept(ContentType.JSON);
         requestSpecification.body(ticketSelfInputDTONo1);
 
         Response response = requestSpecification.post(TestConstants.ticketsURL + "/self");
-        logger.debug("Response: " + response.asString());
         ValidatableResponse validatableResponse = response.then();
 
         validatableResponse.statusCode(201);
@@ -931,29 +831,27 @@ public class TicketControllerTest {
         TicketDTO ticketDTO = response.getBody().as(TicketDTO.class);
 
         assertNotNull(ticketDTO);
-        assertNotNull(ticketDTO.getTicketID());
+        assertNotNull(ticketDTO.getId());
         assertEquals(movieTimeNo1, ticketDTO.getMovieTime());
-        assertEquals(clientNo1.getUserID(), ticketDTO.getClientID());
-        assertEquals(testMovie.getMovieID(), ticketDTO.getMovieID());
-        assertEquals(testMovie.getMovieBasePrice(), ticketDTO.getTicketFinalPrice());
+        assertEquals(clientNo1.getId(), ticketDTO.getClientId());
+        assertEquals(testMovie.getId(), ticketDTO.getMovieId());
+        assertEquals(testMovie.getBasePrice(), ticketDTO.getFinalPrice());
 
-        String path = TestConstants.ticketsURL + "/" + ticketDTO.getTicketID() + "/delete";
+        String path = TestConstants.ticketsURL + "/" + ticketDTO.getId() + "/delete";
         requestSpecification = RestAssured.given();
-        requestSpecification.header("Authorization", "Bearer " + accessToken);
+        requestSpecification.header(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken);
 
         response = requestSpecification.delete(path);
-        logger.debug("Response: " + response.getBody().asString());
         validatableResponse = response.then();
         validatableResponse.statusCode(204);
 
         requestSpecification = RestAssured.given();
         requestSpecification.contentType(ContentType.JSON);
-        requestSpecification.header("Authorization", "Bearer " + accessToken);
+        requestSpecification.header(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken);
         requestSpecification.accept(ContentType.JSON);
         requestSpecification.body(ticketSelfInputDTONo2);
 
         response = requestSpecification.post(TestConstants.ticketsURL + "/self");
-        logger.info("Response: " + response.getBody().asString());
         validatableResponse = response.then();
 
         validatableResponse.statusCode(201);
@@ -961,87 +859,80 @@ public class TicketControllerTest {
         ticketDTO = response.getBody().as(TicketDTO.class);
 
         assertNotNull(ticketDTO);
-        assertNotNull(ticketDTO.getTicketID());
+        assertNotNull(ticketDTO.getId());
         assertEquals(movieTimeNo1, ticketDTO.getMovieTime());
-        assertEquals(clientNo1.getUserID(), ticketDTO.getClientID());
-        assertEquals(testMovie.getMovieID(), ticketDTO.getMovieID());
-        assertEquals(testMovie.getMovieBasePrice(), ticketDTO.getTicketFinalPrice());
+        assertEquals(clientNo1.getId(), ticketDTO.getClientId());
+        assertEquals(testMovie.getId(), ticketDTO.getMovieId());
+        assertEquals(testMovie.getBasePrice(), ticketDTO.getFinalPrice());
     }
 
     // Client tests
 
     @Test
-    public void clientControllerFindAllTicketsAsAnUnauthenticatedUserTestNegative() {
-        UUID searchedClientID = clientNo1.getUserID();
+    void clientControllerFindAllTicketsAsAnUnauthenticatedUserTestNegative() {
+        UUID searchedClientID = clientNo1.getId();
         String path = TestConstants.clientsURL + "/" + searchedClientID + "/ticket-list";
 
         RequestSpecification requestSpecification = RestAssured.given();
         requestSpecification.accept(ContentType.JSON);
 
         Response response = requestSpecification.get(path);
-        logger.debug("Response: " + response.getBody().asString());
         ValidatableResponse validatableResponse = response.then();
 
         validatableResponse.statusCode(403);
     }
 
     @Test
-    public void clientControllerFindAllTicketsAsAnAuthenticatedClientTestPositive() {
-        String accessToken = this.loginToAccount(new UserInputDTO(clientNo1.getUserLogin(), passwordNotHashed), TestConstants.clientLoginURL);
+    void clientControllerFindAllTicketsAsAnAuthenticatedClientTestPositive() {
+        String accessToken = loginToAccount(new LoginAccountRequest(clientNo1.getLogin(), passwordNotHashed), TestConstants.clientLoginURL);
 
-        UUID searchedClientID = clientNo1.getUserID();
         String path = TestConstants.clientsURL + "/self/ticket-list";
 
         RequestSpecification requestSpecification = RestAssured.given();
-        requestSpecification.header("Authorization", "Bearer " + accessToken);
+        requestSpecification.header(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken);
         requestSpecification.accept(ContentType.JSON);
 
         Response response = requestSpecification.get(path);
-        logger.debug("Response: " + response.getBody().asString());
         ValidatableResponse validatableResponse = response.then();
 
         validatableResponse.statusCode(200);
 
-        List<TicketDTO> listOfTickets = response.getBody().as(new TypeRef<List<TicketDTO>>() {
-        });
+        List<TicketDTO> listOfTickets = response.getBody().as(new TypeRef<>() {});
         assertEquals(4, listOfTickets.size());
     }
 
     @Test
-    public void clientControllerFindAllTicketsAsAnAuthenticatedStaffTestPositive() {
-        String accessToken = this.loginToAccount(new UserInputDTO(staffNo1.getUserLogin(), passwordNotHashed), TestConstants.staffLoginURL);
+    void clientControllerFindAllTicketsAsAnAuthenticatedStaffTestPositive() {
+        String accessToken = loginToAccount(new LoginAccountRequest(staffNo1.getLogin(), passwordNotHashed), TestConstants.staffLoginURL);
 
-        UUID searchedClientID = clientNo1.getUserID();
+        UUID searchedClientID = clientNo1.getId();
         String path = TestConstants.clientsURL + "/" + searchedClientID + "/ticket-list";
 
         RequestSpecification requestSpecification = RestAssured.given();
-        requestSpecification.header("Authorization", "Bearer " + accessToken);
+        requestSpecification.header(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken);
         requestSpecification.accept(ContentType.JSON);
 
         Response response = requestSpecification.get(path);
-        logger.debug("Response: " + response.getBody().asString());
         ValidatableResponse validatableResponse = response.then();
 
         validatableResponse.statusCode(200);
 
-        List<TicketDTO> listOfTickets = response.getBody().as(new TypeRef<List<TicketDTO>>() {
-        });
+        List<TicketDTO> listOfTickets = response.getBody().as(new TypeRef<>() {});
         assertEquals(4, listOfTickets.size());
     }
 
     @Test
-    public void clientControllerFindAllTicketsAsAnAuthenticatedAdminTestNegative() {
-        String accessToken = this.loginToAccount(new UserInputDTO(adminNo1.getUserLogin(), passwordNotHashed), TestConstants.adminLoginURL);
+    void clientControllerFindAllTicketsAsAnAuthenticatedAdminTestNegative() {
+        String accessToken = loginToAccount(new LoginAccountRequest(adminNo1.getLogin(), passwordNotHashed), TestConstants.adminLoginURL);
 
-        UUID searchedClientID = clientNo1.getUserID();
+        UUID searchedClientID = clientNo1.getId();
         String path = TestConstants.clientsURL + "/" + searchedClientID + "/ticket-list";
 
         RequestSpecification requestSpecification = RestAssured.given();
-        requestSpecification.header("Authorization", "Bearer " + accessToken);
+        requestSpecification.header(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken);
         requestSpecification.accept(ContentType.JSON);
 
         Response response = requestSpecification.get(path);
-        logger.debug("Response: " + response.getBody().asString());
         ValidatableResponse validatableResponse = response.then();
 
         validatableResponse.statusCode(403);
@@ -1050,81 +941,76 @@ public class TicketControllerTest {
     // Movie tests
 
     @Test
-    public void movieControllerFindAllTicketsAsAnUnauthenticatedUserTestNegative() {
-        UUID searchedMovieID = movieNo1.getMovieID();
+    void movieControllerFindAllTicketsAsAnUnauthenticatedUserTestNegative() {
+        UUID searchedMovieID = movieNo1.getId();
         String path = TestConstants.moviesURL + "/" + searchedMovieID + "/tickets";
 
         RequestSpecification requestSpecification = RestAssured.given();
         requestSpecification.accept(ContentType.JSON);
 
         Response response = requestSpecification.get(path);
-        logger.debug("Response: " + response.getBody().asString());
         ValidatableResponse validatableResponse = response.then();
 
         validatableResponse.statusCode(403);
     }
 
     @Test
-    public void movieControllerFindAllTicketsAsAnAuthenticatedClientTestNegative() {
-        String accessToken = this.loginToAccount(new UserInputDTO(clientNo1.getUserLogin(), passwordNotHashed), TestConstants.clientLoginURL);
+    void movieControllerFindAllTicketsAsAnAuthenticatedClientTestNegative() {
+        String accessToken = loginToAccount(new LoginAccountRequest(clientNo1.getLogin(), passwordNotHashed), TestConstants.clientLoginURL);
 
-        UUID searchedMovieID = movieNo1.getMovieID();
+        UUID searchedMovieID = movieNo1.getId();
         String path = TestConstants.moviesURL + "/" + searchedMovieID + "/tickets";
 
         RequestSpecification requestSpecification = RestAssured.given();
-        requestSpecification.header("Authorization", "Bearer " + accessToken);
+        requestSpecification.header(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken);
         requestSpecification.accept(ContentType.JSON);
 
         Response response = requestSpecification.get(path);
-        logger.debug("Response: " + response.getBody().asString());
         ValidatableResponse validatableResponse = response.then();
 
         validatableResponse.statusCode(403);
     }
 
     @Test
-    public void movieControllerFindAllTicketsAsAnAuthenticatedStaffTestPositive() {
-        String accessToken = this.loginToAccount(new UserInputDTO(staffNo1.getUserLogin(), passwordNotHashed), TestConstants.staffLoginURL);
+    void movieControllerFindAllTicketsAsAnAuthenticatedStaffTestPositive() {
+        String accessToken = loginToAccount(new LoginAccountRequest(staffNo1.getLogin(), passwordNotHashed), TestConstants.staffLoginURL);
 
-        UUID searchedMovieID = movieNo1.getMovieID();
+        UUID searchedMovieID = movieNo1.getId();
         String path = TestConstants.moviesURL + "/" + searchedMovieID + "/tickets";
 
         RequestSpecification requestSpecification = RestAssured.given();
-        requestSpecification.header("Authorization", "Bearer " + accessToken);
+        requestSpecification.header(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken);
         requestSpecification.accept(ContentType.JSON);
 
         Response response = requestSpecification.get(path);
-        logger.debug("Response: " + response.getBody().asString());
         ValidatableResponse validatableResponse = response.then();
 
         validatableResponse.statusCode(200);
 
-        List<TicketDTO> listOfTickets = response.getBody().as(new TypeRef<List<TicketDTO>>() {
-        });
+        List<TicketDTO> listOfTickets = response.getBody().as(new TypeRef<>() {});
         assertEquals(3, listOfTickets.size());
     }
 
     @Test
-    public void movieControllerFindAllTicketsAsAnAuthenticatedAdminTestNegative() {
-        String accessToken = this.loginToAccount(new UserInputDTO(adminNo1.getUserLogin(), passwordNotHashed), TestConstants.adminLoginURL);
+    void movieControllerFindAllTicketsAsAnAuthenticatedAdminTestNegative() {
+        String accessToken = loginToAccount(new LoginAccountRequest(adminNo1.getLogin(), passwordNotHashed), TestConstants.adminLoginURL);
 
-        UUID searchedMovieID = movieNo1.getMovieID();
+        UUID searchedMovieID = movieNo1.getId();
         String path = TestConstants.moviesURL + "/" + searchedMovieID + "/tickets";
 
         RequestSpecification requestSpecification = RestAssured.given();
-        requestSpecification.header("Authorization", "Bearer " + accessToken);
+        requestSpecification.header(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken);
         requestSpecification.accept(ContentType.JSON);
 
         Response response = requestSpecification.get(path);
-        logger.debug("Response: " + response.getBody().asString());
         ValidatableResponse validatableResponse = response.then();
 
         validatableResponse.statusCode(403);
     }
 
     @Test
-    public void movieControllerDeleteMovieThatIsUsedInTicketAsAnUnauthenticatedUserTestNegative() {
-        UUID removedMovieID = movieNo1.getMovieID();
+    void movieControllerDeleteMovieThatIsUsedInTicketAsAnUnauthenticatedUserTestNegative() {
+        UUID removedMovieID = movieNo1.getId();
         String path = TestConstants.moviesURL + "/" + removedMovieID + "/delete";
 
         List<Ticket> listOfTicketForMovie = movieService.getListOfTicketsForCertainMovie(removedMovieID);
@@ -1135,17 +1021,16 @@ public class TicketControllerTest {
         RequestSpecification requestSpecification = RestAssured.given();
 
         Response response = requestSpecification.delete(path);
-        logger.debug("Response: " + response.asString());
         ValidatableResponse validatableResponse = response.then();
 
         validatableResponse.statusCode(403);
     }
 
     @Test
-    public void movieControllerDeleteMovieThatIsUsedInTicketAsAnAuthenticatedClientTestNegative() {
-        String accessToken = this.loginToAccount(new UserInputDTO(clientNo1.getUserLogin(), passwordNotHashed), TestConstants.clientLoginURL);
+    void movieControllerDeleteMovieThatIsUsedInTicketAsAnAuthenticatedClientTestNegative() {
+        String accessToken = loginToAccount(new LoginAccountRequest(clientNo1.getLogin(), passwordNotHashed), TestConstants.clientLoginURL);
 
-        UUID removedMovieID = movieNo1.getMovieID();
+        UUID removedMovieID = movieNo1.getId();
         String path = TestConstants.moviesURL + "/" + removedMovieID + "/delete";
 
         List<Ticket> listOfTicketForMovie = movieService.getListOfTicketsForCertainMovie(removedMovieID);
@@ -1154,20 +1039,19 @@ public class TicketControllerTest {
         assertEquals(3, listOfTicketForMovie.size());
 
         RequestSpecification requestSpecification = RestAssured.given();
-        requestSpecification.header("Authorization", "Bearer " + accessToken);
+        requestSpecification.header(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken);
 
         Response response = requestSpecification.delete(path);
-        logger.debug("Response: " + response.asString());
         ValidatableResponse validatableResponse = response.then();
 
         validatableResponse.statusCode(403);
     }
 
     @Test
-    public void movieControllerDeleteMovieThatIsUsedInTicketAsAnAuthenticatedStaffTestNegative() {
-        String accessToken = this.loginToAccount(new UserInputDTO(staffNo1.getUserLogin(), passwordNotHashed), TestConstants.staffLoginURL);
+    void movieControllerDeleteMovieThatIsUsedInTicketAsAnAuthenticatedStaffTestNegative() {
+        String accessToken = loginToAccount(new LoginAccountRequest(staffNo1.getLogin(), passwordNotHashed), TestConstants.staffLoginURL);
 
-        UUID removedMovieID = movieNo1.getMovieID();
+        UUID removedMovieID = movieNo1.getId();
         String path = TestConstants.moviesURL + "/" + removedMovieID + "/delete";
 
         List<Ticket> listOfTicketForMovie = movieService.getListOfTicketsForCertainMovie(removedMovieID);
@@ -1176,20 +1060,19 @@ public class TicketControllerTest {
         assertEquals(3, listOfTicketForMovie.size());
 
         RequestSpecification requestSpecification = RestAssured.given();
-        requestSpecification.header("Authorization", "Bearer " + accessToken);
+        requestSpecification.header(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken);
 
         Response response = requestSpecification.delete(path);
-        logger.debug("Response: " + response.asString());
         ValidatableResponse validatableResponse = response.then();
 
         validatableResponse.statusCode(400);
     }
 
     @Test
-    public void movieControllerDeleteMovieThatIsUsedInTicketAsAnAuthenticatedAdminTestNegative() {
-        String accessToken = this.loginToAccount(new UserInputDTO(adminNo1.getUserLogin(), passwordNotHashed), TestConstants.adminLoginURL);
+    void movieControllerDeleteMovieThatIsUsedInTicketAsAnAuthenticatedAdminTestNegative() {
+        String accessToken = loginToAccount(new LoginAccountRequest(adminNo1.getLogin(), passwordNotHashed), TestConstants.adminLoginURL);
 
-        UUID removedMovieID = movieNo1.getMovieID();
+        UUID removedMovieID = movieNo1.getId();
         String path = TestConstants.moviesURL + "/" + removedMovieID + "/delete";
 
         List<Ticket> listOfTicketForMovie = movieService.getListOfTicketsForCertainMovie(removedMovieID);
@@ -1198,20 +1081,19 @@ public class TicketControllerTest {
         assertEquals(3, listOfTicketForMovie.size());
 
         RequestSpecification requestSpecification = RestAssured.given();
-        requestSpecification.header("Authorization", "Bearer " + accessToken);
+        requestSpecification.header(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken);
 
         Response response = requestSpecification.delete(path);
-        logger.debug("Response: " + response.asString());
         ValidatableResponse validatableResponse = response.then();
 
         validatableResponse.statusCode(403);
     }
 
-    private String loginToAccount(UserInputDTO userInputDTO, String loginURL) {
+    private String loginToAccount(LoginAccountRequest loginDto, String loginURL) {
         RequestSpecification requestSpecification = RestAssured.given();
         requestSpecification.contentType(ContentType.JSON);
         requestSpecification.accept(ContentType.JSON);
-        requestSpecification.body(new UserInputDTO(userInputDTO.getUserLogin(), userInputDTO.getUserPassword()));
+        requestSpecification.body(new LoginAccountRequest(loginDto.login(), loginDto.password()));
 
         Response response = requestSpecification.post(loginURL);
         ValidatableResponse validatableResponse = response.then();

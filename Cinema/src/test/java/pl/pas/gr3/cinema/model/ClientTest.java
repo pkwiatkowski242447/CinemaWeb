@@ -3,15 +3,15 @@ package pl.pas.gr3.cinema.model;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import pl.pas.gr3.cinema.model.users.Admin;
-import pl.pas.gr3.cinema.model.users.Client;
-import pl.pas.gr3.cinema.model.users.Staff;
+import pl.pas.gr3.cinema.entity.account.Admin;
+import pl.pas.gr3.cinema.entity.account.Client;
+import pl.pas.gr3.cinema.entity.account.Staff;
 
 import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-public class ClientTest {
+class ClientTest {
 
     private Client clientNo1;
     private Client clientNo2;
@@ -37,7 +37,7 @@ public class ClientTest {
     private static String passwordNo2;
 
     @BeforeAll
-    public static void initializeVariables() {
+    static void initializeVariables() {
         uuidNo1 = UUID.randomUUID();
         uuidNo2 = UUID.randomUUID();
         loginNo1 = "loginNo1";
@@ -47,167 +47,167 @@ public class ClientTest {
     }
 
     @BeforeEach
-    public void initializeClientObjects() {
+    void initializeClientObjects() {
         clientNo1 = new Client(uuidNo1, loginNo1, passwordNo1);
         clientNo2 = new Client(uuidNo2, loginNo2, passwordNo2);
-        clientNo3 = new Client(clientNo1.getUserID(),
-                clientNo1.getUserLogin(),
-                clientNo1.getUserPassword());
+        clientNo3 = new Client(clientNo1.getId(),
+                clientNo1.getLogin(),
+                clientNo1.getPassword());
 
         clientNo4 = new Client(uuidNo1, loginNo2, passwordNo2);
         clientNo5 = new Client(uuidNo1, loginNo1, passwordNo2);
 
         adminNo1 = new Admin(uuidNo1, loginNo1, passwordNo1);
         adminNo2 = new Admin(uuidNo2, loginNo2, passwordNo2);
-        adminNo3 = new Admin(adminNo1.getUserID(),
-                adminNo1.getUserLogin(),
-                adminNo1.getUserPassword());
+        adminNo3 = new Admin(adminNo1.getId(),
+                adminNo1.getLogin(),
+                adminNo1.getPassword());
 
         adminNo4 = new Admin(uuidNo1, loginNo2, passwordNo2);
         adminNo5 = new Admin(uuidNo1, loginNo1, passwordNo2);
 
         staffNo1 = new Staff(uuidNo1, loginNo1, passwordNo1);
         staffNo2 = new Staff(uuidNo2, loginNo2, passwordNo2);
-        staffNo3 = new Staff(staffNo1.getUserID(),
-                staffNo1.getUserLogin(),
-                staffNo1.getUserPassword());
+        staffNo3 = new Staff(staffNo1.getId(),
+                staffNo1.getLogin(),
+                staffNo1.getPassword());
 
         staffNo4 = new Staff(uuidNo1, loginNo2, passwordNo2);
         staffNo5 = new Staff(uuidNo1, loginNo1, passwordNo2);
     }
 
     @Test
-    public void clientConstructorAndGettersTest() {
+    void clientConstructorAndGettersTest() {
         Client testClient = new Client(uuidNo1, loginNo1, passwordNo1);
         assertNotNull(testClient);
-        assertEquals(uuidNo1, testClient.getUserID());
-        assertEquals(loginNo1, testClient.getUserLogin());
-        assertEquals(passwordNo1, testClient.getUserPassword());
+        assertEquals(uuidNo1, testClient.getId());
+        assertEquals(loginNo1, testClient.getLogin());
+        assertEquals(passwordNo1, testClient.getPassword());
     }
 
     @Test
-    public void staffConstructorAndGettersTest() {
+    void staffConstructorAndGettersTest() {
         Staff testStaff = new Staff(uuidNo1, loginNo1, passwordNo1);
         assertNotNull(testStaff);
-        assertEquals(uuidNo1, testStaff.getUserID());
-        assertEquals(loginNo1, testStaff.getUserLogin());
-        assertEquals(passwordNo1, testStaff.getUserPassword());
+        assertEquals(uuidNo1, testStaff.getId());
+        assertEquals(loginNo1, testStaff.getLogin());
+        assertEquals(passwordNo1, testStaff.getPassword());
     }
 
     @Test
-    public void adminConstructorAndGettersTest() {
+    void adminConstructorAndGettersTest() {
         Admin testAdmin = new Admin(uuidNo1, loginNo1, passwordNo1);
         assertNotNull(testAdmin);
-        assertEquals(uuidNo1, testAdmin.getUserID());
-        assertEquals(loginNo1, testAdmin.getUserLogin());
-        assertEquals(passwordNo1, testAdmin.getUserPassword());
+        assertEquals(uuidNo1, testAdmin.getId());
+        assertEquals(loginNo1, testAdmin.getLogin());
+        assertEquals(passwordNo1, testAdmin.getPassword());
     }
 
     @Test
-    public void clientSetLoginTestPositive() {
-        String loginBefore = clientNo1.getUserLogin();
+    void clientSetLoginTestPositive() {
+        String loginBefore = clientNo1.getLogin();
         String newClientLogin = "newClientLogin";
-        clientNo1.setUserLogin(newClientLogin);
-        String loginAfter = clientNo1.getUserLogin();
+        clientNo1.setLogin(newClientLogin);
+        String loginAfter = clientNo1.getLogin();
         assertEquals(newClientLogin, loginAfter);
         assertNotEquals(loginBefore, loginAfter);
     }
 
     @Test
-    public void clientSetPasswordTestPositive() {
-        String passwordBefore = clientNo1.getUserPassword();
+    void clientSetPasswordTestPositive() {
+        String passwordBefore = clientNo1.getPassword();
         String newClientPassword = "newClientPassword";
-        clientNo1.setUserPassword(newClientPassword);
-        String passwordAfter = clientNo1.getUserPassword();
+        clientNo1.setPassword(newClientPassword);
+        String passwordAfter = clientNo1.getPassword();
         assertEquals(newClientPassword, passwordAfter);
         assertNotEquals(passwordBefore, passwordAfter);
     }
 
     @Test
-    public void staffSetLoginTestPositive() {
-        String loginBefore = staffNo1.getUserLogin();
+    void staffSetLoginTestPositive() {
+        String loginBefore = staffNo1.getLogin();
         String newStaffLogin = "newStaffLogin";
-        staffNo1.setUserLogin(newStaffLogin);
-        String loginAfter = staffNo1.getUserLogin();
+        staffNo1.setLogin(newStaffLogin);
+        String loginAfter = staffNo1.getLogin();
         assertEquals(newStaffLogin, loginAfter);
         assertNotEquals(loginBefore, loginAfter);
     }
 
     @Test
-    public void staffSetPasswordTestPositive() {
-        String passwordBefore = staffNo1.getUserPassword();
+    void staffSetPasswordTestPositive() {
+        String passwordBefore = staffNo1.getPassword();
         String newStaffPassword = "newStaffPassword";
-        staffNo1.setUserPassword(newStaffPassword);
-        String passwordAfter = staffNo1.getUserPassword();
+        staffNo1.setPassword(newStaffPassword);
+        String passwordAfter = staffNo1.getPassword();
         assertEquals(newStaffPassword, passwordAfter);
         assertNotEquals(passwordBefore, passwordAfter);
     }
 
     @Test
-    public void adminSetLoginTestPositive() {
-        String loginBefore = adminNo1.getUserLogin();
+    void adminSetLoginTestPositive() {
+        String loginBefore = adminNo1.getLogin();
         String newAdminLogin = "newAdminLogin";
-        adminNo1.setUserLogin(newAdminLogin);
-        String loginAfter = adminNo1.getUserLogin();
+        adminNo1.setLogin(newAdminLogin);
+        String loginAfter = adminNo1.getLogin();
         assertEquals(newAdminLogin, loginAfter);
         assertNotEquals(loginBefore, loginAfter);
     }
 
 
     @Test
-    public void adminSetPasswordTestPositive() {
-        String passwordBefore = adminNo1.getUserPassword();
+    void adminSetPasswordTestPositive() {
+        String passwordBefore = adminNo1.getPassword();
         String newAdminPassword = "newAdminPassword";
-        adminNo1.setUserPassword(newAdminPassword);
-        String passwordAfter = adminNo1.getUserPassword();
+        adminNo1.setPassword(newAdminPassword);
+        String passwordAfter = adminNo1.getPassword();
         assertEquals(newAdminPassword, passwordAfter);
         assertNotEquals(passwordBefore, passwordAfter);
     }
 
     @Test
-    public void clientEqualsTestWithItself() {
+    void clientEqualsTestWithItself() {
         boolean equalsResult = clientNo1.equals(clientNo1);
         assertTrue(equalsResult);
     }
 
     @Test
-    public void clientEqualsTestWithNull() {
+    void clientEqualsTestWithNull() {
         boolean equalsResult = clientNo1.equals(null);
         assertFalse(equalsResult);
     }
 
     @Test
-    public void clientEqualsTestWithObjectOfDifferentClass() {
+    void clientEqualsTestWithObjectOfDifferentClass() {
         boolean equalsResult = clientNo1.equals(new Object());
         assertFalse(equalsResult);
     }
 
     @Test
-    public void clientEqualsTestWithObjectOfTheSameClassButDifferent() {
+    void clientEqualsTestWithObjectOfTheSameClassButDifferent() {
         boolean equalsResult = clientNo1.equals(clientNo2);
         assertFalse(equalsResult);
     }
 
     @Test
-    public void clientEqualsTestWithObjectOfTheSameClassWithTheSameIDButWithDifferentLoginAndPassword() {
+    void clientEqualsTestWithObjectOfTheSameClassWithTheSameIDButWithDifferentLoginAndPassword() {
         boolean equalsResult = clientNo1.equals(clientNo4);
         assertFalse(equalsResult);
     }
 
     @Test
-    public void clientEqualsTestWithObjectOfTheSameClassWithTheSameIDAndLoginButWithDifferentPassword() {
+    void clientEqualsTestWithObjectOfTheSameClassWithTheSameIDAndLoginButWithDifferentPassword() {
         boolean equalsResult = clientNo1.equals(clientNo5);
         assertFalse(equalsResult);
     }
 
     @Test
-    public void clientEqualsTestWithObjectOfTheSameClassAndTheSame() {
+    void clientEqualsTestWithObjectOfTheSameClassAndTheSame() {
         boolean equalsResult = clientNo1.equals(clientNo3);
         assertTrue(equalsResult);
     }
 
     @Test
-    public void clientHashCodeTestPositive() {
+    void clientHashCodeTestPositive() {
         int hashCodeFromClientNo1 = clientNo1.hashCode();
         int hashCodeFromClientNo3 = clientNo3.hashCode();
         assertEquals(hashCodeFromClientNo1, hashCodeFromClientNo3);
@@ -215,62 +215,62 @@ public class ClientTest {
     }
 
     @Test
-    public void clientHashCodeTestNegative() {
+    void clientHashCodeTestNegative() {
         int hashCodeFromClientNo1 = clientNo1.hashCode();
         int hashCodeFromClientNo2 = clientNo2.hashCode();
         assertNotEquals(hashCodeFromClientNo1, hashCodeFromClientNo2);
     }
 
     @Test
-    public void adminEqualsTestWithItself() {
+    void adminEqualsTestWithItself() {
         boolean equalsResult = adminNo1.equals(adminNo1);
         assertTrue(equalsResult);
     }
 
     @Test
-    public void adminEqualsTestWithNull() {
+    void adminEqualsTestWithNull() {
         boolean equalsResult = adminNo1.equals(null);
         assertFalse(equalsResult);
     }
 
     @Test
-    public void adminEqualsTestWithObjectOfDifferentClass() {
+    void adminEqualsTestWithObjectOfDifferentClass() {
         boolean equalsResult = adminNo1.equals(new Object());
         assertFalse(equalsResult);
     }
 
     @Test
-    public void adminEqualsTestWithObjectOfTheSameClassButDifferent() {
+    void adminEqualsTestWithObjectOfTheSameClassButDifferent() {
         boolean equalsResult = adminNo1.equals(adminNo2);
         assertFalse(equalsResult);
     }
 
     @Test
-    public void adminEqualsTestWithObjectOfTheSameClassWithTheSameIDButWithDifferentLoginAndPassword() {
+    void adminEqualsTestWithObjectOfTheSameClassWithTheSameIDButWithDifferentLoginAndPassword() {
         boolean equalsResult = adminNo1.equals(adminNo4);
         assertFalse(equalsResult);
     }
 
     @Test
-    public void adminEqualsTestWithObjectOfTheSameClassWithTheSameIDAndLoginButWithDifferentPassword() {
+    void adminEqualsTestWithObjectOfTheSameClassWithTheSameIDAndLoginButWithDifferentPassword() {
         boolean equalsResult = adminNo1.equals(adminNo5);
         assertFalse(equalsResult);
     }
 
     @Test
-    public void adminEqualsTestWithObjectOfTheSameClassAndTheSame() {
+    void adminEqualsTestWithObjectOfTheSameClassAndTheSame() {
         boolean equalsResult = adminNo1.equals(adminNo3);
         assertTrue(equalsResult);
     }
 
     @Test
-    public void adminEqualsTestWithIdenticalClientObject() {
+    void adminEqualsTestWithIdenticalClientObject() {
         boolean equalsResult = adminNo1.equals(clientNo1);
         assertFalse(equalsResult);
     }
 
     @Test
-    public void adminHashCodeTestPositive() {
+    void adminHashCodeTestPositive() {
         int hashCodeFromClientNo1 = adminNo1.hashCode();
         int hashCodeFromClientNo3 = adminNo3.hashCode();
         assertEquals(hashCodeFromClientNo1, hashCodeFromClientNo3);
@@ -278,62 +278,62 @@ public class ClientTest {
     }
 
     @Test
-    public void adminHashCodeTestNegative() {
+    void adminHashCodeTestNegative() {
         int hashCodeFromClientNo1 = adminNo1.hashCode();
         int hashCodeFromClientNo2 = adminNo2.hashCode();
         assertNotEquals(hashCodeFromClientNo1, hashCodeFromClientNo2);
     }
 
     @Test
-    public void staffEqualsTestWithItself() {
+    void staffEqualsTestWithItself() {
         boolean equalsResult = staffNo1.equals(staffNo1);
         assertTrue(equalsResult);
     }
 
     @Test
-    public void staffEqualsTestWithNull() {
+    void staffEqualsTestWithNull() {
         boolean equalsResult = staffNo1.equals(null);
         assertFalse(equalsResult);
     }
 
     @Test
-    public void staffEqualsTestWithObjectOfDifferentClass() {
+    void staffEqualsTestWithObjectOfDifferentClass() {
         boolean equalsResult = staffNo1.equals(new Object());
         assertFalse(equalsResult);
     }
 
     @Test
-    public void staffEqualsTestWithObjectOfTheSameClassButDifferent() {
+    void staffEqualsTestWithObjectOfTheSameClassButDifferent() {
         boolean equalsResult = staffNo1.equals(staffNo2);
         assertFalse(equalsResult);
     }
 
     @Test
-    public void staffEqualsTestWithObjectOfTheSameClassWithTheSameIDButWithDifferentLoginAndPassword() {
+    void staffEqualsTestWithObjectOfTheSameClassWithTheSameIDButWithDifferentLoginAndPassword() {
         boolean equalsResult = staffNo1.equals(staffNo4);
         assertFalse(equalsResult);
     }
 
     @Test
-    public void staffEqualsTestWithObjectOfTheSameClassWithTheSameIDAndLoginButWithDifferentPassword() {
+    void staffEqualsTestWithObjectOfTheSameClassWithTheSameIDAndLoginButWithDifferentPassword() {
         boolean equalsResult = staffNo1.equals(staffNo4);
         assertFalse(equalsResult);
     }
 
     @Test
-    public void staffEqualsTestWithObjectOfTheSameClassAndTheSame() {
+    void staffEqualsTestWithObjectOfTheSameClassAndTheSame() {
         boolean equalsResult = staffNo1.equals(staffNo3);
         assertTrue(equalsResult);
     }
 
     @Test
-    public void staffEqualsTestWithIdenticalClientObject() {
+    void staffEqualsTestWithIdenticalClientObject() {
         boolean equalsResult = staffNo1.equals(clientNo1);
         assertFalse(equalsResult);
     }
 
     @Test
-    public void staffHashCodeTestPositive() {
+    void staffHashCodeTestPositive() {
         int hashCodeFromClientNo1 = staffNo1.hashCode();
         int hashCodeFromClientNo3 = staffNo3.hashCode();
         assertEquals(hashCodeFromClientNo1, hashCodeFromClientNo3);
@@ -341,28 +341,28 @@ public class ClientTest {
     }
 
     @Test
-    public void staffHashCodeTestNegative() {
+    void staffHashCodeTestNegative() {
         int hashCodeFromClientNo1 = staffNo1.hashCode();
         int hashCodeFromClientNo2 = staffNo2.hashCode();
         assertNotEquals(hashCodeFromClientNo1, hashCodeFromClientNo2);
     }
 
     @Test
-    public void clientToStringTest() {
+    void clientToStringTest() {
         String clientResultToString = clientNo1.toString();
         assertNotNull(clientResultToString);
         assertFalse(clientResultToString.isEmpty());
     }
 
     @Test
-    public void staffToStringTest() {
+    void staffToStringTest() {
         String staffResultToString = staffNo1.toString();
         assertNotNull(staffResultToString);
         assertFalse(staffResultToString.isEmpty());
     }
 
     @Test
-    public void adminToStringTest() {
+    void adminToStringTest() {
         String adminResultToString = adminNo1.toString();
         assertNotNull(adminResultToString);
         assertFalse(adminResultToString.isEmpty());

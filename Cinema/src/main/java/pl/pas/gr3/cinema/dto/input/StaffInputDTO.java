@@ -14,17 +14,17 @@ public class StaffInputDTO {
 
     @JsonProperty("login")
     @JsonbProperty("login")
-    private String staffLogin;
+    private String login;
 
     @JsonProperty("password")
     @JsonbProperty("password")
-    private String staffPassword;
+    private String password;
 
     @JsonCreator
     @JsonbCreator
-    public StaffInputDTO(@JsonProperty("login") @JsonbProperty("login") String staffLogin,
-                         @JsonProperty("password") @JsonbProperty("password") String staffPassword) {
-        this.staffLogin = staffLogin;
-        this.staffPassword = staffPassword;
+    public StaffInputDTO(@JsonProperty("login") @JsonbProperty("login") String login,
+                         @JsonProperty("password") @JsonbProperty("password") String password) {
+        this.login = login;
+        this.password = password;
     }
 }
