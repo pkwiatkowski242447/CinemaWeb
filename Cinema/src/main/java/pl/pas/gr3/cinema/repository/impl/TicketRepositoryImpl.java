@@ -82,11 +82,11 @@ public class TicketRepositoryImpl extends MongoRepository implements TicketRepos
         this.databaseName = "default";
         super.initDBConnection(databaseName);
 
-        mongoDatabase.getCollection(ticketCollectionName).drop();
+        mongoDatabase.getCollection(TICKETS_COLLECTION_NAME).drop();
 
         boolean collectionExists = false;
         for (String collectionName : mongoDatabase.listCollectionNames()) {
-            if (collectionName.equals(ticketCollectionName)) {
+            if (collectionName.equals(TICKETS_COLLECTION_NAME)) {
                 collectionExists = true;
                 break;
             }
@@ -94,7 +94,7 @@ public class TicketRepositoryImpl extends MongoRepository implements TicketRepos
 
         if (!collectionExists) {
             CreateCollectionOptions createCollectionOptions = new CreateCollectionOptions().validationOptions(validationOptions);
-            mongoDatabase.createCollection(ticketCollectionName, createCollectionOptions);
+            mongoDatabase.createCollection(TICKETS_COLLECTION_NAME, createCollectionOptions);
         }
     }
 
@@ -181,9 +181,9 @@ public class TicketRepositoryImpl extends MongoRepository implements TicketRepos
     public TicketRepositoryImpl(String databaseName) {
         this.databaseName = databaseName;
         super.initDBConnection(this.databaseName);
-        mongoDatabase.getCollection(ticketCollectionName).drop();
+        mongoDatabase.getCollection(TICKETS_COLLECTION_NAME).drop();
         CreateCollectionOptions createCollectionOptions = new CreateCollectionOptions().validationOptions(validationOptions);
-        mongoDatabase.createCollection(ticketCollectionName, createCollectionOptions);
+        mongoDatabase.createCollection(TICKETS_COLLECTION_NAME, createCollectionOptions);
     }
 
     @Override

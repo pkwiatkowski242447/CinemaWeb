@@ -6,6 +6,14 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.mapstruct.factory.Mappers;
+import org.springframework.test.util.ReflectionTestUtils;
+import pl.pas.gr3.cinema.exception.bad_request.AccountActivationException;
+import pl.pas.gr3.cinema.exception.bad_request.AccountCreateException;
+import pl.pas.gr3.cinema.exception.bad_request.AccountDeleteException;
+import pl.pas.gr3.cinema.exception.bad_request.AccountUpdateException;
+import pl.pas.gr3.cinema.exception.not_found.AccountNotFoundException;
+import pl.pas.gr3.cinema.mapper.AccountMapper;
 import pl.pas.gr3.cinema.repository.impl.AccountRepositoryImpl;
 import pl.pas.gr3.cinema.service.impl.StaffServiceImpl;
 import pl.pas.gr3.cinema.entity.account.Staff;
@@ -26,6 +34,8 @@ class StaffServiceTest {
     private Staff staffNo1;
     private Staff staffNo2;
 
+    private AccountMapper accountMapper;
+
     @BeforeAll
     static void initialize() {
         accountRepository = new AccountRepositoryImpl(DATABASE_NAME);
@@ -34,6 +44,9 @@ class StaffServiceTest {
 
     @BeforeEach
     void initializeSampleData() {
+        accountMapper = Mappers.getMapper(AccountMapper.class);
+        ReflectionTestUtils.setField(accountRepository, "accountMapper", accountMapper);
+
         this.clearTestData();
         try {
             staffNo1 = staffService.create("UniqueStaffLoginNo1", "UniqueStaffPasswordNo1");
@@ -73,7 +86,7 @@ class StaffServiceTest {
     // Create tests
 
     @Test
-    void staffServiceCreateStaffTestPositive() throws StaffServiceCreateException {
+    void staffServiceCreateStaffTestPositive() {
         String staffLogin = "SomeOtherLoginNo1";
         String staffPassword = "SomeOtherPasswordNo1";
         Staff staff = staffService.create(staffLogin, staffPassword);
@@ -86,32 +99,32 @@ class StaffServiceTest {
     void staffServiceCreateStaffWithNullLoginThatTestNegative() {
         String staffLogin = null;
         String staffPassword = "SomeOtherPasswordNo1";
-        assertThrows(StaffServiceCreateException.class, () -> staffService.create(staffLogin, staffPassword));
+        assertThrows(AccountCreateException.class, () -> staffService.create(staffLogin, staffPassword));
     }
 
     @Test
     void staffServiceCreateStaffWithEmptyLoginThatTestNegative() {
         String staffLogin = "";
         String staffPassword = "SomeOtherPasswordNo1";
-        assertThrows(StaffServiceCreateException.class, () -> staffService.create(staffLogin, staffPassword));
+        assertThrows(AccountCreateException.class, () -> staffService.create(staffLogin, staffPassword));
     }
 
     @Test
     void staffServiceCreateStaffWithLoginTooShortThatTestNegative() {
         String staffLogin = "ddddfdd";
         String staffPassword = "SomeOtherPasswordNo1";
-        assertThrows(StaffServiceCreateException.class, () -> staffService.create(staffLogin, staffPassword));
+        assertThrows(AccountCreateException.class, () -> staffService.create(staffLogin, staffPassword));
     }
 
     @Test
     void staffServiceCreateStaffWithLoginTooLongThatTestNegative() {
         String staffLogin = "ddddfddddfddddfddddfd";
         String staffPassword = "SomeOtherPasswordNo1";
-        assertThrows(StaffServiceCreateException.class, () -> staffService.create(staffLogin, staffPassword));
+        assertThrows(AccountCreateException.class, () -> staffService.create(staffLogin, staffPassword));
     }
 
     @Test
-    void staffServiceCreateStaffWithLoginLengthEqualTo8ThatTestPositive() throws StaffServiceCreateException {
+    void staffServiceCreateStaffWithLoginLengthEqualTo8ThatTestPositive() {
         String staffLogin = "ddddfddd";
         String staffPassword = "SomeOtherPasswordNo1";
         Staff staff = staffService.create(staffLogin, staffPassword);
@@ -121,7 +134,7 @@ class StaffServiceTest {
     }
 
     @Test
-    void staffServiceCreateStaffWithLoginLengthEqualTo20ThatTestNegative() throws StaffServiceCreateException {
+    void staffServiceCreateStaffWithLoginLengthEqualTo20ThatTestNegative() {
         String staffLogin = "ddddfddddfddddfddddf";
         String staffPassword = "SomeOtherPasswordNo1";
         Staff staff = staffService.create(staffLogin, staffPassword);
@@ -134,13 +147,13 @@ class StaffServiceTest {
     void staffServiceCreateStaffWithLoginThatDoesNotMeetRegExTestNegative() {
         String staffLogin = "Some Invalid Login";
         String staffPassword = "SomeOtherPasswordNo1";
-        assertThrows(StaffServiceCreateException.class, () -> staffService.create(staffLogin, staffPassword));
+        assertThrows(AccountCreateException.class, () -> staffService.create(staffLogin, staffPassword));
     }
 
     // Read tests
 
     @Test
-    void staffServiceFindStaffByIDTestPositive() throws StaffServiceReadException {
+    void staffServiceFindStaffByIDTestPositive() {
         Staff foundStaff = staffService.findByUUID(staffNo1.getId());
         assertNotNull(foundStaff);
         assertEquals(staffNo1, foundStaff);
@@ -150,11 +163,11 @@ class StaffServiceTest {
     void staffServiceFindStaffByIDThatIsNotInTheDatabaseTestNegative() {
         Staff staff = new Staff(UUID.randomUUID(), "SomeOtherLoginNo1", "SomeOtherPasswordNo1");
         assertNotNull(staff);
-        assertThrows(StaffServiceStaffNotFoundException.class, () -> staffService.findByUUID(staff.getId()));
+        assertThrows(AccountNotFoundException.class, () -> staffService.findByUUID(staff.getId()));
     }
 
     @Test
-    void staffServiceFindStaffByLoginTestPositive() throws StaffServiceReadException {
+    void staffServiceFindStaffByLoginTestPositive() {
         Staff foundStaff = staffService.findByLogin(staffNo1.getLogin());
         assertNotNull(foundStaff);
         assertEquals(staffNo1, foundStaff);
@@ -164,11 +177,11 @@ class StaffServiceTest {
     void staffServiceFindStaffByLoginThatIsNotInTheDatabaseTestNegative() {
         Staff staff = new Staff(UUID.randomUUID(), "SomeOtherLoginNo1", "SomeOtherPasswordNo1");
         assertNotNull(staff);
-        assertThrows(StaffServiceStaffNotFoundException.class, () -> staffService.findByLogin(staff.getLogin()));
+        assertThrows(AccountNotFoundException.class, () -> staffService.findByLogin(staff.getLogin()));
     }
 
     @Test
-    void staffServiceFindFindStaffsMatchingLoginTestPositive() throws StaffServiceCreateException, StaffServiceReadException {
+    void staffServiceFindFindStaffsMatchingLoginTestPositive() {
         staffService.create("NewStaffLogin", "NewStaffPassword");
         List<Staff> listOfStaffs = staffService.findAllMatchingLogin("New");
         assertNotNull(listOfStaffs);
@@ -177,7 +190,7 @@ class StaffServiceTest {
     }
 
     @Test
-    void staffServiceFindFindStaffsTestPositive() throws StaffServiceReadException {
+    void staffServiceFindFindStaffsTestPositive(){
         List<Staff> listOfStaffs = staffService.findAll();
         assertNotNull(listOfStaffs);
         assertFalse(listOfStaffs.isEmpty());
@@ -187,7 +200,7 @@ class StaffServiceTest {
     // Update tests
 
     @Test
-    void staffServiceUpdateStaffTestPositive() throws StaffServiceUpdateException, StaffServiceReadException {
+    void staffServiceUpdateStaffTestPositive() {
         String staffLoginBefore = staffNo1.getLogin();
         String staffPasswordBefore = staffNo1.getPassword();
         String newStaffLogin = "OtherNewLoginNo1";
@@ -212,7 +225,7 @@ class StaffServiceTest {
         String staffPassword = "SomeOtherPasswordNo2";
         staffNo1.setLogin(staffLogin);
         staffNo1.setPassword(staffPassword);
-        assertThrows(StaffServiceUpdateException.class, () -> staffService.update(staffNo1));
+        assertThrows(AccountUpdateException.class, () -> staffService.update(staffNo1));
     }
 
     @Test
@@ -221,7 +234,7 @@ class StaffServiceTest {
         String staffPassword = "SomeOtherPasswordNo2";
         staffNo1.setLogin(staffLogin);
         staffNo1.setPassword(staffPassword);
-        assertThrows(StaffServiceUpdateException.class, () -> staffService.update(staffNo1));
+        assertThrows(AccountUpdateException.class, () -> staffService.update(staffNo1));
     }
 
     @Test
@@ -230,7 +243,7 @@ class StaffServiceTest {
         String staffPassword = "SomeOtherPasswordNo2";
         staffNo1.setLogin(staffLogin);
         staffNo1.setPassword(staffPassword);
-        assertThrows(StaffServiceUpdateException.class, () -> staffService.update(staffNo1));
+        assertThrows(AccountUpdateException.class, () -> staffService.update(staffNo1));
     }
 
     @Test
@@ -239,11 +252,11 @@ class StaffServiceTest {
         String staffPassword = "SomeOtherPasswordNo2";
         staffNo1.setLogin(staffLogin);
         staffNo1.setPassword(staffPassword);
-        assertThrows(StaffServiceUpdateException.class, () -> staffService.update(staffNo1));
+        assertThrows(AccountUpdateException.class, () -> staffService.update(staffNo1));
     }
 
     @Test
-    void staffServiceUpdateStaffWithLoginLengthEqualTo8TestPositive() throws StaffServiceReadException {
+    void staffServiceUpdateStaffWithLoginLengthEqualTo8TestPositive() {
         String staffLogin = "ddddfddd";
         String staffPassword = "SomeOtherPasswordNo2";
         staffNo1.setLogin(staffLogin);
@@ -255,7 +268,7 @@ class StaffServiceTest {
     }
 
     @Test
-    void staffServiceUpdateStaffWithLoginLengthEqualTo20TestPositive() throws StaffServiceReadException {
+    void staffServiceUpdateStaffWithLoginLengthEqualTo20TestPositive() {
         String staffLogin = "ddddfddddfddddfddddf";
         String staffPassword = "SomeOtherPasswordNo2";
         staffNo1.setLogin(staffLogin);
@@ -272,32 +285,32 @@ class StaffServiceTest {
         String staffPassword = "SomeOtherPasswordNo2";
         staffNo1.setLogin(staffLogin);
         staffNo1.setPassword(staffPassword);
-        assertThrows(StaffServiceUpdateException.class, () -> staffService.update(staffNo1));
+        assertThrows(AccountUpdateException.class, () -> staffService.update(staffNo1));
     }
 
     // Delete tests
 
     @Test
-    void staffServiceDeleteStaffTestPositive() throws StaffServiceReadException, StaffServiceDeleteException {
+    void staffServiceDeleteStaffTestPositive() {
         UUID removedStaffUUID = staffNo1.getId();
         Staff foundStaff = staffService.findByUUID(removedStaffUUID);
         assertNotNull(foundStaff);
         assertEquals(staffNo1, foundStaff);
         staffService.delete(removedStaffUUID);
-        assertThrows(StaffServiceReadException.class, () -> staffService.findByUUID(removedStaffUUID));
+        assertThrows(AccountNotFoundException.class, () -> staffService.findByUUID(removedStaffUUID));
     }
 
     @Test
     void staffServiceDeleteStaffThatIsNotInTheDatabaseTestNegative() {
         Staff staff = new Staff(UUID.randomUUID(), "SomeOtherStaffLoginNo3", "SomeOtherStaffPasswordNo3");
         assertNotNull(staff);
-        assertThrows(StaffServiceDeleteException.class, () -> staffService.delete(staff.getId()));
+        assertThrows(AccountNotFoundException.class, () -> staffService.delete(staff.getId()));
     }
 
     // Activate tests
 
     @Test
-    void staffServiceActivateStaffTestPositive() throws StaffServiceDeactivationException, StaffServiceActivationException, StaffServiceReadException {
+    void staffServiceActivateStaffTestPositive() {
         staffService.deactivate(staffNo1.getId());
 
         Staff foundStaff = staffService.findByUUID(staffNo1.getId());
@@ -313,13 +326,13 @@ class StaffServiceTest {
     void staffServiceActivateStaffThatIsNotInTheDatabaseTestNegative() {
         Staff staff = new Staff(UUID.randomUUID(), "SomeOtherStaffLoginNo3", "SomeOtherStaffPasswordNo3");
         assertNotNull(staff);
-        assertThrows(StaffServiceActivationException.class, () -> staffService.activate(staff.getId()));
+        assertThrows(AccountNotFoundException.class, () -> staffService.activate(staff.getId()));
     }
 
     // Deactivate tests
 
     @Test
-    void staffServiceDeactivateStaffTestPositive() throws StaffServiceDeactivationException, StaffServiceReadException {
+    void staffServiceDeactivateStaffTestPositive() {
         Staff foundStaff = staffService.findByUUID(staffNo1.getId());
         assertNotNull(foundStaff);
         assertEquals(staffNo1, foundStaff);
@@ -334,6 +347,6 @@ class StaffServiceTest {
     void staffServiceDeactivateStaffThatIsNotInTheDatabaseTestNegative() {
         Staff staff = new Staff(UUID.randomUUID(), "SomeOtherStaffLoginNo3", "SomeOtherStaffPasswordNo3");
         assertNotNull(staff);
-        assertThrows(StaffServiceDeactivationException.class, () -> staffService.deactivate(staff.getId()));
+        assertThrows(AccountNotFoundException.class, () -> staffService.deactivate(staff.getId()));
     }
 }

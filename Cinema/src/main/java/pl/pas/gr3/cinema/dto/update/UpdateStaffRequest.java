@@ -7,13 +7,13 @@ import jakarta.json.bind.annotation.JsonbProperty;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
-import pl.pas.gr3.cinema.dto.output.AdminDTO;
+import pl.pas.gr3.cinema.dto.output.StaffResponse;
 
 import java.util.UUID;
 
 @Getter @Setter
 @NoArgsConstructor
-public class AdminPasswordDTO extends AdminDTO {
+public class UpdateStaffRequest extends StaffResponse {
 
     @JsonProperty("password")
     @JsonbProperty("password")
@@ -21,10 +21,10 @@ public class AdminPasswordDTO extends AdminDTO {
 
     @JsonCreator
     @JsonbCreator
-    public AdminPasswordDTO(@JsonProperty("id") @JsonbProperty("id") UUID id,
-                            @JsonProperty("login") @JsonbProperty("login") String login,
-                            @JsonProperty("password") @JsonbProperty("password") String password,
-                            @JsonProperty("status-active") @JsonbProperty("status-active") boolean active) {
+    public UpdateStaffRequest(@JsonProperty("id") @JsonbProperty("id") UUID id,
+                              @JsonProperty("login") @JsonbProperty("login") String login,
+                              @JsonProperty("password") @JsonbProperty("password") String password,
+                              @JsonProperty("status-active") @JsonbProperty("status-active") boolean active) {
         super(id, login, active);
         this.password = password;
     }

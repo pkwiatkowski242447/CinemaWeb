@@ -21,8 +21,8 @@ import pl.pas.gr3.cinema.service.impl.MovieServiceImpl;
 import pl.pas.gr3.cinema.service.impl.StaffServiceImpl;
 import pl.pas.gr3.cinema.service.impl.TicketServiceImpl;
 import pl.pas.gr3.cinema.dto.auth.LoginAccountRequest;
-import pl.pas.gr3.cinema.dto.input.TicketSelfInputDTO;
-import pl.pas.gr3.cinema.dto.output.TicketDTO;
+import pl.pas.gr3.cinema.dto.input.CreateOwnTicketRequest;
+import pl.pas.gr3.cinema.dto.output.TicketResponse;
 import pl.pas.gr3.cinema.entity.Movie;
 import pl.pas.gr3.cinema.entity.Ticket;
 import pl.pas.gr3.cinema.entity.account.Admin;
@@ -83,7 +83,7 @@ class TicketControllerTest {
         accountRepository = new AccountRepositoryImpl(TestConstants.databaseName);
         movieRepository = new MovieRepositoryImpl(TestConstants.databaseName);
 
-        ticketService = new TicketServiceImpl(ticketRepository);
+        ticketService = new TicketServiceImpl(accountRepository, ticketRepository);
         clientService = new ClientServiceImpl(accountRepository);
         adminService = new AdminServiceImpl(accountRepository);
         staffService = new StaffServiceImpl(accountRepository);
@@ -166,12 +166,12 @@ class TicketControllerTest {
 
     @Test
     void ticketControllerCreateTicketAsAnUnauthenticatedUserTestNegative() {
-        TicketSelfInputDTO ticketSelfInputDTO = new TicketSelfInputDTO(movieTimeNo1.toString(), movieNo1.getId());
+        CreateOwnTicketRequest createOwnTicketRequest = new CreateOwnTicketRequest(movieTimeNo1.toString(), movieNo1.getId());
 
         RequestSpecification requestSpecification = RestAssured.given();
         requestSpecification.contentType(ContentType.JSON);
         requestSpecification.accept(ContentType.JSON);
-        requestSpecification.body(ticketSelfInputDTO);
+        requestSpecification.body(createOwnTicketRequest);
 
         Response response = requestSpecification.post(TestConstants.ticketsURL + "/self");
         ValidatableResponse validatableResponse = response.then();
@@ -183,40 +183,40 @@ class TicketControllerTest {
     void ticketControllerCreateTicketAsAnAuthenticatedClientTestPositive() {
         String accessToken = loginToAccount(new LoginAccountRequest(clientNo1.getLogin(), passwordNotHashed), TestConstants.clientLoginURL);
 
-        TicketSelfInputDTO ticketSelfInputDTO = new TicketSelfInputDTO(movieTimeNo1.toString(), movieNo1.getId());
+        CreateOwnTicketRequest createOwnTicketRequest = new CreateOwnTicketRequest(movieTimeNo1.toString(), movieNo1.getId());
 
         RequestSpecification requestSpecification = RestAssured.given();
         requestSpecification.contentType(ContentType.JSON);
         requestSpecification.header(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken);
         requestSpecification.accept(ContentType.JSON);
-        requestSpecification.body(ticketSelfInputDTO);
+        requestSpecification.body(createOwnTicketRequest);
 
         Response response = requestSpecification.post(TestConstants.ticketsURL + "/self");
         ValidatableResponse validatableResponse = response.then();
 
         validatableResponse.statusCode(201);
 
-        TicketDTO ticketDTO = response.getBody().as(TicketDTO.class);
+        TicketResponse ticketResponse = response.getBody().as(TicketResponse.class);
 
-        assertNotNull(ticketDTO);
-        assertNotNull(ticketDTO.getId());
-        assertEquals(movieTimeNo1, ticketDTO.getMovieTime());
-        assertEquals(clientNo1.getId(), ticketDTO.getClientId());
-        assertEquals(movieNo1.getId(), ticketDTO.getMovieId());
-        assertEquals(movieNo1.getBasePrice(), ticketDTO.getFinalPrice());
+        assertNotNull(ticketResponse);
+        assertNotNull(ticketResponse.getId());
+        assertEquals(movieTimeNo1, ticketResponse.getMovieTime());
+        assertEquals(clientNo1.getId(), ticketResponse.getClientId());
+        assertEquals(movieNo1.getId(), ticketResponse.getMovieId());
+        assertEquals(movieNo1.getBasePrice(), ticketResponse.getFinalPrice());
     }
 
     @Test
     void ticketControllerCreateTicketAsAnAuthenticatedStaffTestNegative() {
         String accessToken = loginToAccount(new LoginAccountRequest(staffNo1.getLogin(), passwordNotHashed), TestConstants.staffLoginURL);
 
-        TicketSelfInputDTO ticketSelfInputDTO = new TicketSelfInputDTO(movieTimeNo1.toString(), movieNo1.getId());
+        CreateOwnTicketRequest createOwnTicketRequest = new CreateOwnTicketRequest(movieTimeNo1.toString(), movieNo1.getId());
 
         RequestSpecification requestSpecification = RestAssured.given();
         requestSpecification.contentType(ContentType.JSON);
         requestSpecification.header(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken);
         requestSpecification.accept(ContentType.JSON);
-        requestSpecification.body(ticketSelfInputDTO);
+        requestSpecification.body(createOwnTicketRequest);
 
         Response response = requestSpecification.post(TestConstants.ticketsURL + "/self");
         ValidatableResponse validatableResponse = response.then();
@@ -228,13 +228,13 @@ class TicketControllerTest {
     void ticketControllerCreateTicketAsAnAuthenticatedAdminTestNegative() {
         String accessToken = loginToAccount(new LoginAccountRequest(adminNo1.getLogin(), passwordNotHashed), TestConstants.adminLoginURL);
 
-        TicketSelfInputDTO ticketSelfInputDTO = new TicketSelfInputDTO(movieTimeNo1.toString(), movieNo1.getId());
+        CreateOwnTicketRequest createOwnTicketRequest = new CreateOwnTicketRequest(movieTimeNo1.toString(), movieNo1.getId());
 
         RequestSpecification requestSpecification = RestAssured.given();
         requestSpecification.contentType(ContentType.JSON);
         requestSpecification.header(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken);
         requestSpecification.accept(ContentType.JSON);
-        requestSpecification.body(ticketSelfInputDTO);
+        requestSpecification.body(createOwnTicketRequest);
 
         Response response = requestSpecification.post(TestConstants.ticketsURL + "/self");
         ValidatableResponse validatableResponse = response.then();
@@ -248,13 +248,13 @@ class TicketControllerTest {
 
         UUID movieID = null;
 
-        TicketSelfInputDTO ticketSelfInputDTO = new TicketSelfInputDTO(movieTimeNo1.toString(), movieID);
+        CreateOwnTicketRequest createOwnTicketRequest = new CreateOwnTicketRequest(movieTimeNo1.toString(), movieID);
 
         RequestSpecification requestSpecification = RestAssured.given();
         requestSpecification.contentType(ContentType.JSON);
         requestSpecification.header(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken);
         requestSpecification.accept(ContentType.JSON);
-        requestSpecification.body(ticketSelfInputDTO);
+        requestSpecification.body(createOwnTicketRequest);
 
         Response response = requestSpecification.post(TestConstants.ticketsURL + "/self");
         ValidatableResponse validatableResponse = response.then();
@@ -290,14 +290,14 @@ class TicketControllerTest {
 
         validatableResponse.statusCode(200);
 
-        TicketDTO ticketDTO = response.getBody().as(TicketDTO.class);
+        TicketResponse ticketResponse = response.getBody().as(TicketResponse.class);
 
-        assertNotNull(ticketDTO);
-        assertEquals(ticketNo1.getId(), ticketDTO.getId());
-        assertEquals(ticketNo1.getMovieTime(), ticketDTO.getMovieTime());
-        assertEquals(ticketNo1.getUserId(), ticketDTO.getClientId());
-        assertEquals(ticketNo1.getMovieId(), ticketDTO.getMovieId());
-        assertEquals(ticketNo1.getPrice(), ticketDTO.getFinalPrice());
+        assertNotNull(ticketResponse);
+        assertEquals(ticketNo1.getId(), ticketResponse.getId());
+        assertEquals(ticketNo1.getMovieTime(), ticketResponse.getMovieTime());
+        assertEquals(ticketNo1.getUserId(), ticketResponse.getClientId());
+        assertEquals(ticketNo1.getMovieId(), ticketResponse.getMovieId());
+        assertEquals(ticketNo1.getPrice(), ticketResponse.getFinalPrice());
     }
 
     @Test
@@ -314,14 +314,14 @@ class TicketControllerTest {
 
         validatableResponse.statusCode(200);
 
-        TicketDTO ticketDTO = response.getBody().as(TicketDTO.class);
+        TicketResponse ticketResponse = response.getBody().as(TicketResponse.class);
 
-        assertNotNull(ticketDTO);
-        assertEquals(ticketNo1.getId(), ticketDTO.getId());
-        assertEquals(ticketNo1.getMovieTime(), ticketDTO.getMovieTime());
-        assertEquals(ticketNo1.getUserId(), ticketDTO.getClientId());
-        assertEquals(ticketNo1.getMovieId(), ticketDTO.getMovieId());
-        assertEquals(ticketNo1.getPrice(), ticketDTO.getFinalPrice());
+        assertNotNull(ticketResponse);
+        assertEquals(ticketNo1.getId(), ticketResponse.getId());
+        assertEquals(ticketNo1.getMovieTime(), ticketResponse.getMovieTime());
+        assertEquals(ticketNo1.getUserId(), ticketResponse.getClientId());
+        assertEquals(ticketNo1.getMovieId(), ticketResponse.getMovieId());
+        assertEquals(ticketNo1.getPrice(), ticketResponse.getFinalPrice());
     }
 
     @Test
@@ -395,7 +395,7 @@ class TicketControllerTest {
 
         validatableResponse.statusCode(200);
 
-        List<TicketDTO> listOfTickets = response.getBody().as(new TypeRef<>() {});
+        List<TicketResponse> listOfTickets = response.getBody().as(new TypeRef<>() {});
         assertEquals(6, listOfTickets.size());
     }
 
@@ -428,16 +428,16 @@ class TicketControllerTest {
         ValidatableResponse validatableResponse = response.then();
         validatableResponse.statusCode(200);
 
-        TicketDTO ticketDTO = response.getBody().as(TicketDTO.class);
+        TicketResponse ticketResponse = response.getBody().as(TicketResponse.class);
         String etagContent = response.header(HttpHeaders.ETAG);
 
         LocalDateTime newMovieTime = LocalDateTime.now().truncatedTo(ChronoUnit.SECONDS);
-        ticketDTO.setMovieTime(newMovieTime);
+        ticketResponse.setMovieTime(newMovieTime);
 
         requestSpecification = RestAssured.given();
         requestSpecification.contentType(ContentType.JSON);
         requestSpecification.header(HttpHeaders.IF_MATCH, etagContent);
-        requestSpecification.body(ticketDTO);
+        requestSpecification.body(ticketResponse);
 
         response = requestSpecification.put(TestConstants.ticketsURL + "/update");
         validatableResponse = response.then();
@@ -456,20 +456,20 @@ class TicketControllerTest {
         ValidatableResponse validatableResponse = response.then();
         validatableResponse.statusCode(200);
 
-        TicketDTO ticketDTO = response.getBody().as(TicketDTO.class);
+        TicketResponse ticketResponse = response.getBody().as(TicketResponse.class);
         String etagContent = response.header(HttpHeaders.ETAG);
 
         accessToken = loginToAccount(new LoginAccountRequest(clientNo1.getLogin(), passwordNotHashed), TestConstants.clientLoginURL);
 
         LocalDateTime movieTimeBefore = ticketNo1.getMovieTime();
         LocalDateTime newMovieTime = LocalDateTime.now().truncatedTo(ChronoUnit.SECONDS);
-        ticketDTO.setMovieTime(newMovieTime);
+        ticketResponse.setMovieTime(newMovieTime);
 
         requestSpecification = RestAssured.given();
         requestSpecification.contentType(ContentType.JSON);
         requestSpecification.header(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken);
         requestSpecification.header(HttpHeaders.IF_MATCH, etagContent);
-        requestSpecification.body(ticketDTO);
+        requestSpecification.body(ticketResponse);
 
         response = requestSpecification.put(TestConstants.ticketsURL + "/update");
         validatableResponse = response.then();
@@ -495,17 +495,17 @@ class TicketControllerTest {
         ValidatableResponse validatableResponse = response.then();
         validatableResponse.statusCode(200);
 
-        TicketDTO ticketDTO = response.getBody().as(TicketDTO.class);
+        TicketResponse ticketResponse = response.getBody().as(TicketResponse.class);
 
         accessToken = loginToAccount(new LoginAccountRequest(clientNo1.getLogin(), passwordNotHashed), TestConstants.clientLoginURL);
         
         LocalDateTime newMovieTime = LocalDateTime.now().truncatedTo(ChronoUnit.SECONDS);
-        ticketDTO.setMovieTime(newMovieTime);
+        ticketResponse.setMovieTime(newMovieTime);
 
         requestSpecification = RestAssured.given();
         requestSpecification.contentType(ContentType.JSON);
         requestSpecification.header(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken);
-        requestSpecification.body(ticketDTO);
+        requestSpecification.body(ticketResponse);
 
         response = requestSpecification.put(TestConstants.ticketsURL + "/update");
         validatableResponse = response.then();
@@ -524,18 +524,18 @@ class TicketControllerTest {
         ValidatableResponse validatableResponse = response.then();
         validatableResponse.statusCode(200);
 
-        TicketDTO ticketDTO = response.getBody().as(TicketDTO.class);
+        TicketResponse ticketResponse = response.getBody().as(TicketResponse.class);
         String etagContent = response.getHeader(HttpHeaders.ETAG);
 
         accessToken = loginToAccount(new LoginAccountRequest(clientNo1.getLogin(), passwordNotHashed), TestConstants.clientLoginURL);
 
-        ticketDTO.setId(UUID.randomUUID());
+        ticketResponse.setId(UUID.randomUUID());
 
         requestSpecification = RestAssured.given();
         requestSpecification.contentType(ContentType.JSON);
         requestSpecification.header(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken);
         requestSpecification.header(HttpHeaders.IF_MATCH, etagContent);
-        requestSpecification.body(ticketDTO);
+        requestSpecification.body(ticketResponse);
 
         response = requestSpecification.put(TestConstants.ticketsURL + "/update");
         validatableResponse = response.then();
@@ -554,19 +554,19 @@ class TicketControllerTest {
         ValidatableResponse validatableResponse = response.then();
         validatableResponse.statusCode(200);
 
-        TicketDTO ticketDTO = response.getBody().as(TicketDTO.class);
+        TicketResponse ticketResponse = response.getBody().as(TicketResponse.class);
         String etagContent = response.header(HttpHeaders.ETAG);
 
         accessToken = loginToAccount(new LoginAccountRequest(clientNo2.getLogin(), passwordNotHashed), TestConstants.clientLoginURL);
         
         LocalDateTime newMovieTime = LocalDateTime.now().truncatedTo(ChronoUnit.SECONDS);
-        ticketDTO.setMovieTime(newMovieTime);
+        ticketResponse.setMovieTime(newMovieTime);
 
         requestSpecification = RestAssured.given();
         requestSpecification.contentType(ContentType.JSON);
         requestSpecification.header(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken);
         requestSpecification.header(HttpHeaders.IF_MATCH, etagContent);
-        requestSpecification.body(ticketDTO);
+        requestSpecification.body(ticketResponse);
 
         response = requestSpecification.put(TestConstants.ticketsURL + "/update");
         validatableResponse = response.then();
@@ -585,19 +585,19 @@ class TicketControllerTest {
         ValidatableResponse validatableResponse = response.then();
         validatableResponse.statusCode(200);
 
-        TicketDTO ticketDTO = response.getBody().as(TicketDTO.class);
+        TicketResponse ticketResponse = response.getBody().as(TicketResponse.class);
         String etagContent = response.header(HttpHeaders.ETAG);
 
         accessToken = loginToAccount(new LoginAccountRequest(staffNo1.getLogin(), passwordNotHashed), TestConstants.staffLoginURL);
 
         LocalDateTime newMovieTime = LocalDateTime.now().truncatedTo(ChronoUnit.SECONDS);
-        ticketDTO.setMovieTime(newMovieTime);
+        ticketResponse.setMovieTime(newMovieTime);
 
         requestSpecification = RestAssured.given();
         requestSpecification.contentType(ContentType.JSON);
         requestSpecification.header(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken);
         requestSpecification.header(HttpHeaders.IF_MATCH, etagContent);
-        requestSpecification.body(ticketDTO);
+        requestSpecification.body(ticketResponse);
 
         response = requestSpecification.put(TestConstants.ticketsURL + "/update");
         validatableResponse = response.then();
@@ -616,19 +616,19 @@ class TicketControllerTest {
         ValidatableResponse validatableResponse = response.then();
         validatableResponse.statusCode(200);
 
-        TicketDTO ticketDTO = response.getBody().as(TicketDTO.class);
+        TicketResponse ticketResponse = response.getBody().as(TicketResponse.class);
         String etagContent = response.header(HttpHeaders.ETAG);
 
         accessToken = loginToAccount(new LoginAccountRequest(adminNo1.getLogin(), passwordNotHashed), TestConstants.adminLoginURL);
 
         LocalDateTime newMovieTime = LocalDateTime.now().truncatedTo(ChronoUnit.SECONDS);
-        ticketDTO.setMovieTime(newMovieTime);
+        ticketResponse.setMovieTime(newMovieTime);
 
         requestSpecification = RestAssured.given();
         requestSpecification.contentType(ContentType.JSON);
         requestSpecification.header(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken);
         requestSpecification.header(HttpHeaders.IF_MATCH, etagContent);
-        requestSpecification.body(ticketDTO);
+        requestSpecification.body(ticketResponse);
 
         response = requestSpecification.put(TestConstants.ticketsURL + "/update");
         validatableResponse = response.then();
@@ -647,19 +647,19 @@ class TicketControllerTest {
         ValidatableResponse validatableResponse = response.then();
         validatableResponse.statusCode(200);
 
-        TicketDTO ticketDTO = response.getBody().as(TicketDTO.class);
+        TicketResponse ticketResponse = response.getBody().as(TicketResponse.class);
         String etagContent = response.header(HttpHeaders.ETAG);
 
         accessToken = loginToAccount(new LoginAccountRequest(clientNo1.getLogin(), passwordNotHashed), TestConstants.clientLoginURL);
 
         LocalDateTime newMovieTime = null;
-        ticketDTO.setMovieTime(newMovieTime);
+        ticketResponse.setMovieTime(newMovieTime);
 
         requestSpecification = RestAssured.given();
         requestSpecification.contentType(ContentType.JSON);
         requestSpecification.header(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken);
         requestSpecification.header(HttpHeaders.IF_MATCH, etagContent);
-        requestSpecification.body(ticketDTO);
+        requestSpecification.body(ticketResponse);
 
         response = requestSpecification.put(TestConstants.ticketsURL + "/update");
         validatableResponse = response.then();
@@ -774,34 +774,34 @@ class TicketControllerTest {
         String accessToken = loginToAccount(new LoginAccountRequest(clientNo1.getLogin(), passwordNotHashed), TestConstants.clientLoginURL);
 
         Movie testMovie = movieService.create("SomeMovieTitleNo1", 31.20, 3, 1);
-        TicketSelfInputDTO ticketSelfInputDTONo1 = new TicketSelfInputDTO(movieTimeNo1.toString(), testMovie.getId());
-        TicketSelfInputDTO ticketSelfInputDTONo2 = new TicketSelfInputDTO(movieTimeNo1.toString(), testMovie.getId());
+        CreateOwnTicketRequest createOwnTicketRequestNo1 = new CreateOwnTicketRequest(movieTimeNo1.toString(), testMovie.getId());
+        CreateOwnTicketRequest createOwnTicketRequestNo2 = new CreateOwnTicketRequest(movieTimeNo1.toString(), testMovie.getId());
 
         RequestSpecification requestSpecification = RestAssured.given();
         requestSpecification.contentType(ContentType.JSON);
         requestSpecification.header(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken);
         requestSpecification.accept(ContentType.JSON);
-        requestSpecification.body(ticketSelfInputDTONo1);
+        requestSpecification.body(createOwnTicketRequestNo1);
 
         Response response = requestSpecification.post(TestConstants.ticketsURL + "/self");
         ValidatableResponse validatableResponse = response.then();
 
         validatableResponse.statusCode(201);
 
-        TicketDTO ticketDTO = response.getBody().as(TicketDTO.class);
+        TicketResponse ticketResponse = response.getBody().as(TicketResponse.class);
 
-        assertNotNull(ticketDTO);
-        assertNotNull(ticketDTO.getId());
-        assertEquals(movieTimeNo1, ticketDTO.getMovieTime());
-        assertEquals(clientNo1.getId(), ticketDTO.getClientId());
-        assertEquals(testMovie.getId(), ticketDTO.getMovieId());
-        assertEquals(testMovie.getBasePrice(), ticketDTO.getFinalPrice());
+        assertNotNull(ticketResponse);
+        assertNotNull(ticketResponse.getId());
+        assertEquals(movieTimeNo1, ticketResponse.getMovieTime());
+        assertEquals(clientNo1.getId(), ticketResponse.getClientId());
+        assertEquals(testMovie.getId(), ticketResponse.getMovieId());
+        assertEquals(testMovie.getBasePrice(), ticketResponse.getFinalPrice());
 
         requestSpecification = RestAssured.given();
         requestSpecification.contentType(ContentType.JSON);
         requestSpecification.header(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken);
         requestSpecification.accept(ContentType.JSON);
-        requestSpecification.body(ticketSelfInputDTONo2);
+        requestSpecification.body(createOwnTicketRequestNo2);
 
         response = requestSpecification.post(TestConstants.ticketsURL + "/self");
         validatableResponse = response.then();
@@ -814,30 +814,30 @@ class TicketControllerTest {
         String accessToken = loginToAccount(new LoginAccountRequest(clientNo1.getLogin(), passwordNotHashed), TestConstants.clientLoginURL);
 
         Movie testMovie = movieService.create("SomeMovieTitleNo1", 31.20, 3, 1);
-        TicketSelfInputDTO ticketSelfInputDTONo1 = new TicketSelfInputDTO(movieTimeNo1.toString(), testMovie.getId());
-        TicketSelfInputDTO ticketSelfInputDTONo2 = new TicketSelfInputDTO(movieTimeNo1.toString(), testMovie.getId());
+        CreateOwnTicketRequest createOwnTicketRequestNo1 = new CreateOwnTicketRequest(movieTimeNo1.toString(), testMovie.getId());
+        CreateOwnTicketRequest createOwnTicketRequestNo2 = new CreateOwnTicketRequest(movieTimeNo1.toString(), testMovie.getId());
 
         RequestSpecification requestSpecification = RestAssured.given();
         requestSpecification.contentType(ContentType.JSON);
         requestSpecification.header(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken);
         requestSpecification.accept(ContentType.JSON);
-        requestSpecification.body(ticketSelfInputDTONo1);
+        requestSpecification.body(createOwnTicketRequestNo1);
 
         Response response = requestSpecification.post(TestConstants.ticketsURL + "/self");
         ValidatableResponse validatableResponse = response.then();
 
         validatableResponse.statusCode(201);
 
-        TicketDTO ticketDTO = response.getBody().as(TicketDTO.class);
+        TicketResponse ticketResponse = response.getBody().as(TicketResponse.class);
 
-        assertNotNull(ticketDTO);
-        assertNotNull(ticketDTO.getId());
-        assertEquals(movieTimeNo1, ticketDTO.getMovieTime());
-        assertEquals(clientNo1.getId(), ticketDTO.getClientId());
-        assertEquals(testMovie.getId(), ticketDTO.getMovieId());
-        assertEquals(testMovie.getBasePrice(), ticketDTO.getFinalPrice());
+        assertNotNull(ticketResponse);
+        assertNotNull(ticketResponse.getId());
+        assertEquals(movieTimeNo1, ticketResponse.getMovieTime());
+        assertEquals(clientNo1.getId(), ticketResponse.getClientId());
+        assertEquals(testMovie.getId(), ticketResponse.getMovieId());
+        assertEquals(testMovie.getBasePrice(), ticketResponse.getFinalPrice());
 
-        String path = TestConstants.ticketsURL + "/" + ticketDTO.getId() + "/delete";
+        String path = TestConstants.ticketsURL + "/" + ticketResponse.getId() + "/delete";
         requestSpecification = RestAssured.given();
         requestSpecification.header(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken);
 
@@ -849,21 +849,21 @@ class TicketControllerTest {
         requestSpecification.contentType(ContentType.JSON);
         requestSpecification.header(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken);
         requestSpecification.accept(ContentType.JSON);
-        requestSpecification.body(ticketSelfInputDTONo2);
+        requestSpecification.body(createOwnTicketRequestNo2);
 
         response = requestSpecification.post(TestConstants.ticketsURL + "/self");
         validatableResponse = response.then();
 
         validatableResponse.statusCode(201);
 
-        ticketDTO = response.getBody().as(TicketDTO.class);
+        ticketResponse = response.getBody().as(TicketResponse.class);
 
-        assertNotNull(ticketDTO);
-        assertNotNull(ticketDTO.getId());
-        assertEquals(movieTimeNo1, ticketDTO.getMovieTime());
-        assertEquals(clientNo1.getId(), ticketDTO.getClientId());
-        assertEquals(testMovie.getId(), ticketDTO.getMovieId());
-        assertEquals(testMovie.getBasePrice(), ticketDTO.getFinalPrice());
+        assertNotNull(ticketResponse);
+        assertNotNull(ticketResponse.getId());
+        assertEquals(movieTimeNo1, ticketResponse.getMovieTime());
+        assertEquals(clientNo1.getId(), ticketResponse.getClientId());
+        assertEquals(testMovie.getId(), ticketResponse.getMovieId());
+        assertEquals(testMovie.getBasePrice(), ticketResponse.getFinalPrice());
     }
 
     // Client tests
@@ -897,7 +897,7 @@ class TicketControllerTest {
 
         validatableResponse.statusCode(200);
 
-        List<TicketDTO> listOfTickets = response.getBody().as(new TypeRef<>() {});
+        List<TicketResponse> listOfTickets = response.getBody().as(new TypeRef<>() {});
         assertEquals(4, listOfTickets.size());
     }
 
@@ -917,7 +917,7 @@ class TicketControllerTest {
 
         validatableResponse.statusCode(200);
 
-        List<TicketDTO> listOfTickets = response.getBody().as(new TypeRef<>() {});
+        List<TicketResponse> listOfTickets = response.getBody().as(new TypeRef<>() {});
         assertEquals(4, listOfTickets.size());
     }
 
@@ -987,7 +987,7 @@ class TicketControllerTest {
 
         validatableResponse.statusCode(200);
 
-        List<TicketDTO> listOfTickets = response.getBody().as(new TypeRef<>() {});
+        List<TicketResponse> listOfTickets = response.getBody().as(new TypeRef<>() {});
         assertEquals(3, listOfTickets.size());
     }
 

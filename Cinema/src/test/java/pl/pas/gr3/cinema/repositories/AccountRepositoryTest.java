@@ -1,10 +1,20 @@
 package pl.pas.gr3.cinema.repositories;
 
+import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.mapstruct.factory.Mappers;
+import org.springframework.test.util.ReflectionTestUtils;
+import pl.pas.gr3.cinema.exception.bad_request.AccountActivationException;
+import pl.pas.gr3.cinema.exception.bad_request.AccountCreateException;
+import pl.pas.gr3.cinema.exception.bad_request.AccountDeleteException;
+import pl.pas.gr3.cinema.exception.bad_request.AccountUpdateException;
+import pl.pas.gr3.cinema.exception.conflict.LoginAlreadyTakenException;
+import pl.pas.gr3.cinema.exception.not_found.AccountNotFoundException;
+import pl.pas.gr3.cinema.mapper.AccountMapper;
 import pl.pas.gr3.cinema.util.consts.model.UserConstants;
 import pl.pas.gr3.cinema.entity.account.Admin;
 import pl.pas.gr3.cinema.entity.account.Client;
@@ -16,6 +26,7 @@ import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.*;
 
+@Slf4j
 class AccountRepositoryTest {
 
     private static final String DATABASE_NAME = "test";
@@ -28,6 +39,8 @@ class AccountRepositoryTest {
     private Staff staffNo1;
     private Staff staffNo2;
 
+    private AccountMapper accountMapper;
+
     @BeforeAll
     static void init() {
         accountRepositoryForTests = new AccountRepositoryImpl(DATABASE_NAME);
@@ -35,6 +48,11 @@ class AccountRepositoryTest {
 
     @BeforeEach
     void addExampleClients() {
+        accountMapper = Mappers.getMapper(AccountMapper.class);
+        ReflectionTestUtils.setField(accountRepositoryForTests, "accountMapper", accountMapper);
+
+        cleanDatabaseState();
+
         try {
             clientNo1 = accountRepositoryForTests.createClient("ClientLoginNo1", "ClientPasswordNo1");
             clientNo2 = accountRepositoryForTests.createClient("ClientLoginNo2", "ClientPasswordNo2");
@@ -43,12 +61,11 @@ class AccountRepositoryTest {
             staffNo1 = accountRepositoryForTests.createStaff("StaffLoginNo1", "StaffPasswordNo1");
             staffNo2 = accountRepositoryForTests.createStaff("StaffLoginNo2", "StaffPasswordNo2");
         } catch (Exception exception) {
-            throw new RuntimeException("Could not initialize test database while adding clients to it.", exception);
+            throw new RuntimeException("Could not initialize test database while adding test data.", exception);
         }
     }
 
-    @AfterEach
-    void removeExampleClients() {
+    private void cleanDatabaseState() {
         try {
             List<Client> clients = accountRepositoryForTests.findAllClients();
             clients.forEach(client -> accountRepositoryForTests.delete(client.getId(), "client"));
@@ -59,7 +76,7 @@ class AccountRepositoryTest {
             List<Staff> staffs = accountRepositoryForTests.findAllStaffs();
             staffs.forEach(staff -> accountRepositoryForTests.delete(staff.getId(), "staff"));
         } catch (Exception exception) {
-            throw new RuntimeException("Could not remove all clients from the test database after client repository tests.", exception);
+            log.error("Could not remove all clients from the test database after client repository tests.", exception);
         }
     }
 
@@ -71,7 +88,7 @@ class AccountRepositoryTest {
     // Some mongo tests
 
     @Test
-    void mongoRepositoryFindClientWithClientIDTestPositive() throws UserRepositoryException {
+    void mongoRepositoryFindClientWithClientIDTestPositive() {
         Client foundClient = accountRepositoryForTests.findClientByUUID(clientNo1.getId());
         assertNotNull(foundClient);
         assertEquals(clientNo1, foundClient);
@@ -83,11 +100,11 @@ class AccountRepositoryTest {
     void mongoRepositoryFindClientThatIsNotInTheDatabaseWithClientIDTestNegative() {
         Client client = new Client(UUID.randomUUID(), clientNo1.getLogin(), clientNo1.getPassword(), clientNo1.isActive());
         assertNotNull(client);
-        assertThrows(UserRepositoryReadException.class, () -> accountRepositoryForTests.findClientByUUID(client.getId()));
+        assertThrows(AccountNotFoundException.class, () -> accountRepositoryForTests.findClientByUUID(client.getId()));
     }
 
     @Test
-    void mongoRepositoryFindAdminWithAdminIDTestPositive() throws UserRepositoryException {
+    void mongoRepositoryFindAdminWithAdminIDTestPositive() {
         Admin foudnAdmin = accountRepositoryForTests.findAdminByUUID(adminNo1.getId());
         assertNotNull(foudnAdmin);
         assertEquals(adminNo1, foudnAdmin);
@@ -99,11 +116,11 @@ class AccountRepositoryTest {
     void mongoRepositoryFindAdminWithAdminThatIsNotInTheDatabaseIDTestNegative() {
         Admin admin = new Admin(UUID.randomUUID(), clientNo1.getLogin(), clientNo1.getPassword(), clientNo1.isActive());
         assertNotNull(admin);
-        assertThrows(UserRepositoryReadException.class, () -> accountRepositoryForTests.findAdminByUUID(admin.getId()));
+        assertThrows(AccountNotFoundException.class, () -> accountRepositoryForTests.findAdminByUUID(admin.getId()));
     }
 
     @Test
-    void mongoRepositoryFindStaffWithStaffIDTestPositive() throws UserRepositoryException {
+    void mongoRepositoryFindStaffWithStaffIDTestPositive() {
         Staff foundStaff = accountRepositoryForTests.findStaffByUUID(staffNo1.getId());
         assertNotNull(foundStaff);
         assertEquals(staffNo1, foundStaff);
@@ -115,13 +132,13 @@ class AccountRepositoryTest {
     void mongoRepositoryFindStaffThatIsNotInTheDatabaseWithStaffIDTestNegative() {
         Staff staff = new Staff(UUID.randomUUID(), clientNo1.getLogin(), clientNo1.getPassword(), clientNo1.isActive());
         assertNotNull(staff);
-        assertThrows(UserRepositoryReadException.class, () -> accountRepositoryForTests.findByUUID(staff.getId()));
+        assertThrows(AccountNotFoundException.class, () -> accountRepositoryForTests.findByUUID(staff.getId()));
     }
 
     // Client create tests
 
     @Test
-    void userRepositoryCreateClientTestPositive() throws UserRepositoryException {
+    void userRepositoryCreateClientTestPositive() {
         Client client = accountRepositoryForTests.createClient("SomeLogin", "SomePassword");
         assertNotNull(client);
         Client foundClient = accountRepositoryForTests.findClientByUUID(client.getId());
@@ -131,34 +148,44 @@ class AccountRepositoryTest {
 
     @Test
     void userRepositoryCreateClientWithLoginAlreadyInTheDatabaseTestNegative() {
-        assertThrows(UserRepositoryCreateUserDuplicateLoginException.class, () -> accountRepositoryForTests.createClient(clientNo1.getLogin(), "SomePassword"));
+        assertThrows(LoginAlreadyTakenException.class,
+            () -> accountRepositoryForTests.createClient(clientNo1.getLogin(), "SomePassword")
+        );
     }
 
     @Test
     void userRepositoryCreateClientWithNullLoginTestNegative() {
-        assertThrows(UserRepositoryCreateException.class, () -> accountRepositoryForTests.createClient(null, "SomePassword"));
+        assertThrows(AccountCreateException.class,
+            () -> accountRepositoryForTests.createClient(null, "SomePassword")
+        );
     }
 
     @Test
     void userRepositoryCreateClientWithEmptyLoginTestNegative() {
         String clientLogin = "";
-        assertThrows(UserRepositoryCreateException.class, () -> accountRepositoryForTests.createClient(clientLogin, "SomePassword"));
+        assertThrows(AccountCreateException.class,
+            () -> accountRepositoryForTests.createClient(clientLogin, "SomePassword")
+        );
     }
 
     @Test
     void userRepositoryCreateClientWithLoginTooShortTestNegative() {
         String clientLogin = "dddf";
-        assertThrows(UserRepositoryCreateException.class, () -> accountRepositoryForTests.createClient(clientLogin, "SomePassword"));
+        assertThrows(AccountCreateException.class,
+            () -> accountRepositoryForTests.createClient(clientLogin, "SomePassword")
+        );
     }
 
     @Test
     void userRepositoryCreateClientWithLoginTooLongTestNegative() {
         String clientLogin = "ddddfddddfddddfddddfd";
-        assertThrows(UserRepositoryCreateException.class, () -> accountRepositoryForTests.createClient(clientLogin, "SomePassword"));
+        assertThrows(AccountCreateException.class,
+            () -> accountRepositoryForTests.createClient(clientLogin, "SomePassword")
+        );
     }
 
     @Test
-    void userRepositoryCreateClientWithLoginLengthEqualTo8TestNegative() throws UserRepositoryException {
+    void userRepositoryCreateClientWithLoginLengthEqualTo8TestNegative() {
         String clientLogin = "dddfdddf";
         Client client = accountRepositoryForTests.createClient(clientLogin, "SomePassword");
         assertNotNull(client);
@@ -168,7 +195,7 @@ class AccountRepositoryTest {
     }
 
     @Test
-    void userRepositoryCreateClientWithLoginLengthEqualTo20TestNegative() throws UserRepositoryException {
+    void userRepositoryCreateClientWithLoginLengthEqualTo20TestNegative() {
         String clientLogin = "dddfdddfdddfdddfdddf";
         Client client = accountRepositoryForTests.createClient(clientLogin, "SomePassword");
         assertNotNull(client);
@@ -180,13 +207,15 @@ class AccountRepositoryTest {
     @Test
     void userRepositoryCreateClientWithLoginThatViolatesRegExTestNegative() {
         String clientLogin = "Some Login";
-        assertThrows(UserRepositoryCreateException.class, () -> accountRepositoryForTests.createClient(clientLogin, "SomePassword"));
+        assertThrows(AccountCreateException.class,
+            () -> accountRepositoryForTests.createClient(clientLogin, "SomePassword")
+        );
     }
 
     // Admin create tests
 
     @Test
-    void userRepositoryCreateAdminTestPositive() throws UserRepositoryException {
+    void userRepositoryCreateAdminTestPositive() {
         Admin admin = accountRepositoryForTests.createAdmin("SomeLogin", "SomePassword");
         assertNotNull(admin);
         Admin foundAdmin = accountRepositoryForTests.findAdminByUUID(admin.getId());
@@ -196,34 +225,44 @@ class AccountRepositoryTest {
 
     @Test
     void userRepositoryCreateAdminWithLoginAlreadyInTheDatabaseTestNegative() {
-        assertThrows(UserRepositoryCreateUserDuplicateLoginException.class, () -> accountRepositoryForTests.createAdmin(adminNo1.getLogin(), "SomePassword"));
+        assertThrows(LoginAlreadyTakenException.class,
+            () -> accountRepositoryForTests.createAdmin(adminNo1.getLogin(), "SomePassword")
+        );
     }
 
     @Test
     void userRepositoryCreateAdminWithNullLoginTestNegative() {
-        assertThrows(UserRepositoryCreateException.class, () -> accountRepositoryForTests.createAdmin(null, "SomePassword"));
+        assertThrows(AccountCreateException.class,
+            () -> accountRepositoryForTests.createAdmin(null, "SomePassword")
+        );
     }
 
     @Test
     void userRepositoryCreateAdminWithEmptyLoginTestNegative() {
         String adminLogin = "";
-        assertThrows(UserRepositoryCreateException.class, () -> accountRepositoryForTests.createAdmin(adminLogin, "SomePassword"));
+        assertThrows(AccountCreateException.class,
+            () -> accountRepositoryForTests.createAdmin(adminLogin, "SomePassword")
+        );
     }
 
     @Test
     void userRepositoryCreateAdminWithLoginTooShortTestNegative() {
         String adminLogin = "dddf";
-        assertThrows(UserRepositoryCreateException.class, () -> accountRepositoryForTests.createAdmin(adminLogin, "SomePassword"));
+        assertThrows(AccountCreateException.class,
+            () -> accountRepositoryForTests.createAdmin(adminLogin, "SomePassword")
+        );
     }
 
     @Test
     void userRepositoryCreateAdminWithLoginTooLongTestNegative() {
         String adminLogin = "ddddfddddfddddfddddfd";
-        assertThrows(UserRepositoryCreateException.class, () -> accountRepositoryForTests.createAdmin(adminLogin, "SomePassword"));
+        assertThrows(AccountCreateException.class,
+            () -> accountRepositoryForTests.createAdmin(adminLogin, "SomePassword")
+        );
     }
 
     @Test
-    void userRepositoryCreateAdminWithLoginLengthEqualTo8TestNegative() throws UserRepositoryException {
+    void userRepositoryCreateAdminWithLoginLengthEqualTo8TestNegative() {
         String adminLogin = "dddfdddf";
         Admin admin = accountRepositoryForTests.createAdmin(adminLogin, "SomePassword");
         assertNotNull(admin);
@@ -233,7 +272,7 @@ class AccountRepositoryTest {
     }
 
     @Test
-    void userRepositoryCreateAdminWithLoginLengthEqualTo20TestNegative() throws UserRepositoryException {
+    void userRepositoryCreateAdminWithLoginLengthEqualTo20TestNegative() {
         String adminLogin = "dddfdddfdddfdddfdddf";
         Admin admin = accountRepositoryForTests.createAdmin(adminLogin, "SomePassword");
         assertNotNull(admin);
@@ -245,13 +284,15 @@ class AccountRepositoryTest {
     @Test
     void userRepositoryCreateAdminWithLoginThatViolatesRegExTestNegative() {
         String adminLogin = "Some Login";
-        assertThrows(UserRepositoryCreateException.class, () -> accountRepositoryForTests.createAdmin(adminLogin, "SomePassword"));
+        assertThrows(AccountCreateException.class,
+            () -> accountRepositoryForTests.createAdmin(adminLogin, "SomePassword")
+        );
     }
 
     // Staff create tests
 
     @Test
-    void userRepositoryCreateStaffTestPositive() throws UserRepositoryException {
+    void userRepositoryCreateStaffTestPositive() {
         Staff staff = accountRepositoryForTests.createStaff("SomeLogin", "SomePassword");
         assertNotNull(staff);
         Staff foundStaff = accountRepositoryForTests.findStaffByUUID(staff.getId());
@@ -261,34 +302,44 @@ class AccountRepositoryTest {
 
     @Test
     void userRepositoryCreateStaffWithLoginAlreadyInTheDatabaseTestNegative() {
-        assertThrows(UserRepositoryCreateUserDuplicateLoginException.class, () -> accountRepositoryForTests.createStaff(staffNo1.getLogin(), "SomePassword"));
+        assertThrows(LoginAlreadyTakenException.class,
+            () -> accountRepositoryForTests.createStaff(staffNo1.getLogin(), "SomePassword")
+        );
     }
 
     @Test
     void userRepositoryCreateStaffWithNullLoginTestNegative() {
-        assertThrows(UserRepositoryCreateException.class, () -> accountRepositoryForTests.createStaff(null, "SomePassword"));
+        assertThrows(AccountCreateException.class,
+            () -> accountRepositoryForTests.createStaff(null, "SomePassword")
+        );
     }
 
     @Test
     void userRepositoryCreateStaffWithEmptyLoginTestNegative() {
         String staffLogin = "";
-        assertThrows(UserRepositoryCreateException.class, () -> accountRepositoryForTests.createStaff(staffLogin, "SomePassword"));
+        assertThrows(AccountCreateException.class,
+            () -> accountRepositoryForTests.createStaff(staffLogin, "SomePassword")
+        );
     }
 
     @Test
     void userRepositoryCreateStaffWithLoginTooShortTestNegative() {
         String staffLogin = "dddf";
-        assertThrows(UserRepositoryCreateException.class, () -> accountRepositoryForTests.createStaff(staffLogin, "SomePassword"));
+        assertThrows(AccountCreateException.class,
+            () -> accountRepositoryForTests.createStaff(staffLogin, "SomePassword")
+        );
     }
 
     @Test
     void userRepositoryCreateStaffWithLoginTooLongTestNegative() {
         String staffLogin = "ddddfddddfddddfddddfd";
-        assertThrows(UserRepositoryCreateException.class, () -> accountRepositoryForTests.createStaff(staffLogin, "SomePassword"));
+        assertThrows(AccountCreateException.class,
+            () -> accountRepositoryForTests.createStaff(staffLogin, "SomePassword")
+        );
     }
 
     @Test
-    void userRepositoryCreateStaffWithLoginLengthEqualTo8TestNegative() throws UserRepositoryException {
+    void userRepositoryCreateStaffWithLoginLengthEqualTo8TestNegative() {
         String staffLogin = "dddfdddf";
         Staff staff = accountRepositoryForTests.createStaff(staffLogin, "SomePassword");
         assertNotNull(staff);
@@ -298,7 +349,7 @@ class AccountRepositoryTest {
     }
 
     @Test
-    void userRepositoryCreateStaffWithLoginLengthEqualTo20TestNegative() throws UserRepositoryException {
+    void userRepositoryCreateStaffWithLoginLengthEqualTo20TestNegative() {
         String staffLogin = "dddfdddfdddfdddfdddf";
         Staff staff = accountRepositoryForTests.createStaff(staffLogin, "SomePassword");
         assertNotNull(staff);
@@ -310,13 +361,15 @@ class AccountRepositoryTest {
     @Test
     void userRepositoryCreateStaffWithLoginThatViolatesRegExTestNegative() {
         String staffLogin = "Some Login";
-        assertThrows(UserRepositoryCreateException.class, () -> accountRepositoryForTests.createStaff(staffLogin, "SomePassword"));
+        assertThrows(AccountCreateException.class,
+            () -> accountRepositoryForTests.createStaff(staffLogin, "SomePassword")
+        );
     }
 
     // Find client by ID tests
 
     @Test
-    void userRepositoryFindClientByIDTestPositive() throws UserRepositoryException {
+    void userRepositoryFindClientByIDTestPositive() {
         Client foundClient = accountRepositoryForTests.findClientByUUID(clientNo1.getId());
         assertNotNull(foundClient);
         assertEquals(clientNo1, foundClient);
@@ -326,11 +379,13 @@ class AccountRepositoryTest {
     void userRepositoryFindClientByIDThatIsNotInTheDatabaseTestNegative() {
         Client client = new Client(UUID.randomUUID(), "SomeLogin", "SomePassword");
         assertNotNull(client);
-        assertThrows(UserRepositoryUserNotFoundException.class, () -> accountRepositoryForTests.findClientByUUID(client.getId()));
+        assertThrows(AccountNotFoundException.class,
+            () -> accountRepositoryForTests.findClientByUUID(client.getId())
+        );
     }
 
     @Test
-    void userRepositoryFindAdminByIDTestPositive() throws UserRepositoryException {
+    void userRepositoryFindAdminByIDTestPositive() {
         Admin foundAdmin = accountRepositoryForTests.findAdminByUUID(adminNo1.getId());
         assertNotNull(foundAdmin);
         assertEquals(adminNo1, foundAdmin);
@@ -340,11 +395,13 @@ class AccountRepositoryTest {
     void userRepositoryFindAdminByIDThatIsNotInTheDatabaseTestNegative() {
         Admin admin = new Admin(UUID.randomUUID(), "SomeLogin", "SomePassword");
         assertNotNull(admin);
-        assertThrows(UserRepositoryAdminNotFoundException.class, () -> accountRepositoryForTests.findAdminByUUID(admin.getId()));
+        assertThrows(AccountNotFoundException.class,
+            () -> accountRepositoryForTests.findAdminByUUID(admin.getId())
+        );
     }
 
     @Test
-    void userRepositoryFindStaffByIDTestPositive() throws UserRepositoryException {
+    void userRepositoryFindStaffByIDTestPositive() {
         Staff foundStaff = accountRepositoryForTests.findStaffByUUID(staffNo1.getId());
         assertNotNull(foundStaff);
         assertEquals(staffNo1, foundStaff);
@@ -354,13 +411,15 @@ class AccountRepositoryTest {
     void userRepositoryFindStaffByIDThatIsNotInTheDatabaseTestNegative() {
         Staff staff = new Staff(UUID.randomUUID(), "SomeLogin", "SomePassword");
         assertNotNull(staff);
-        assertThrows(UserRepositoryStaffNotFoundException.class, () -> accountRepositoryForTests.findStaffByUUID(staff.getId()));
+        assertThrows(AccountNotFoundException.class,
+            () -> accountRepositoryForTests.findStaffByUUID(staff.getId())
+        );
     }
 
     // Find all users
 
     @Test
-    void userRepositoryFindAllClientsTestPositive() throws UserRepositoryException {
+    void userRepositoryFindAllClientsTestPositive() {
         List<Client> listOfAllClients = accountRepositoryForTests.findAllClients();
         assertNotNull(listOfAllClients);
         assertFalse(listOfAllClients.isEmpty());
@@ -368,7 +427,7 @@ class AccountRepositoryTest {
     }
 
     @Test
-    void userRepositoryFindAllAdminsTestPositive() throws UserRepositoryException {
+    void userRepositoryFindAllAdminsTestPositive() {
         List<Admin> listOfAllAdmins = accountRepositoryForTests.findAllAdmins();
         assertNotNull(listOfAllAdmins);
         assertFalse(listOfAllAdmins.isEmpty());
@@ -376,7 +435,7 @@ class AccountRepositoryTest {
     }
 
     @Test
-    void userRepositoryFindAllStaffsTestPositive() throws UserRepositoryException {
+    void userRepositoryFindAllStaffsTestPositive() {
         List<Staff> listOfAllStaffs = accountRepositoryForTests.findAllStaffs();
         assertNotNull(listOfAllStaffs);
         assertFalse(listOfAllStaffs.isEmpty());
@@ -386,7 +445,7 @@ class AccountRepositoryTest {
     // Find users by logins
 
     @Test
-    void userRepositoryFindClientByLoginTestPositive() throws UserRepositoryException {
+    void userRepositoryFindClientByLoginTestPositive() {
         String clientLogin = clientNo1.getLogin();
         Client foundClient = accountRepositoryForTests.findClientByLogin(clientLogin);
         assertNotNull(foundClient);
@@ -394,7 +453,7 @@ class AccountRepositoryTest {
     }
 
     @Test
-    void userRepositoryFindAdminByLoginTestPositive() throws UserRepositoryException {
+    void userRepositoryFindAdminByLoginTestPositive() {
         String adminLogin = adminNo1.getLogin();
         Admin foundAdmin = accountRepositoryForTests.findAdminByLogin(adminLogin);
         assertNotNull(foundAdmin);
@@ -402,7 +461,7 @@ class AccountRepositoryTest {
     }
 
     @Test
-    void userRepositoryFindStaffByLoginTestPositive() throws UserRepositoryException {
+    void userRepositoryFindStaffByLoginTestPositive() {
         String staffLogin = staffNo1.getLogin();
         Staff foundStaff = accountRepositoryForTests.findStaffByLogin(staffLogin);
         assertNotNull(foundStaff);
@@ -415,27 +474,33 @@ class AccountRepositoryTest {
     void userRepositoryFindClientByLoginThatIsNotInTheDatabaseTestNegative() {
         Client client = new Client(UUID.randomUUID(), "SomeLogin", "SomePassword");
         assertNotNull(client);
-        assertThrows(UserRepositoryUserNotFoundException.class, () -> accountRepositoryForTests.findClientByLogin(client.getLogin()));
+        assertThrows(AccountNotFoundException.class,
+            () -> accountRepositoryForTests.findClientByLogin(client.getLogin())
+        );
     }
 
     @Test
     void userRepositoryFindAdminByLoginThatIsNotInTheDatabaseTestNegative() {
         Admin admin = new Admin(UUID.randomUUID(), "SomeLogin", "SomePassword");
         assertNotNull(admin);
-        assertThrows(UserRepositoryAdminNotFoundException.class, () -> accountRepositoryForTests.findAdminByLogin(admin.getLogin()));
+        assertThrows(AccountNotFoundException.class,
+            () -> accountRepositoryForTests.findAdminByLogin(admin.getLogin())
+        );
     }
 
     @Test
     void userRepositoryFindStaffByLoginThatIsNotInTheDatabaseTestNegative() {
         Staff staff = new Staff(UUID.randomUUID(), "SomeLogin", "SomePassword");
         assertNotNull(staff);
-        assertThrows(UserRepositoryStaffNotFoundException.class, () -> accountRepositoryForTests.findStaffByLogin(staff.getLogin()));
+        assertThrows(AccountNotFoundException.class,
+            () -> accountRepositoryForTests.findStaffByLogin(staff.getLogin())
+        );
     }
 
     // Find all users matching login
 
     @Test
-    void userRepositoryFindAllClientsMatchingLoginTestPositive() throws UserRepositoryException {
+    void userRepositoryFindAllClientsMatchingLoginTestPositive() {
         String clientLogin = "Client";
         List<Client> listOfFoundClients = accountRepositoryForTests.findAllClientsMatchingLogin(clientLogin);
         assertNotNull(listOfFoundClients);
@@ -444,7 +509,7 @@ class AccountRepositoryTest {
     }
 
     @Test
-    void userRepositoryFindAllClientsMatchingLoginWhenLoginIsNotInTheDatabaseTestPositive() throws UserRepositoryException {
+    void userRepositoryFindAllClientsMatchingLoginWhenLoginIsNotInTheDatabaseTestPositive() {
         String clientLogin = "NonExistentLogin";
         List<Client> listOfFoundClients = accountRepositoryForTests.findAllClientsMatchingLogin(clientLogin);
         assertNotNull(listOfFoundClients);
@@ -452,7 +517,7 @@ class AccountRepositoryTest {
     }
 
     @Test
-    void userRepositoryFindAllAdminsMatchingLoginTestPositive() throws UserRepositoryException {
+    void userRepositoryFindAllAdminsMatchingLoginTestPositive() {
         String adminLogin = "Admin";
         List<Admin> listOfFoundAdmins = accountRepositoryForTests.findAllAdminsMatchingLogin(adminLogin);
         assertNotNull(listOfFoundAdmins);
@@ -461,7 +526,7 @@ class AccountRepositoryTest {
     }
 
     @Test
-    void userRepositoryFindAllAdminsMatchingLoginWhenLoginIsNotInTheDatabaseTestPositive() throws UserRepositoryException {
+    void userRepositoryFindAllAdminsMatchingLoginWhenLoginIsNotInTheDatabaseTestPositive() {
         String adminLogin = "NonExistentLogin";
         List<Admin> listOfFoundAdmins = accountRepositoryForTests.findAllAdminsMatchingLogin(adminLogin);
         assertNotNull(listOfFoundAdmins);
@@ -469,7 +534,7 @@ class AccountRepositoryTest {
     }
 
     @Test
-    void userRepositoryFindAllStaffsMatchingLoginTestPositive() throws UserRepositoryException {
+    void userRepositoryFindAllStaffsMatchingLoginTestPositive() {
         String staffLogin = "Staff";
         List<Staff> listOfFoundStaffs = accountRepositoryForTests.findAllStaffsMatchingLogin(staffLogin);
         assertNotNull(listOfFoundStaffs);
@@ -478,7 +543,7 @@ class AccountRepositoryTest {
     }
 
     @Test
-    void userRepositoryFindAllStaffsMatchingLoginWhenLoginIsNotInTheDatabaseTestPositive() throws UserRepositoryException {
+    void userRepositoryFindAllStaffsMatchingLoginWhenLoginIsNotInTheDatabaseTestPositive() {
         String staffLogin = "NonExistentLogin";
         List<Staff> listOfFoundStaffs = accountRepositoryForTests.findAllStaffsMatchingLogin(staffLogin);
         assertNotNull(listOfFoundStaffs);
@@ -488,7 +553,7 @@ class AccountRepositoryTest {
     // Activate users tests positive
 
     @Test
-    void userRepositoryActivateClientTestPositive() throws UserRepositoryException {
+    void userRepositoryActivateClientTestPositive() {
         clientNo1.setActive(false);
         accountRepositoryForTests.updateClient(clientNo1);
         Client foundClient = accountRepositoryForTests.findClientByUUID(clientNo1.getId());
@@ -501,7 +566,7 @@ class AccountRepositoryTest {
     }
 
     @Test
-    void userRepositoryActivateAdminTestPositive() throws UserRepositoryException {
+    void userRepositoryActivateAdminTestPositive() {
         adminNo1.setActive(false);
         accountRepositoryForTests.updateAdmin(adminNo1);
         Admin foundAdmin = accountRepositoryForTests.findAdminByUUID(adminNo1.getId());
@@ -514,7 +579,7 @@ class AccountRepositoryTest {
     }
 
     @Test
-    void userRepositoryActivateStaffTestPositive() throws UserRepositoryException {
+    void userRepositoryActivateStaffTestPositive() {
         staffNo1.setActive(false);
         accountRepositoryForTests.updateStaff(staffNo1);
         Staff foundStaff = accountRepositoryForTests.findStaffByUUID(staffNo1.getId());
@@ -531,25 +596,31 @@ class AccountRepositoryTest {
     @Test
     void userRepositoryActivateClientThatIsNotInTheDatabaseTestNegative() {
         Client client = new Client(UUID.randomUUID(), "SomeLogin", "SomePassword");
-        assertThrows(UserActivationException.class, () -> accountRepositoryForTests.activate(client, UserConstants.CLIENT_DISCRIMINATOR));
+        assertThrows(AccountNotFoundException.class,
+            () -> accountRepositoryForTests.activate(client, UserConstants.CLIENT_DISCRIMINATOR)
+        );
     }
 
     @Test
     void userRepositoryActivateAdminThatIsNotInTheDatabaseTestNegative() {
         Admin admin = new Admin(UUID.randomUUID(), "SomeLogin", "SomePassword");
-        assertThrows(UserActivationException.class, () -> accountRepositoryForTests.activate(admin, UserConstants.ADMIN_DISCRIMINATOR));
+        assertThrows(AccountNotFoundException.class,
+            () -> accountRepositoryForTests.activate(admin, UserConstants.ADMIN_DISCRIMINATOR)
+        );
     }
 
     @Test
     void userRepositoryActivateStaffThatIsNotInTheDatabaseTestNegative() {
         Staff staff = new Staff(UUID.randomUUID(), "SomeLogin", "SomePassword");
-        assertThrows(UserActivationException.class, () -> accountRepositoryForTests.activate(staff, UserConstants.STAFF_DISCRIMINATOR));
+        assertThrows(AccountNotFoundException.class,
+            () -> accountRepositoryForTests.activate(staff, UserConstants.STAFF_DISCRIMINATOR)
+        );
     }
 
     // Deactivate users tests positive
 
     @Test
-    void userRepositoryDeactivateClientTestPositive() throws UserRepositoryException {
+    void userRepositoryDeactivateClientTestPositive() {
         Client foundClient = accountRepositoryForTests.findClientByUUID(clientNo1.getId());
         assertNotNull(foundClient);
         assertTrue(foundClient.isActive());
@@ -560,7 +631,7 @@ class AccountRepositoryTest {
     }
 
     @Test
-    void userRepositoryDeactivateAdminTestPositive() throws UserRepositoryException {
+    void userRepositoryDeactivateAdminTestPositive() {
         Admin foundAdmin = accountRepositoryForTests.findAdminByUUID(adminNo1.getId());
         assertNotNull(foundAdmin);
         assertTrue(foundAdmin.isActive());
@@ -571,7 +642,7 @@ class AccountRepositoryTest {
     }
 
     @Test
-    void userRepositoryDeactivateStaffTestPositive() throws UserRepositoryException {
+    void userRepositoryDeactivateStaffTestPositive() {
         Staff foundStaff = accountRepositoryForTests.findStaffByUUID(staffNo1.getId());
         assertNotNull(foundStaff);
         assertTrue(foundStaff.isActive());
@@ -586,25 +657,31 @@ class AccountRepositoryTest {
     @Test
     void userRepositoryDeactivateClientThatIsNotInTheDatabaseTestNegative() {
         Client client = new Client(UUID.randomUUID(), "SomeLogin", "SomePassword");
-        assertThrows(UserDeactivationException.class, () -> accountRepositoryForTests.deactivate(client, UserConstants.CLIENT_DISCRIMINATOR));
+        assertThrows(AccountNotFoundException.class,
+            () -> accountRepositoryForTests.deactivate(client, UserConstants.CLIENT_DISCRIMINATOR)
+        );
     }
 
     @Test
     void userRepositoryDeactivateAdminThatIsNotInTheDatabaseTestNegative() {
         Admin admin = new Admin(UUID.randomUUID(), "SomeLogin", "SomePassword");
-        assertThrows(UserDeactivationException.class, () -> accountRepositoryForTests.deactivate(admin, UserConstants.ADMIN_DISCRIMINATOR));
+        assertThrows(AccountNotFoundException.class,
+            () -> accountRepositoryForTests.deactivate(admin, UserConstants.ADMIN_DISCRIMINATOR)
+        );
     }
 
     @Test
     void userRepositoryDeactivateStaffThatIsNotInTheDatabaseTestNegative() {
         Staff staff = new Staff(UUID.randomUUID(), "SomeLogin", "SomePassword");
-        assertThrows(UserDeactivationException.class, () -> accountRepositoryForTests.deactivate(staff, UserConstants.STAFF_DISCRIMINATOR));
+        assertThrows(AccountNotFoundException.class,
+            () -> accountRepositoryForTests.deactivate(staff, UserConstants.STAFF_DISCRIMINATOR)
+        );
     }
 
     // Update client tests
 
     @Test
-    void userRepositoryUpdateClientTestPositive() throws UserRepositoryException {
+    void userRepositoryUpdateClientTestPositive() {
         String newLogin = "NewLogin";
         String newPassword = "NewPassword";
         String loginBefore = clientNo1.getLogin();
@@ -627,38 +704,38 @@ class AccountRepositoryTest {
     void userRepositoryUpdateClientThatIsNotInTheDatabaseTestNegative() {
         Client client = new Client(UUID.randomUUID(), clientNo1.getLogin(), clientNo1.getPassword(), clientNo1.isActive());
         assertNotNull(client);
-        assertThrows(UserRepositoryUpdateException.class, () -> accountRepositoryForTests.updateClient(client));
+        assertThrows(AccountNotFoundException.class, () -> accountRepositoryForTests.updateClient(client));
     }
 
     @Test
     void userRepositoryUpdateClientWithNullLoginTestNegative() {
         clientNo1.setLogin(null);
-        assertThrows(UserRepositoryUpdateException.class, () -> accountRepositoryForTests.updateClient(clientNo1));
+        assertThrows(AccountUpdateException.class, () -> accountRepositoryForTests.updateClient(clientNo1));
     }
 
     @Test
     void userRepositoryUpdateClientWithEmptyLoginTestNegative() {
         String newLogin = "";
         clientNo1.setLogin(newLogin);
-        assertThrows(UserRepositoryUpdateException.class, () -> accountRepositoryForTests.updateClient(clientNo1));
+        assertThrows(AccountUpdateException.class, () -> accountRepositoryForTests.updateClient(clientNo1));
     }
 
     @Test
     void userRepositoryUpdateClientWithLoginTooShortTestNegative() {
         String newLogin = "dddf";
         clientNo1.setLogin(newLogin);
-        assertThrows(UserRepositoryUpdateException.class, () -> accountRepositoryForTests.updateClient(clientNo1));
+        assertThrows(AccountUpdateException.class, () -> accountRepositoryForTests.updateClient(clientNo1));
     }
 
     @Test
     void userRepositoryUpdateClientWithLoginTooLongTestNegative() {
         String newLogin = "ddddfddddfddddfddddfd";
         clientNo1.setLogin(newLogin);
-        assertThrows(UserRepositoryUpdateException.class, () -> accountRepositoryForTests.updateClient(clientNo1));
+        assertThrows(AccountUpdateException.class, () -> accountRepositoryForTests.updateClient(clientNo1));
     }
 
     @Test
-    void userRepositoryUpdateClientWithLoginLengthEqualTo8TestNegative() throws UserRepositoryException {
+    void userRepositoryUpdateClientWithLoginLengthEqualTo8TestNegative() {
         String newLogin = "dddfdddf";
         String loginBefore = clientNo1.getLogin();
         clientNo1.setLogin(newLogin);
@@ -671,7 +748,7 @@ class AccountRepositoryTest {
     }
 
     @Test
-    void userRepositoryUpdateClientWithLoginLengthEqualTo20TestNegative() throws UserRepositoryException {
+    void userRepositoryUpdateClientWithLoginLengthEqualTo20TestNegative() {
         String newLogin = "dddfdddfdddfdddfdddf";
         String loginBefore = clientNo1.getLogin();
         clientNo1.setLogin(newLogin);
@@ -687,13 +764,13 @@ class AccountRepositoryTest {
     void userRepositoryUpdateClientWithLoginThatViolatesRegExTestNegative() {
         String clientLogin = "Some Login";
         clientNo1.setLogin(clientLogin);
-        assertThrows(UserRepositoryUpdateException.class, () -> accountRepositoryForTests.updateClient(clientNo1));
+        assertThrows(AccountUpdateException.class, () -> accountRepositoryForTests.updateClient(clientNo1));
     }
 
     // Update admin tests
 
     @Test
-    void userRepositoryUpdateAdminTestPositive() throws UserRepositoryException {
+    void userRepositoryUpdateAdminTestPositive() {
         String newLogin = "NewLogin";
         String newPassword = "NewPassword";
         String loginBefore = adminNo1.getLogin();
@@ -716,38 +793,38 @@ class AccountRepositoryTest {
     void userRepositoryUpdateAdminThatIsNotInTheDatabaseTestNegative() {
         Admin admin = new Admin(UUID.randomUUID(), adminNo1.getLogin(), adminNo1.getPassword(), adminNo1.isActive());
         assertNotNull(admin);
-        assertThrows(UserRepositoryUpdateException.class, () -> accountRepositoryForTests.updateAdmin(admin));
+        assertThrows(AccountNotFoundException.class, () -> accountRepositoryForTests.updateAdmin(admin));
     }
 
     @Test
     void userRepositoryUpdateAdminWithNullLoginTestNegative() {
         adminNo1.setLogin(null);
-        assertThrows(UserRepositoryUpdateException.class, () -> accountRepositoryForTests.updateAdmin(adminNo1));
+        assertThrows(AccountUpdateException.class, () -> accountRepositoryForTests.updateAdmin(adminNo1));
     }
 
     @Test
     void userRepositoryUpdateAdminWithEmptyLoginTestNegative() {
         String newLogin = "";
         adminNo1.setLogin(newLogin);
-        assertThrows(UserRepositoryUpdateException.class, () -> accountRepositoryForTests.updateAdmin(adminNo1));
+        assertThrows(AccountUpdateException.class, () -> accountRepositoryForTests.updateAdmin(adminNo1));
     }
 
     @Test
     void userRepositoryUpdateAdminWithLoginTooShortTestNegative() {
         String newLogin = "dddf";
         adminNo1.setLogin(newLogin);
-        assertThrows(UserRepositoryUpdateException.class, () -> accountRepositoryForTests.updateAdmin(adminNo1));
+        assertThrows(AccountUpdateException.class, () -> accountRepositoryForTests.updateAdmin(adminNo1));
     }
 
     @Test
     void userRepositoryUpdateAdminWithLoginTooLongTestNegative() {
         String newLogin = "ddddfddddfddddfddddfd";
         adminNo1.setLogin(newLogin);
-        assertThrows(UserRepositoryUpdateException.class, () -> accountRepositoryForTests.updateAdmin(adminNo1));
+        assertThrows(AccountUpdateException.class, () -> accountRepositoryForTests.updateAdmin(adminNo1));
     }
 
     @Test
-    void userRepositoryUpdateAdminWithLoginLengthEqualTo8TestNegative() throws UserRepositoryException {
+    void userRepositoryUpdateAdminWithLoginLengthEqualTo8TestNegative() {
         String newLogin = "dddfdddf";
         String loginBefore = adminNo1.getLogin();
         adminNo1.setLogin(newLogin);
@@ -760,7 +837,7 @@ class AccountRepositoryTest {
     }
 
     @Test
-    void userRepositoryUpdateAdminWithLoginLengthEqualTo20TestNegative() throws UserRepositoryException {
+    void userRepositoryUpdateAdminWithLoginLengthEqualTo20TestNegative() {
         String newLogin = "dddfdddfdddfdddfdddf";
         String loginBefore = adminNo1.getLogin();
         adminNo1.setLogin(newLogin);
@@ -776,13 +853,13 @@ class AccountRepositoryTest {
     void userRepositoryUpdateAdminWithLoginThatViolatesRegExTestNegative() {
         String clientLogin = "Some Login";
         adminNo1.setLogin(clientLogin);
-        assertThrows(UserRepositoryUpdateException.class, () -> accountRepositoryForTests.updateAdmin(adminNo1));
+        assertThrows(AccountUpdateException.class, () -> accountRepositoryForTests.updateAdmin(adminNo1));
     }
 
     // Staff update tests
 
     @Test
-    void userRepositoryUpdateStaffTestPositive() throws UserRepositoryException {
+    void userRepositoryUpdateStaffTestPositive() {
         String newLogin = "NewLogin";
         String newPassword = "NewPassword";
         String loginBefore = staffNo1.getLogin();
@@ -805,38 +882,38 @@ class AccountRepositoryTest {
     void userRepositoryUpdateStaffThatIsNotInTheDatabaseTestNegative() {
         Staff staff = new Staff(UUID.randomUUID(), adminNo1.getLogin(), adminNo1.getPassword(), adminNo1.isActive());
         assertNotNull(staff);
-        assertThrows(UserRepositoryUpdateException.class, () -> accountRepositoryForTests.updateStaff(staff));
+        assertThrows(AccountNotFoundException.class, () -> accountRepositoryForTests.updateStaff(staff));
     }
 
     @Test
     void userRepositoryUpdateStaffWithNullLoginTestNegative() {
         staffNo1.setLogin(null);
-        assertThrows(UserRepositoryUpdateException.class, () -> accountRepositoryForTests.updateStaff(staffNo1));
+        assertThrows(AccountUpdateException.class, () -> accountRepositoryForTests.updateStaff(staffNo1));
     }
 
     @Test
     void userRepositoryUpdateStaffWithEmptyLoginTestNegative() {
         String newLogin = "";
         staffNo1.setLogin(newLogin);
-        assertThrows(UserRepositoryUpdateException.class, () -> accountRepositoryForTests.updateStaff(staffNo1));
+        assertThrows(AccountUpdateException.class, () -> accountRepositoryForTests.updateStaff(staffNo1));
     }
 
     @Test
     void userRepositoryUpdateStaffWithLoginTooShortTestNegative() {
         String newLogin = "dddf";
         staffNo1.setLogin(newLogin);
-        assertThrows(UserRepositoryUpdateException.class, () -> accountRepositoryForTests.updateStaff(staffNo1));
+        assertThrows(AccountUpdateException.class, () -> accountRepositoryForTests.updateStaff(staffNo1));
     }
 
     @Test
     void userRepositoryUpdateStaffWithLoginTooLongTestNegative() {
         String newLogin = "ddddfddddfddddfddddfd";
         staffNo1.setLogin(newLogin);
-        assertThrows(UserRepositoryUpdateException.class, () -> accountRepositoryForTests.updateStaff(staffNo1));
+        assertThrows(AccountUpdateException.class, () -> accountRepositoryForTests.updateStaff(staffNo1));
     }
 
     @Test
-    void userRepositoryUpdateStaffWithLoginLengthEqualTo8TestNegative() throws UserRepositoryException {
+    void userRepositoryUpdateStaffWithLoginLengthEqualTo8TestNegative() {
         String newLogin = "dddfdddf";
         String loginBefore = staffNo1.getLogin();
         staffNo1.setLogin(newLogin);
@@ -849,7 +926,7 @@ class AccountRepositoryTest {
     }
 
     @Test
-    void userRepositoryUpdateStaffWithLoginLengthEqualTo20TestNegative() throws UserRepositoryException {
+    void userRepositoryUpdateStaffWithLoginLengthEqualTo20TestNegative() {
         String newLogin = "dddfdddfdddfdddfdddf";
         String loginBefore = staffNo1.getLogin();
         staffNo1.setLogin(newLogin);
@@ -865,13 +942,13 @@ class AccountRepositoryTest {
     void userRepositoryUpdateStaffWithLoginThatViolatesRegExTestNegative() {
         String clientLogin = "Some Login";
         staffNo1.setLogin(clientLogin);
-        assertThrows(UserRepositoryUpdateException.class, () -> accountRepositoryForTests.updateStaff(staffNo1));
+        assertThrows(AccountUpdateException.class, () -> accountRepositoryForTests.updateStaff(staffNo1));
     }
 
     // Client delete tests
 
     @Test
-    void userRepositoryDeleteClientTestPositive() throws UserRepositoryException {
+    void userRepositoryDeleteClientTestPositive() {
         int numOfClientsBefore = accountRepositoryForTests.findAllClients().size();
         UUID removedClientID = clientNo1.getId();
         accountRepositoryForTests.delete(clientNo1.getId(), UserConstants.CLIENT_DISCRIMINATOR);
@@ -879,19 +956,19 @@ class AccountRepositoryTest {
         assertNotEquals(numOfClientsBefore, numOfClientsAfter);
         assertEquals(2, numOfClientsBefore);
         assertEquals(1, numOfClientsAfter);
-        assertThrows(UserRepositoryReadException.class, () -> accountRepositoryForTests.findByUUID(removedClientID));
+        assertThrows(AccountNotFoundException.class, () -> accountRepositoryForTests.findByUUID(removedClientID));
     }
 
     @Test
     void userRepositoryDeleteClientThatIsNotInTheDatabaseTestNegative() {
         Client client = new Client(UUID.randomUUID(), "SomeLogin", "SomePassword");
-        assertThrows(UserRepositoryDeleteException.class, () -> accountRepositoryForTests.delete(client.getId(), UserConstants.CLIENT_DISCRIMINATOR));
+        assertThrows(AccountNotFoundException.class, () -> accountRepositoryForTests.delete(client.getId(), UserConstants.CLIENT_DISCRIMINATOR));
     }
 
     // Admin delete tests
 
     @Test
-    void userRepositoryDeleteAdminTestPositive() throws UserRepositoryException {
+    void userRepositoryDeleteAdminTestPositive() {
         int numOfAdminsBefore = accountRepositoryForTests.findAllAdmins().size();
         UUID removedAdminID = adminNo1.getId();
         accountRepositoryForTests.delete(adminNo1.getId(), UserConstants.ADMIN_DISCRIMINATOR);
@@ -899,19 +976,19 @@ class AccountRepositoryTest {
         assertNotEquals(numOfAdminsBefore, numOfAdminsAfter);
         assertEquals(2, numOfAdminsBefore);
         assertEquals(1, numOfAdminsAfter);
-        assertThrows(UserRepositoryReadException.class, () -> accountRepositoryForTests.findAdminByUUID(removedAdminID));
+        assertThrows(AccountNotFoundException.class, () -> accountRepositoryForTests.findAdminByUUID(removedAdminID));
     }
 
     @Test
     void userRepositoryDeleteAdminThatIsNotInTheDatabaseTestNegative() {
         Admin admin = new Admin(UUID.randomUUID(), "SomeLogin", "SomePassword");
-        assertThrows(UserRepositoryDeleteException.class, () -> accountRepositoryForTests.delete(admin.getId(), UserConstants.ADMIN_DISCRIMINATOR));
+        assertThrows(AccountNotFoundException.class, () -> accountRepositoryForTests.delete(admin.getId(), UserConstants.ADMIN_DISCRIMINATOR));
     }
 
     // Staff delete tests
 
     @Test
-    void userRepositoryDeleteStaffTestPositive() throws UserRepositoryException {
+    void userRepositoryDeleteStaffTestPositive() {
         int numOfStaffsBefore = accountRepositoryForTests.findAllStaffs().size();
         UUID removedStaffID = staffNo1.getId();
         accountRepositoryForTests.delete(staffNo1.getId(), UserConstants.STAFF_DISCRIMINATOR);
@@ -919,44 +996,58 @@ class AccountRepositoryTest {
         assertNotEquals(numOfStaffsBefore, numOfStaffsAfter);
         assertEquals(2, numOfStaffsBefore);
         assertEquals(1, numOfStaffsAfter);
-        assertThrows(UserRepositoryReadException.class, () -> accountRepositoryForTests.findStaffByUUID(removedStaffID));
+        assertThrows(AccountNotFoundException.class, () -> accountRepositoryForTests.findStaffByUUID(removedStaffID));
     }
 
     @Test
     void userRepositoryDeleteStaffThatIsNotInTheDatabaseTestNegative() {
         Staff staff = new Staff(UUID.randomUUID(), "SomeLogin", "SomePassword");
-        assertThrows(UserRepositoryDeleteException.class, () -> accountRepositoryForTests.delete(staff.getId(), UserConstants.STAFF_DISCRIMINATOR));
+        assertThrows(AccountNotFoundException.class,
+            () -> accountRepositoryForTests.delete(staff.getId(), UserConstants.STAFF_DISCRIMINATOR)
+        );
     }
 
     // Delete user with wrong discriminator
 
     @Test
     void userRepositoryTryDeletingClientWithAdminDiscriminatorTestNegative() {
-        assertThrows(UserRepositoryDeleteException.class, () -> accountRepositoryForTests.delete(clientNo1.getId(), UserConstants.ADMIN_DISCRIMINATOR));
+        assertThrows(AccountDeleteException.class,
+            () -> accountRepositoryForTests.delete(clientNo1.getId(), UserConstants.ADMIN_DISCRIMINATOR)
+        );
     }
 
     @Test
     void userRepositoryTryDeletingClientWithStaffDiscriminatorTestNegative() {
-        assertThrows(UserRepositoryDeleteException.class, () -> accountRepositoryForTests.delete(clientNo1.getId(), UserConstants.STAFF_DISCRIMINATOR));
+        assertThrows(AccountDeleteException.class,
+            () -> accountRepositoryForTests.delete(clientNo1.getId(), UserConstants.STAFF_DISCRIMINATOR)
+        );
     }
 
     @Test
     void userRepositoryTryDeletingAdminWithClientDiscriminatorTestNegative() {
-        assertThrows(UserRepositoryDeleteException.class, () -> accountRepositoryForTests.delete(adminNo1.getId(), UserConstants.CLIENT_DISCRIMINATOR));
+        assertThrows(AccountDeleteException.class,
+            () -> accountRepositoryForTests.delete(adminNo1.getId(), UserConstants.CLIENT_DISCRIMINATOR)
+        );
     }
 
     @Test
     void userRepositoryTryDeletingAdminWithStaffDiscriminatorTestNegative() {
-        assertThrows(UserRepositoryDeleteException.class, () -> accountRepositoryForTests.delete(adminNo1.getId(), UserConstants.STAFF_DISCRIMINATOR));
+        assertThrows(AccountDeleteException.class,
+            () -> accountRepositoryForTests.delete(adminNo1.getId(), UserConstants.STAFF_DISCRIMINATOR)
+        );
     }
 
     @Test
     void userRepositoryTryDeletingStaffWithClientDiscriminatorTestNegative() {
-        assertThrows(UserRepositoryDeleteException.class, () -> accountRepositoryForTests.delete(staffNo1.getId(), UserConstants.CLIENT_DISCRIMINATOR));
+        assertThrows(AccountDeleteException.class,
+            () -> accountRepositoryForTests.delete(staffNo1.getId(), UserConstants.CLIENT_DISCRIMINATOR)
+        );
     }
 
     @Test
     void userRepositoryTryDeletingStaffWithAdminDiscriminatorTestNegative() {
-        assertThrows(UserRepositoryDeleteException.class, () -> accountRepositoryForTests.delete(staffNo1.getId(), UserConstants.ADMIN_DISCRIMINATOR));
+        assertThrows(AccountDeleteException.class,
+            () -> accountRepositoryForTests.delete(staffNo1.getId(), UserConstants.ADMIN_DISCRIMINATOR)
+        );
     }
 }

@@ -24,8 +24,8 @@ import pl.pas.gr3.cinema.entity.account.Client;
 import pl.pas.gr3.cinema.entity.account.Staff;
 import pl.pas.gr3.cinema.repository.impl.AccountRepositoryImpl;
 import pl.pas.gr3.cinema.dto.auth.LoginAccountRequest;
-import pl.pas.gr3.cinema.dto.output.MovieDTO;
-import pl.pas.gr3.cinema.dto.input.MovieInputDTO;
+import pl.pas.gr3.cinema.dto.output.MovieResponse;
+import pl.pas.gr3.cinema.dto.input.CreateMovieRequest;
 import pl.pas.gr3.cinema.service.impl.MovieServiceImpl;
 import pl.pas.gr3.cinema.entity.Movie;
 import pl.pas.gr3.cinema.repository.impl.MovieRepositoryImpl;
@@ -134,12 +134,12 @@ class MovieControllerTest {
         int scrRoomNumber = 11;
         int numberOfAvailableSeats = 37;
 
-        MovieInputDTO movieInputDTO = new MovieInputDTO(movieTitle, movieBasePrice, scrRoomNumber, numberOfAvailableSeats);
+        CreateMovieRequest createMovieRequest = new CreateMovieRequest(movieTitle, movieBasePrice, scrRoomNumber, numberOfAvailableSeats);
 
         RequestSpecification requestSpecification = RestAssured.given();
         requestSpecification.contentType(ContentType.JSON);
         requestSpecification.accept(ContentType.JSON);
-        requestSpecification.body(movieInputDTO);
+        requestSpecification.body(createMovieRequest);
 
         Response response = requestSpecification.post(TestConstants.moviesURL);
         ValidatableResponse validatableResponse = response.then();
@@ -156,13 +156,13 @@ class MovieControllerTest {
         int scrRoomNumber = 11;
         int numberOfAvailableSeats = 37;
 
-        MovieInputDTO movieInputDTO = new MovieInputDTO(movieTitle, movieBasePrice, scrRoomNumber, numberOfAvailableSeats);
+        CreateMovieRequest createMovieRequest = new CreateMovieRequest(movieTitle, movieBasePrice, scrRoomNumber, numberOfAvailableSeats);
 
         RequestSpecification requestSpecification = RestAssured.given();
         requestSpecification.contentType(ContentType.JSON);
         requestSpecification.header(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken);
         requestSpecification.accept(ContentType.JSON);
-        requestSpecification.body(movieInputDTO);
+        requestSpecification.body(createMovieRequest);
 
         Response response = requestSpecification.post(TestConstants.moviesURL);
         ValidatableResponse validatableResponse = response.then();
@@ -179,26 +179,26 @@ class MovieControllerTest {
         int scrRoomNumber = 11;
         int numberOfAvailableSeats = 37;
 
-        MovieInputDTO movieInputDTO = new MovieInputDTO(movieTitle, movieBasePrice, scrRoomNumber, numberOfAvailableSeats);
+        CreateMovieRequest createMovieRequest = new CreateMovieRequest(movieTitle, movieBasePrice, scrRoomNumber, numberOfAvailableSeats);
 
         RequestSpecification requestSpecification = RestAssured.given();
         requestSpecification.contentType(ContentType.JSON);
         requestSpecification.header(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken);
         requestSpecification.accept(ContentType.JSON);
-        requestSpecification.body(movieInputDTO);
+        requestSpecification.body(createMovieRequest);
 
         Response response = requestSpecification.post(TestConstants.moviesURL);
         ValidatableResponse validatableResponse = response.then();
 
         validatableResponse.statusCode(201);
 
-        MovieDTO movieDTO = response.getBody().as(MovieDTO.class);
+        MovieResponse movieResponse = response.getBody().as(MovieResponse.class);
 
-        assertNotNull(movieDTO);
-        assertEquals(movieTitle, movieDTO.getTitle());
-        assertEquals(movieBasePrice, movieDTO.getBasePrice());
-        assertEquals(scrRoomNumber, movieDTO.getScrRoomNumber());
-        assertEquals(numberOfAvailableSeats, movieDTO.getAvailableSeats());
+        assertNotNull(movieResponse);
+        assertEquals(movieTitle, movieResponse.getTitle());
+        assertEquals(movieBasePrice, movieResponse.getBasePrice());
+        assertEquals(scrRoomNumber, movieResponse.getScrRoomNumber());
+        assertEquals(numberOfAvailableSeats, movieResponse.getAvailableSeats());
     }
 
     @Test
@@ -210,13 +210,13 @@ class MovieControllerTest {
         int scrRoomNumber = 11;
         int numberOfAvailableSeats = 37;
 
-        MovieInputDTO movieInputDTO = new MovieInputDTO(movieTitle, movieBasePrice, scrRoomNumber, numberOfAvailableSeats);
+        CreateMovieRequest createMovieRequest = new CreateMovieRequest(movieTitle, movieBasePrice, scrRoomNumber, numberOfAvailableSeats);
 
         RequestSpecification requestSpecification = RestAssured.given();
         requestSpecification.contentType(ContentType.JSON);
         requestSpecification.header(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken);
         requestSpecification.accept(ContentType.JSON);
-        requestSpecification.body(movieInputDTO);
+        requestSpecification.body(createMovieRequest);
 
         Response response = requestSpecification.post(TestConstants.moviesURL);
         ValidatableResponse validatableResponse = response.then();
@@ -233,13 +233,13 @@ class MovieControllerTest {
         int scrRoomNumber = 11;
         int numberOfAvailableSeats = 37;
 
-        MovieInputDTO movieInputDTO = new MovieInputDTO(movieTitle, movieBasePrice, scrRoomNumber, numberOfAvailableSeats);
+        CreateMovieRequest createMovieRequest = new CreateMovieRequest(movieTitle, movieBasePrice, scrRoomNumber, numberOfAvailableSeats);
 
         RequestSpecification requestSpecification = RestAssured.given();
         requestSpecification.contentType(ContentType.JSON);
         requestSpecification.header(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken);
         requestSpecification.accept(ContentType.JSON);
-        requestSpecification.body(movieInputDTO);
+        requestSpecification.body(createMovieRequest);
 
         Response response = requestSpecification.post(TestConstants.moviesURL);
         ValidatableResponse validatableResponse = response.then();
@@ -256,13 +256,13 @@ class MovieControllerTest {
         int scrRoomNumber = 11;
         int numberOfAvailableSeats = 37;
 
-        MovieInputDTO movieInputDTO = new MovieInputDTO(movieTitle, movieBasePrice, scrRoomNumber, numberOfAvailableSeats);
+        CreateMovieRequest createMovieRequest = new CreateMovieRequest(movieTitle, movieBasePrice, scrRoomNumber, numberOfAvailableSeats);
 
         RequestSpecification requestSpecification = RestAssured.given();
         requestSpecification.contentType(ContentType.JSON);
         requestSpecification.header(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken);
         requestSpecification.accept(ContentType.JSON);
-        requestSpecification.body(movieInputDTO);
+        requestSpecification.body(createMovieRequest);
 
         Response response = requestSpecification.post(TestConstants.moviesURL);
         ValidatableResponse validatableResponse = response.then();
@@ -279,13 +279,13 @@ class MovieControllerTest {
         int scrRoomNumber = 11;
         int numberOfAvailableSeats = 37;
 
-        MovieInputDTO movieInputDTO = new MovieInputDTO(movieTitle, movieBasePrice, scrRoomNumber, numberOfAvailableSeats);
+        CreateMovieRequest createMovieRequest = new CreateMovieRequest(movieTitle, movieBasePrice, scrRoomNumber, numberOfAvailableSeats);
 
         RequestSpecification requestSpecification = RestAssured.given();
         requestSpecification.contentType(ContentType.JSON);
         requestSpecification.header(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken);
         requestSpecification.accept(ContentType.JSON);
-        requestSpecification.body(movieInputDTO);
+        requestSpecification.body(createMovieRequest);
 
         Response response = requestSpecification.post(TestConstants.moviesURL);
         ValidatableResponse validatableResponse = response.then();
@@ -302,13 +302,13 @@ class MovieControllerTest {
         int scrRoomNumber = 11;
         int numberOfAvailableSeats = 37;
 
-        MovieInputDTO movieInputDTO = new MovieInputDTO(movieTitle, movieBasePrice, scrRoomNumber, numberOfAvailableSeats);
+        CreateMovieRequest createMovieRequest = new CreateMovieRequest(movieTitle, movieBasePrice, scrRoomNumber, numberOfAvailableSeats);
 
         RequestSpecification requestSpecification = RestAssured.given();
         requestSpecification.contentType(ContentType.JSON);
         requestSpecification.header(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken);
         requestSpecification.accept(ContentType.JSON);
-        requestSpecification.body(movieInputDTO);
+        requestSpecification.body(createMovieRequest);
 
         Response response = requestSpecification.post(TestConstants.moviesURL);
         ValidatableResponse validatableResponse = response.then();
@@ -325,26 +325,26 @@ class MovieControllerTest {
         int scrRoomNumber = 11;
         int numberOfAvailableSeats = 37;
 
-        MovieInputDTO movieInputDTO = new MovieInputDTO(movieTitle, movieBasePrice, scrRoomNumber, numberOfAvailableSeats);
+        CreateMovieRequest createMovieRequest = new CreateMovieRequest(movieTitle, movieBasePrice, scrRoomNumber, numberOfAvailableSeats);
 
         RequestSpecification requestSpecification = RestAssured.given();
         requestSpecification.contentType(ContentType.JSON);
         requestSpecification.header(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken);
         requestSpecification.accept(ContentType.JSON);
-        requestSpecification.body(movieInputDTO);
+        requestSpecification.body(createMovieRequest);
 
         Response response = requestSpecification.post(TestConstants.moviesURL);
         ValidatableResponse validatableResponse = response.then();
 
         validatableResponse.statusCode(201);
 
-        MovieDTO movieDTO = response.getBody().as(MovieDTO.class);
+        MovieResponse movieResponse = response.getBody().as(MovieResponse.class);
 
-        assertNotNull(movieDTO);
-        assertEquals(movieTitle, movieDTO.getTitle());
-        assertEquals(movieBasePrice, movieDTO.getBasePrice());
-        assertEquals(scrRoomNumber, movieDTO.getScrRoomNumber());
-        assertEquals(numberOfAvailableSeats, movieDTO.getAvailableSeats());
+        assertNotNull(movieResponse);
+        assertEquals(movieTitle, movieResponse.getTitle());
+        assertEquals(movieBasePrice, movieResponse.getBasePrice());
+        assertEquals(scrRoomNumber, movieResponse.getScrRoomNumber());
+        assertEquals(numberOfAvailableSeats, movieResponse.getAvailableSeats());
     }
 
     @Test
@@ -356,26 +356,26 @@ class MovieControllerTest {
         int scrRoomNumber = 11;
         int numberOfAvailableSeats = 37;
 
-        MovieInputDTO movieInputDTO = new MovieInputDTO(movieTitle, movieBasePrice, scrRoomNumber, numberOfAvailableSeats);
+        CreateMovieRequest createMovieRequest = new CreateMovieRequest(movieTitle, movieBasePrice, scrRoomNumber, numberOfAvailableSeats);
 
         RequestSpecification requestSpecification = RestAssured.given();
         requestSpecification.contentType(ContentType.JSON);
         requestSpecification.header(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken);
         requestSpecification.accept(ContentType.JSON);
-        requestSpecification.body(movieInputDTO);
+        requestSpecification.body(createMovieRequest);
 
         Response response = requestSpecification.post(TestConstants.moviesURL);
         ValidatableResponse validatableResponse = response.then();
 
         validatableResponse.statusCode(201);
 
-        MovieDTO movieDTO = response.getBody().as(MovieDTO.class);
+        MovieResponse movieResponse = response.getBody().as(MovieResponse.class);
 
-        assertNotNull(movieDTO);
-        assertEquals(movieTitle, movieDTO.getTitle());
-        assertEquals(movieBasePrice, movieDTO.getBasePrice());
-        assertEquals(scrRoomNumber, movieDTO.getScrRoomNumber());
-        assertEquals(numberOfAvailableSeats, movieDTO.getAvailableSeats());
+        assertNotNull(movieResponse);
+        assertEquals(movieTitle, movieResponse.getTitle());
+        assertEquals(movieBasePrice, movieResponse.getBasePrice());
+        assertEquals(scrRoomNumber, movieResponse.getScrRoomNumber());
+        assertEquals(numberOfAvailableSeats, movieResponse.getAvailableSeats());
     }
 
     @Test
@@ -387,13 +387,13 @@ class MovieControllerTest {
         int scrRoomNumber = 11;
         int numberOfAvailableSeats = 37;
 
-        MovieInputDTO movieInputDTO = new MovieInputDTO(movieTitle, movieBasePrice, scrRoomNumber, numberOfAvailableSeats);
+        CreateMovieRequest createMovieRequest = new CreateMovieRequest(movieTitle, movieBasePrice, scrRoomNumber, numberOfAvailableSeats);
 
         RequestSpecification requestSpecification = RestAssured.given();
         requestSpecification.contentType(ContentType.JSON);
         requestSpecification.header(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken);
         requestSpecification.accept(ContentType.JSON);
-        requestSpecification.body(movieInputDTO);
+        requestSpecification.body(createMovieRequest);
 
         Response response = requestSpecification.post(TestConstants.moviesURL);
         ValidatableResponse validatableResponse = response.then();
@@ -410,13 +410,13 @@ class MovieControllerTest {
         int scrRoomNumber = 11;
         int numberOfAvailableSeats = 37;
 
-        MovieInputDTO movieInputDTO = new MovieInputDTO(movieTitle, movieBasePrice, scrRoomNumber, numberOfAvailableSeats);
+        CreateMovieRequest createMovieRequest = new CreateMovieRequest(movieTitle, movieBasePrice, scrRoomNumber, numberOfAvailableSeats);
 
         RequestSpecification requestSpecification = RestAssured.given();
         requestSpecification.contentType(ContentType.JSON);
         requestSpecification.header(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken);
         requestSpecification.accept(ContentType.JSON);
-        requestSpecification.body(movieInputDTO);
+        requestSpecification.body(createMovieRequest);
 
         Response response = requestSpecification.post(TestConstants.moviesURL);
         ValidatableResponse validatableResponse = response.then();
@@ -433,26 +433,26 @@ class MovieControllerTest {
         int scrRoomNumber = 11;
         int numberOfAvailableSeats = 37;
 
-        MovieInputDTO movieInputDTO = new MovieInputDTO(movieTitle, movieBasePrice, scrRoomNumber, numberOfAvailableSeats);
+        CreateMovieRequest createMovieRequest = new CreateMovieRequest(movieTitle, movieBasePrice, scrRoomNumber, numberOfAvailableSeats);
 
         RequestSpecification requestSpecification = RestAssured.given();
         requestSpecification.contentType(ContentType.JSON);
         requestSpecification.header(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken);
         requestSpecification.accept(ContentType.JSON);
-        requestSpecification.body(movieInputDTO);
+        requestSpecification.body(createMovieRequest);
 
         Response response = requestSpecification.post(TestConstants.moviesURL);
         ValidatableResponse validatableResponse = response.then();
 
         validatableResponse.statusCode(201);
 
-        MovieDTO movieDTO = response.getBody().as(MovieDTO.class);
+        MovieResponse movieResponse = response.getBody().as(MovieResponse.class);
 
-        assertNotNull(movieDTO);
-        assertEquals(movieTitle, movieDTO.getTitle());
-        assertEquals(movieBasePrice, movieDTO.getBasePrice());
-        assertEquals(scrRoomNumber, movieDTO.getScrRoomNumber());
-        assertEquals(numberOfAvailableSeats, movieDTO.getAvailableSeats());
+        assertNotNull(movieResponse);
+        assertEquals(movieTitle, movieResponse.getTitle());
+        assertEquals(movieBasePrice, movieResponse.getBasePrice());
+        assertEquals(scrRoomNumber, movieResponse.getScrRoomNumber());
+        assertEquals(numberOfAvailableSeats, movieResponse.getAvailableSeats());
     }
 
     @Test
@@ -464,26 +464,26 @@ class MovieControllerTest {
         int scrRoomNumber = 11;
         int numberOfAvailableSeats = 37;
 
-        MovieInputDTO movieInputDTO = new MovieInputDTO(movieTitle, movieBasePrice, scrRoomNumber, numberOfAvailableSeats);
+        CreateMovieRequest createMovieRequest = new CreateMovieRequest(movieTitle, movieBasePrice, scrRoomNumber, numberOfAvailableSeats);
 
         RequestSpecification requestSpecification = RestAssured.given();
         requestSpecification.contentType(ContentType.JSON);
         requestSpecification.header(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken);
         requestSpecification.accept(ContentType.JSON);
-        requestSpecification.body(movieInputDTO);
+        requestSpecification.body(createMovieRequest);
 
         Response response = requestSpecification.post(TestConstants.moviesURL);
         ValidatableResponse validatableResponse = response.then();
 
         validatableResponse.statusCode(201);
 
-        MovieDTO movieDTO = response.getBody().as(MovieDTO.class);
+        MovieResponse movieResponse = response.getBody().as(MovieResponse.class);
 
-        assertNotNull(movieDTO);
-        assertEquals(movieTitle, movieDTO.getTitle());
-        assertEquals(movieBasePrice, movieDTO.getBasePrice());
-        assertEquals(scrRoomNumber, movieDTO.getScrRoomNumber());
-        assertEquals(numberOfAvailableSeats, movieDTO.getAvailableSeats());
+        assertNotNull(movieResponse);
+        assertEquals(movieTitle, movieResponse.getTitle());
+        assertEquals(movieBasePrice, movieResponse.getBasePrice());
+        assertEquals(scrRoomNumber, movieResponse.getScrRoomNumber());
+        assertEquals(numberOfAvailableSeats, movieResponse.getAvailableSeats());
     }
 
     @Test
@@ -495,13 +495,13 @@ class MovieControllerTest {
         int scrRoomNumber = 0;
         int numberOfAvailableSeats = 37;
 
-        MovieInputDTO movieInputDTO = new MovieInputDTO(movieTitle, movieBasePrice, scrRoomNumber, numberOfAvailableSeats);
+        CreateMovieRequest createMovieRequest = new CreateMovieRequest(movieTitle, movieBasePrice, scrRoomNumber, numberOfAvailableSeats);
 
         RequestSpecification requestSpecification = RestAssured.given();
         requestSpecification.contentType(ContentType.JSON);
         requestSpecification.header(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken);
         requestSpecification.accept(ContentType.JSON);
-        requestSpecification.body(movieInputDTO);
+        requestSpecification.body(createMovieRequest);
 
         Response response = requestSpecification.post(TestConstants.moviesURL);
         ValidatableResponse validatableResponse = response.then();
@@ -518,13 +518,13 @@ class MovieControllerTest {
         int scrRoomNumber = 31;
         int numberOfAvailableSeats = 37;
 
-        MovieInputDTO movieInputDTO = new MovieInputDTO(movieTitle, movieBasePrice, scrRoomNumber, numberOfAvailableSeats);
+        CreateMovieRequest createMovieRequest = new CreateMovieRequest(movieTitle, movieBasePrice, scrRoomNumber, numberOfAvailableSeats);
 
         RequestSpecification requestSpecification = RestAssured.given();
         requestSpecification.contentType(ContentType.JSON);
         requestSpecification.header(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken);
         requestSpecification.accept(ContentType.JSON);
-        requestSpecification.body(movieInputDTO);
+        requestSpecification.body(createMovieRequest);
 
         Response response = requestSpecification.post(TestConstants.moviesURL);
         ValidatableResponse validatableResponse = response.then();
@@ -541,26 +541,26 @@ class MovieControllerTest {
         int scrRoomNumber = 1;
         int numberOfAvailableSeats = 37;
 
-        MovieInputDTO movieInputDTO = new MovieInputDTO(movieTitle, movieBasePrice, scrRoomNumber, numberOfAvailableSeats);
+        CreateMovieRequest createMovieRequest = new CreateMovieRequest(movieTitle, movieBasePrice, scrRoomNumber, numberOfAvailableSeats);
 
         RequestSpecification requestSpecification = RestAssured.given();
         requestSpecification.contentType(ContentType.JSON);
         requestSpecification.header(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken);
         requestSpecification.accept(ContentType.JSON);
-        requestSpecification.body(movieInputDTO);
+        requestSpecification.body(createMovieRequest);
 
         Response response = requestSpecification.post(TestConstants.moviesURL);
         ValidatableResponse validatableResponse = response.then();
 
         validatableResponse.statusCode(201);
 
-        MovieDTO movieDTO = response.getBody().as(MovieDTO.class);
+        MovieResponse movieResponse = response.getBody().as(MovieResponse.class);
 
-        assertNotNull(movieDTO);
-        assertEquals(movieTitle, movieDTO.getTitle());
-        assertEquals(movieBasePrice, movieDTO.getBasePrice());
-        assertEquals(scrRoomNumber, movieDTO.getScrRoomNumber());
-        assertEquals(numberOfAvailableSeats, movieDTO.getAvailableSeats());
+        assertNotNull(movieResponse);
+        assertEquals(movieTitle, movieResponse.getTitle());
+        assertEquals(movieBasePrice, movieResponse.getBasePrice());
+        assertEquals(scrRoomNumber, movieResponse.getScrRoomNumber());
+        assertEquals(numberOfAvailableSeats, movieResponse.getAvailableSeats());
     }
 
     @Test
@@ -572,26 +572,26 @@ class MovieControllerTest {
         int scrRoomNumber = 30;
         int numberOfAvailableSeats = 37;
 
-        MovieInputDTO movieInputDTO = new MovieInputDTO(movieTitle, movieBasePrice, scrRoomNumber, numberOfAvailableSeats);
+        CreateMovieRequest createMovieRequest = new CreateMovieRequest(movieTitle, movieBasePrice, scrRoomNumber, numberOfAvailableSeats);
 
         RequestSpecification requestSpecification = RestAssured.given();
         requestSpecification.contentType(ContentType.JSON);
         requestSpecification.header(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken);
         requestSpecification.accept(ContentType.JSON);
-        requestSpecification.body(movieInputDTO);
+        requestSpecification.body(createMovieRequest);
 
         Response response = requestSpecification.post(TestConstants.moviesURL);
         ValidatableResponse validatableResponse = response.then();
 
         validatableResponse.statusCode(201);
 
-        MovieDTO movieDTO = response.getBody().as(MovieDTO.class);
+        MovieResponse movieResponse = response.getBody().as(MovieResponse.class);
 
-        assertNotNull(movieDTO);
-        assertEquals(movieTitle, movieDTO.getTitle());
-        assertEquals(movieBasePrice, movieDTO.getBasePrice());
-        assertEquals(scrRoomNumber, movieDTO.getScrRoomNumber());
-        assertEquals(numberOfAvailableSeats, movieDTO.getAvailableSeats());
+        assertNotNull(movieResponse);
+        assertEquals(movieTitle, movieResponse.getTitle());
+        assertEquals(movieBasePrice, movieResponse.getBasePrice());
+        assertEquals(scrRoomNumber, movieResponse.getScrRoomNumber());
+        assertEquals(numberOfAvailableSeats, movieResponse.getAvailableSeats());
     }
 
     @Test
@@ -603,13 +603,13 @@ class MovieControllerTest {
         int scrRoomNumber = 11;
         int numberOfAvailableSeats = -1;
 
-        MovieInputDTO movieInputDTO = new MovieInputDTO(movieTitle, movieBasePrice, scrRoomNumber, numberOfAvailableSeats);
+        CreateMovieRequest createMovieRequest = new CreateMovieRequest(movieTitle, movieBasePrice, scrRoomNumber, numberOfAvailableSeats);
 
         RequestSpecification requestSpecification = RestAssured.given();
         requestSpecification.contentType(ContentType.JSON);
         requestSpecification.header(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken);
         requestSpecification.accept(ContentType.JSON);
-        requestSpecification.body(movieInputDTO);
+        requestSpecification.body(createMovieRequest);
 
         Response response = requestSpecification.post(TestConstants.moviesURL);
         ValidatableResponse validatableResponse = response.then();
@@ -626,13 +626,13 @@ class MovieControllerTest {
         int scrRoomNumber = 11;
         int numberOfAvailableSeats = 121;
 
-        MovieInputDTO movieInputDTO = new MovieInputDTO(movieTitle, movieBasePrice, scrRoomNumber, numberOfAvailableSeats);
+        CreateMovieRequest createMovieRequest = new CreateMovieRequest(movieTitle, movieBasePrice, scrRoomNumber, numberOfAvailableSeats);
 
         RequestSpecification requestSpecification = RestAssured.given();
         requestSpecification.contentType(ContentType.JSON);
         requestSpecification.header(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken);
         requestSpecification.accept(ContentType.JSON);
-        requestSpecification.body(movieInputDTO);
+        requestSpecification.body(createMovieRequest);
 
         Response response = requestSpecification.post(TestConstants.moviesURL);
         ValidatableResponse validatableResponse = response.then();
@@ -649,26 +649,26 @@ class MovieControllerTest {
         int scrRoomNumber = 11;
         int numberOfAvailableSeats = 0;
 
-        MovieInputDTO movieInputDTO = new MovieInputDTO(movieTitle, movieBasePrice, scrRoomNumber, numberOfAvailableSeats);
+        CreateMovieRequest createMovieRequest = new CreateMovieRequest(movieTitle, movieBasePrice, scrRoomNumber, numberOfAvailableSeats);
 
         RequestSpecification requestSpecification = RestAssured.given();
         requestSpecification.contentType(ContentType.JSON);
         requestSpecification.header(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken);
         requestSpecification.accept(ContentType.JSON);
-        requestSpecification.body(movieInputDTO);
+        requestSpecification.body(createMovieRequest);
 
         Response response = requestSpecification.post(TestConstants.moviesURL);
         ValidatableResponse validatableResponse = response.then();
 
         validatableResponse.statusCode(201);
 
-        MovieDTO movieDTO = response.getBody().as(MovieDTO.class);
+        MovieResponse movieResponse = response.getBody().as(MovieResponse.class);
 
-        assertNotNull(movieDTO);
-        assertEquals(movieTitle, movieDTO.getTitle());
-        assertEquals(movieBasePrice, movieDTO.getBasePrice());
-        assertEquals(scrRoomNumber, movieDTO.getScrRoomNumber());
-        assertEquals(numberOfAvailableSeats, movieDTO.getAvailableSeats());
+        assertNotNull(movieResponse);
+        assertEquals(movieTitle, movieResponse.getTitle());
+        assertEquals(movieBasePrice, movieResponse.getBasePrice());
+        assertEquals(scrRoomNumber, movieResponse.getScrRoomNumber());
+        assertEquals(numberOfAvailableSeats, movieResponse.getAvailableSeats());
     }
 
     @Test
@@ -680,26 +680,26 @@ class MovieControllerTest {
         int scrRoomNumber = 11;
         int numberOfAvailableSeats = 120;
 
-        MovieInputDTO movieInputDTO = new MovieInputDTO(movieTitle, movieBasePrice, scrRoomNumber, numberOfAvailableSeats);
+        CreateMovieRequest createMovieRequest = new CreateMovieRequest(movieTitle, movieBasePrice, scrRoomNumber, numberOfAvailableSeats);
 
         RequestSpecification requestSpecification = RestAssured.given();
         requestSpecification.contentType(ContentType.JSON);
         requestSpecification.header(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken);
         requestSpecification.accept(ContentType.JSON);
-        requestSpecification.body(movieInputDTO);
+        requestSpecification.body(createMovieRequest);
 
         Response response = requestSpecification.post(TestConstants.moviesURL);
         ValidatableResponse validatableResponse = response.then();
 
         validatableResponse.statusCode(201);
 
-        MovieDTO movieDTO = response.getBody().as(MovieDTO.class);
+        MovieResponse movieResponse = response.getBody().as(MovieResponse.class);
 
-        assertNotNull(movieDTO);
-        assertEquals(movieTitle, movieDTO.getTitle());
-        assertEquals(movieBasePrice, movieDTO.getBasePrice());
-        assertEquals(scrRoomNumber, movieDTO.getScrRoomNumber());
-        assertEquals(numberOfAvailableSeats, movieDTO.getAvailableSeats());
+        assertNotNull(movieResponse);
+        assertEquals(movieTitle, movieResponse.getTitle());
+        assertEquals(movieBasePrice, movieResponse.getBasePrice());
+        assertEquals(scrRoomNumber, movieResponse.getScrRoomNumber());
+        assertEquals(numberOfAvailableSeats, movieResponse.getAvailableSeats());
     }
 
     // Read tests
@@ -734,12 +734,12 @@ class MovieControllerTest {
 
         validatableResponse.statusCode(200);
 
-        MovieDTO movieDTO = response.getBody().as(MovieDTO.class);
+        MovieResponse movieResponse = response.getBody().as(MovieResponse.class);
 
-        assertEquals(movieNo1.getId(), movieDTO.getId());
-        assertEquals(movieNo1.getTitle(), movieDTO.getTitle());
-        assertEquals(movieNo1.getScrRoomNumber(), movieDTO.getScrRoomNumber());
-        assertEquals(movieNo1.getAvailableSeats(), movieDTO.getAvailableSeats());
+        assertEquals(movieNo1.getId(), movieResponse.getId());
+        assertEquals(movieNo1.getTitle(), movieResponse.getTitle());
+        assertEquals(movieNo1.getScrRoomNumber(), movieResponse.getScrRoomNumber());
+        assertEquals(movieNo1.getAvailableSeats(), movieResponse.getAvailableSeats());
     }
 
     @Test
@@ -758,12 +758,12 @@ class MovieControllerTest {
 
         validatableResponse.statusCode(200);
 
-        MovieDTO movieDTO = response.getBody().as(MovieDTO.class);
+        MovieResponse movieResponse = response.getBody().as(MovieResponse.class);
 
-        assertEquals(movieNo1.getId(), movieDTO.getId());
-        assertEquals(movieNo1.getTitle(), movieDTO.getTitle());
-        assertEquals(movieNo1.getScrRoomNumber(), movieDTO.getScrRoomNumber());
-        assertEquals(movieNo1.getAvailableSeats(), movieDTO.getAvailableSeats());
+        assertEquals(movieNo1.getId(), movieResponse.getId());
+        assertEquals(movieNo1.getTitle(), movieResponse.getTitle());
+        assertEquals(movieNo1.getScrRoomNumber(), movieResponse.getScrRoomNumber());
+        assertEquals(movieNo1.getAvailableSeats(), movieResponse.getAvailableSeats());
     }
 
     @Test
@@ -888,7 +888,7 @@ class MovieControllerTest {
         ValidatableResponse validatableResponse = response.then();
         validatableResponse.statusCode(200);
 
-        MovieDTO movieOutputDTO = response.getBody().as(MovieDTO.class);
+        MovieResponse movieOutputDTO = response.getBody().as(MovieResponse.class);
         String etagContent = response.header(HttpHeaders.ETAG);
 
         String newMovieTitle = "SomeExampleMovieTitleNo1";
@@ -924,7 +924,7 @@ class MovieControllerTest {
         ValidatableResponse validatableResponse = response.then();
         validatableResponse.statusCode(200);
 
-        MovieDTO movieOutputDTO = response.getBody().as(MovieDTO.class);
+        MovieResponse movieOutputDTO = response.getBody().as(MovieResponse.class);
         String etagContent = response.header(HttpHeaders.ETAG);
 
         accessToken = loginToAccount(new LoginAccountRequest(clientUser.getLogin(), passwordNotHashed), TestConstants.clientLoginURL);
@@ -963,7 +963,7 @@ class MovieControllerTest {
         ValidatableResponse validatableResponse = response.then();
         validatableResponse.statusCode(200);
 
-        MovieDTO movieOutputDTO = response.getBody().as(MovieDTO.class);
+        MovieResponse movieOutputDTO = response.getBody().as(MovieResponse.class);
         String etagContent = response.header(HttpHeaders.ETAG);
 
         String movieTitleBefore = movieNo1.getTitle();
@@ -1022,7 +1022,7 @@ class MovieControllerTest {
         ValidatableResponse validatableResponse = response.then();
         validatableResponse.statusCode(200);
 
-        MovieDTO movieOutputDTO = response.getBody().as(MovieDTO.class);
+        MovieResponse movieOutputDTO = response.getBody().as(MovieResponse.class);
         String etagContent = response.header(HttpHeaders.ETAG);
 
         accessToken = loginToAccount(new LoginAccountRequest(adminUser.getLogin(), passwordNotHashed), TestConstants.adminLoginURL);
@@ -1061,7 +1061,7 @@ class MovieControllerTest {
         ValidatableResponse validatableResponse = response.then();
         validatableResponse.statusCode(200);
 
-        MovieDTO movieOutputDTO = response.getBody().as(MovieDTO.class);
+        MovieResponse movieOutputDTO = response.getBody().as(MovieResponse.class);
 
         String newMovieTitle = "SomeExampleMovieTitleNo1";
         double newMovieBasePrice = 45.27;
@@ -1096,7 +1096,7 @@ class MovieControllerTest {
         ValidatableResponse validatableResponse = response.then();
         validatableResponse.statusCode(200);
 
-        MovieDTO movieOutputDTO = response.getBody().as(MovieDTO.class);
+        MovieResponse movieOutputDTO = response.getBody().as(MovieResponse.class);
         String etagContent = response.header(HttpHeaders.ETAG);
 
         movieOutputDTO.setId(UUID.randomUUID());
@@ -1125,7 +1125,7 @@ class MovieControllerTest {
         ValidatableResponse validatableResponse = response.then();
         validatableResponse.statusCode(200);
 
-        MovieDTO movieOutputDTO = response.getBody().as(MovieDTO.class);
+        MovieResponse movieOutputDTO = response.getBody().as(MovieResponse.class);
         String etagContent = response.header(HttpHeaders.ETAG);
 
         String newMovieTitle = null;
@@ -1162,7 +1162,7 @@ class MovieControllerTest {
         ValidatableResponse validatableResponse = response.then();
         validatableResponse.statusCode(200);
 
-        MovieDTO movieOutputDTO = response.getBody().as(MovieDTO.class);
+        MovieResponse movieOutputDTO = response.getBody().as(MovieResponse.class);
         String etagContent = response.header(HttpHeaders.ETAG);
 
         String newMovieTitle = "";
@@ -1199,7 +1199,7 @@ class MovieControllerTest {
         ValidatableResponse validatableResponse = response.then();
         validatableResponse.statusCode(200);
 
-        MovieDTO movieOutputDTO = response.getBody().as(MovieDTO.class);
+        MovieResponse movieOutputDTO = response.getBody().as(MovieResponse.class);
         String etagContent = response.header(HttpHeaders.ETAG);
 
         String newMovieTitle = "";
@@ -1236,7 +1236,7 @@ class MovieControllerTest {
         ValidatableResponse validatableResponse = response.then();
         validatableResponse.statusCode(200);
 
-        MovieDTO movieOutputDTO = response.getBody().as(MovieDTO.class);
+        MovieResponse movieOutputDTO = response.getBody().as(MovieResponse.class);
         String etagContent = response.header(HttpHeaders.ETAG);
 
         String newMovieTitle = "ddddfddddfddddfddddfddddfddddfddddfddddfddddfddddfddddfddddfddddfddddfddddfddddfddddfddddfddddfddddfddddfddddfddddfddddfddddfddddfddddfddddfddddfddddfd";
@@ -1273,7 +1273,7 @@ class MovieControllerTest {
         ValidatableResponse validatableResponse = response.then();
         validatableResponse.statusCode(200);
 
-        MovieDTO movieOutputDTO = response.getBody().as(MovieDTO.class);
+        MovieResponse movieOutputDTO = response.getBody().as(MovieResponse.class);
         String etagContent = response.header(HttpHeaders.ETAG);
 
         String movieTitleBefore = movieNo1.getTitle();
@@ -1332,7 +1332,7 @@ class MovieControllerTest {
         ValidatableResponse validatableResponse = response.then();
         validatableResponse.statusCode(200);
 
-        MovieDTO movieOutputDTO = response.getBody().as(MovieDTO.class);
+        MovieResponse movieOutputDTO = response.getBody().as(MovieResponse.class);
         String etagContent = response.header(HttpHeaders.ETAG);
 
         String movieTitleBefore = movieNo1.getTitle();
@@ -1391,7 +1391,7 @@ class MovieControllerTest {
         ValidatableResponse validatableResponse = response.then();
         validatableResponse.statusCode(200);
 
-        MovieDTO movieOutputDTO = response.getBody().as(MovieDTO.class);
+        MovieResponse movieOutputDTO = response.getBody().as(MovieResponse.class);
         String etagContent = response.header(HttpHeaders.ETAG);
 
         String newMovieTitle = "OtherExampleMovieTitleNo1";
@@ -1428,7 +1428,7 @@ class MovieControllerTest {
         ValidatableResponse validatableResponse = response.then();
         validatableResponse.statusCode(200);
 
-        MovieDTO movieOutputDTO = response.getBody().as(MovieDTO.class);
+        MovieResponse movieOutputDTO = response.getBody().as(MovieResponse.class);
         String etagContent = response.header(HttpHeaders.ETAG);
 
         String newMovieTitle = "OtherExampleMovieTitleNo1";
@@ -1465,7 +1465,7 @@ class MovieControllerTest {
         ValidatableResponse validatableResponse = response.then();
         validatableResponse.statusCode(200);
 
-        MovieDTO movieOutputDTO = response.getBody().as(MovieDTO.class);
+        MovieResponse movieOutputDTO = response.getBody().as(MovieResponse.class);
         String etagContent = response.header(HttpHeaders.ETAG);
 
         String movieTitleBefore = movieNo1.getTitle();
@@ -1524,7 +1524,7 @@ class MovieControllerTest {
         ValidatableResponse validatableResponse = response.then();
         validatableResponse.statusCode(200);
 
-        MovieDTO movieOutputDTO = response.getBody().as(MovieDTO.class);
+        MovieResponse movieOutputDTO = response.getBody().as(MovieResponse.class);
         String etagContent = response.header(HttpHeaders.ETAG);
 
         String movieTitleBefore = movieNo1.getTitle();
@@ -1583,7 +1583,7 @@ class MovieControllerTest {
         ValidatableResponse validatableResponse = response.then();
         validatableResponse.statusCode(200);
 
-        MovieDTO movieOutputDTO = response.getBody().as(MovieDTO.class);
+        MovieResponse movieOutputDTO = response.getBody().as(MovieResponse.class);
         String etagContent = response.header(HttpHeaders.ETAG);
 
         String newMovieTitle = "OtherExampleMovieTitleNo1";
@@ -1620,7 +1620,7 @@ class MovieControllerTest {
         ValidatableResponse validatableResponse = response.then();
         validatableResponse.statusCode(200);
 
-        MovieDTO movieOutputDTO = response.getBody().as(MovieDTO.class);
+        MovieResponse movieOutputDTO = response.getBody().as(MovieResponse.class);
         String etagContent = response.header(HttpHeaders.ETAG);
 
         String newMovieTitle = "OtherExampleMovieTitleNo1";
@@ -1657,7 +1657,7 @@ class MovieControllerTest {
         ValidatableResponse validatableResponse = response.then();
         validatableResponse.statusCode(200);
 
-        MovieDTO movieOutputDTO = response.getBody().as(MovieDTO.class);
+        MovieResponse movieOutputDTO = response.getBody().as(MovieResponse.class);
         String etagContent = response.header(HttpHeaders.ETAG);
 
         String movieTitleBefore = movieNo1.getTitle();
@@ -1716,7 +1716,7 @@ class MovieControllerTest {
         ValidatableResponse validatableResponse = response.then();
         validatableResponse.statusCode(200);
 
-        MovieDTO movieOutputDTO = response.getBody().as(MovieDTO.class);
+        MovieResponse movieOutputDTO = response.getBody().as(MovieResponse.class);
         String etagContent = response.header(HttpHeaders.ETAG);
 
         String movieTitleBefore = movieNo1.getTitle();
@@ -1775,7 +1775,7 @@ class MovieControllerTest {
         ValidatableResponse validatableResponse = response.then();
         validatableResponse.statusCode(200);
 
-        MovieDTO movieOutputDTO = response.getBody().as(MovieDTO.class);
+        MovieResponse movieOutputDTO = response.getBody().as(MovieResponse.class);
         String etagContent = response.header(HttpHeaders.ETAG);
 
         String newMovieTitle = "OtherExampleMovieTitleNo1";
@@ -1812,7 +1812,7 @@ class MovieControllerTest {
         ValidatableResponse validatableResponse = response.then();
         validatableResponse.statusCode(200);
 
-        MovieDTO movieOutputDTO = response.getBody().as(MovieDTO.class);
+        MovieResponse movieOutputDTO = response.getBody().as(MovieResponse.class);
         String etagContent = response.header(HttpHeaders.ETAG);
 
         String newMovieTitle = "OtherExampleMovieTitleNo1";
@@ -1849,7 +1849,7 @@ class MovieControllerTest {
         ValidatableResponse validatableResponse = response.then();
         validatableResponse.statusCode(200);
 
-        MovieDTO movieOutputDTO = response.getBody().as(MovieDTO.class);
+        MovieResponse movieOutputDTO = response.getBody().as(MovieResponse.class);
         String etagContent = response.header(HttpHeaders.ETAG);
 
         String movieTitleBefore = movieNo1.getTitle();
@@ -1908,7 +1908,7 @@ class MovieControllerTest {
         ValidatableResponse validatableResponse = response.then();
         validatableResponse.statusCode(200);
 
-        MovieDTO movieOutputDTO = response.getBody().as(MovieDTO.class);
+        MovieResponse movieOutputDTO = response.getBody().as(MovieResponse.class);
         String etagContent = response.header(HttpHeaders.ETAG);
 
         String movieTitleBefore = movieNo1.getTitle();

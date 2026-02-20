@@ -1,7 +1,14 @@
 package pl.pas.gr3.cinema.repository.impl;
 
-import com.mongodb.*;
-import com.mongodb.client.*;
+import com.mongodb.ConnectionString;
+import com.mongodb.MongoClientSettings;
+import com.mongodb.ReadConcern;
+import com.mongodb.ReadPreference;
+import com.mongodb.WriteConcern;
+import com.mongodb.client.MongoClient;
+import com.mongodb.client.MongoClients;
+import com.mongodb.client.MongoCollection;
+import com.mongodb.client.MongoDatabase;
 import com.mongodb.client.model.Filters;
 import org.bson.Document;
 import org.bson.UuidRepresentation;
@@ -32,17 +39,17 @@ import java.util.UUID;
 
 public abstract class MongoRepository implements Closeable {
 
-    private final static ConnectionString connectionString = new ConnectionString(
+    private static final ConnectionString connectionString = new ConnectionString(
         "mongodb://admin:P%40ssw0rd%21@mongo_node1:27020,mongo_node2:27021,mongo_node3:27022/?authSource=admin&replicaSet=pasReplicaSet"
     );
 
-    protected final static String userCollectionName = MongoRepositoryConstants.USERS_COLLECTION_NAME;
-    protected final static String movieCollectionName = MongoRepositoryConstants.MOVIES_COLLECTION_NAME;
-    protected final static String ticketCollectionName = MongoRepositoryConstants.TICKETS_COLLECTION_NAME;
+    protected static final String USERS_COLLECTION_NAME = MongoRepositoryConstants.USERS_COLLECTION_NAME;
+    protected static final String MOVIES_COLLECTION_NAME = MongoRepositoryConstants.MOVIES_COLLECTION_NAME;
+    protected static final String TICKETS_COLLECTION_NAME = MongoRepositoryConstants.TICKETS_COLLECTION_NAME;
 
-    protected final static Class<Account> clientCollectionType = Account.class;
-    protected final static Class<Movie> movieCollectionType = Movie.class;
-    protected final static Class<Ticket> ticketCollectionType = Ticket.class;
+    protected static final Class<Account> clientCollectionType = Account.class;
+    protected static final Class<Movie> movieCollectionType = Movie.class;
+    protected static final Class<Ticket> ticketCollectionType = Ticket.class;
 
     private final ClassModel<Account> userClassModel = ClassModel.builder(Account.class).enableDiscriminator(true).build();
     private final ClassModel<Client> clientClassModel = ClassModel.builder(Client.class).enableDiscriminator(true).build();
@@ -86,19 +93,19 @@ public abstract class MongoRepository implements Closeable {
     }
 
     protected MongoCollection<Account> getClientCollection() {
-        return mongoDatabase.getCollection(userCollectionName, clientCollectionType);
+        return mongoDatabase.getCollection(USERS_COLLECTION_NAME, clientCollectionType);
     }
 
     protected MongoCollection<Document> getClientCollectionWithoutType() {
-        return mongoDatabase.getCollection(userCollectionName);
+        return mongoDatabase.getCollection(USERS_COLLECTION_NAME);
     }
 
     protected MongoCollection<Movie> getMovieCollection() {
-        return mongoDatabase.getCollection(movieCollectionName, movieCollectionType);
+        return mongoDatabase.getCollection(MOVIES_COLLECTION_NAME, movieCollectionType);
     }
 
     protected MongoCollection<Ticket> getTicketCollection() {
-        return mongoDatabase.getCollection(ticketCollectionName, ticketCollectionType);
+        return mongoDatabase.getCollection(TICKETS_COLLECTION_NAME, ticketCollectionType);
     }
 
     // Find client / movie / ticket by ID

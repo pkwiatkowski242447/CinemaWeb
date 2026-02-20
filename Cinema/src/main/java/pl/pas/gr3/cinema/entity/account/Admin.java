@@ -2,6 +2,7 @@ package pl.pas.gr3.cinema.entity.account;
 
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 import lombok.Setter;
 import lombok.ToString;
 import org.bson.codecs.pojo.annotations.BsonCreator;
@@ -12,6 +13,7 @@ import pl.pas.gr3.cinema.util.consts.model.UserConstants;
 import java.util.UUID;
 
 @Getter @Setter
+@NoArgsConstructor
 @EqualsAndHashCode(callSuper = true)
 @ToString(callSuper = true)
 @BsonDiscriminator(key = UserConstants.USER_DISCRIMINATOR_NAME, value = UserConstants.ADMIN_DISCRIMINATOR)

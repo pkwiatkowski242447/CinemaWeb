@@ -10,7 +10,7 @@ import java.util.UUID;
 @Getter @Setter
 @NoArgsConstructor
 @AllArgsConstructor
-public class TicketSelfInputDTO {
+public class CreateOwnTicketRequest {
 
     private String movieTime;
     private UUID movieId;

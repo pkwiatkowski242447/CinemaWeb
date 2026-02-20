@@ -10,7 +10,7 @@ import lombok.Setter;
 
 @Getter @Setter
 @NoArgsConstructor
-public class StaffInputDTO {
+public class RegisterStaffRequest {
 
     @JsonProperty("login")
     @JsonbProperty("login")
@@ -22,8 +22,8 @@ public class StaffInputDTO {
 
     @JsonCreator
     @JsonbCreator
-    public StaffInputDTO(@JsonProperty("login") @JsonbProperty("login") String login,
-                         @JsonProperty("password") @JsonbProperty("password") String password) {
+    public RegisterStaffRequest(@JsonProperty("login") @JsonbProperty("login") String login,
+                                @JsonProperty("password") @JsonbProperty("password") String password) {
         this.login = login;
         this.password = password;
     }

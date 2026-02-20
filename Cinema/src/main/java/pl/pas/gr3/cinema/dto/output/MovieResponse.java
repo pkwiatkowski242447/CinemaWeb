@@ -1,4 +1,4 @@
-package pl.pas.gr3.cinema.dto.input;
+package pl.pas.gr3.cinema.dto.output;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
@@ -8,9 +8,15 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
+import java.util.UUID;
+
 @Getter @Setter
 @NoArgsConstructor
-public class MovieInputDTO {
+public class MovieResponse {
+
+    @JsonProperty("movie-id")
+    @JsonbProperty("movie-id")
+    private UUID id;
 
     @JsonProperty("movie-title")
     @JsonbProperty("movie-title")
@@ -30,10 +36,12 @@ public class MovieInputDTO {
 
     @JsonCreator
     @JsonbCreator
-    public MovieInputDTO(@JsonProperty("movie-title") @JsonbProperty("movie-title") String title,
+    public MovieResponse(@JsonProperty("movie-id") @JsonbProperty("movie-id") UUID id,
+                         @JsonProperty("movie-title") @JsonbProperty("movie-title") String title,
                          @JsonProperty("movie-base-price") @JsonbProperty("movie-base-price") double basePrice,
                          @JsonProperty("scr-room-number") @JsonbProperty("scr-room-number") int scrRoomNumber,
                          @JsonProperty("number-of-available-seats") @JsonbProperty("number-of-available-seats") int availableSeats) {
+        this.id = id;
         this.title = title;
         this.basePrice = basePrice;
         this.scrRoomNumber = scrRoomNumber;

@@ -1,14 +1,22 @@
 package pl.pas.gr3.cinema.repository.impl;
 
-import com.mongodb.*;
+import com.mongodb.ErrorCategory;
+import com.mongodb.MongoException;
+import com.mongodb.MongoWriteException;
 import com.mongodb.client.ClientSession;
-import com.mongodb.client.model.*;
+import com.mongodb.client.model.Aggregates;
+import com.mongodb.client.model.CreateCollectionOptions;
+import com.mongodb.client.model.Filters;
+import com.mongodb.client.model.IndexOptions;
+import com.mongodb.client.model.Indexes;
+import com.mongodb.client.model.ValidationOptions;
 import jakarta.annotation.PostConstruct;
 import jakarta.annotation.PreDestroy;
 import org.bson.Document;
 import org.bson.conversions.Bson;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Repository;
 import pl.pas.gr3.cinema.entity.account.Account;
 import pl.pas.gr3.cinema.exception.bad_request.AccountActivationException;
@@ -25,14 +33,18 @@ import pl.pas.gr3.cinema.entity.account.Admin;
 import pl.pas.gr3.cinema.entity.account.Client;
 import pl.pas.gr3.cinema.entity.account.Staff;
 import pl.pas.gr3.cinema.repository.api.UserRepository;
-import pl.pas.gr3.cinema.mapper.UserMapper;
+import pl.pas.gr3.cinema.mapper.AccountMapper;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
+import java.util.logging.Filter;
 
 @Repository
 public class AccountRepositoryImpl extends MongoRepository implements UserRepository {
+
+    @Autowired
+    private AccountMapper accountMapper;
 
     private final String databaseName;
     private static final Logger logger = LoggerFactory.getLogger(AccountRepositoryImpl.class);
@@ -53,14 +65,14 @@ public class AccountRepositoryImpl extends MongoRepository implements UserReposi
                             "bsonType": "string",
                             "minLength": 8,
                             "maxLength": 20,
-                            "pattern": "^[^\\s]*$"
+                            "pattern": "^[^\s]*$"
                         }
                         "user_password": {
                             "description": "String containing users password to the cinema web app.",
                             "bsonType": "string",
                             "minLength": 8,
                             "maxLength": 200,
-                            "pattern": "^[^\\s]*$"
+                            "pattern": "^[^\s]*$"
                         }
                         "user_status_active": {
                             "description": "Boolean flag indicating whether account is able to perform any action.",
@@ -75,11 +87,11 @@ public class AccountRepositoryImpl extends MongoRepository implements UserReposi
         this.databaseName = "default";
         super.initDBConnection(this.databaseName);
 
-        mongoDatabase.getCollection(userCollectionName).drop();
+        mongoDatabase.getCollection(USERS_COLLECTION_NAME).drop();
 
         boolean collectionExists = false;
         for (String collectionName : mongoDatabase.listCollectionNames()) {
-            if (collectionName.equals(userCollectionName)) {
+            if (collectionName.equals(USERS_COLLECTION_NAME)) {
                 collectionExists = true;
                 break;
             }
@@ -87,9 +99,9 @@ public class AccountRepositoryImpl extends MongoRepository implements UserReposi
 
         if (!collectionExists) {
             CreateCollectionOptions createCollectionOptions = new CreateCollectionOptions().validationOptions(validationOptions);
-            mongoDatabase.createCollection(userCollectionName, createCollectionOptions);
+            mongoDatabase.createCollection(USERS_COLLECTION_NAME, createCollectionOptions);
             IndexOptions indexOptions = new IndexOptions().unique(true);
-            mongoDatabase.getCollection(userCollectionName).createIndex(Indexes.ascending(UserConstants.USER_LOGIN), indexOptions);
+            mongoDatabase.getCollection(USERS_COLLECTION_NAME).createIndex(Indexes.ascending(UserConstants.USER_LOGIN), indexOptions);
         }
     }
 
@@ -155,11 +167,11 @@ public class AccountRepositoryImpl extends MongoRepository implements UserReposi
         this.databaseName = databaseName;
         super.initDBConnection(this.databaseName);
 
-        mongoDatabase.getCollection(userCollectionName).drop();
+        mongoDatabase.getCollection(USERS_COLLECTION_NAME).drop();
 
         boolean collectionExists = false;
         for (String collectionName : mongoDatabase.listCollectionNames()) {
-            if (collectionName.equals(userCollectionName)) {
+            if (collectionName.equals(USERS_COLLECTION_NAME)) {
                 collectionExists = true;
                 break;
             }
@@ -167,9 +179,9 @@ public class AccountRepositoryImpl extends MongoRepository implements UserReposi
 
         if (!collectionExists) {
             CreateCollectionOptions createCollectionOptions = new CreateCollectionOptions().validationOptions(validationOptions);
-            mongoDatabase.createCollection(userCollectionName, createCollectionOptions);
+            mongoDatabase.createCollection(USERS_COLLECTION_NAME, createCollectionOptions);
             IndexOptions indexOptions = new IndexOptions().unique(true);
-            mongoDatabase.getCollection(userCollectionName).createIndex(Indexes.ascending(UserConstants.USER_LOGIN), indexOptions);
+            mongoDatabase.getCollection(USERS_COLLECTION_NAME).createIndex(Indexes.ascending(UserConstants.USER_LOGIN), indexOptions);
         }
     }
 
@@ -245,7 +257,7 @@ public class AccountRepositoryImpl extends MongoRepository implements UserReposi
 
             Account foundClient = getClientCollection().aggregate(aggregate).first();
             if (foundClient == null) throw new AccountNotFoundException();
-            return UserMapper.toClient(foundClient);
+            return accountMapper.toClient(foundClient);
         } catch (MongoException exception) {
             throw new AccountNotFoundException(exception);
         }
@@ -258,7 +270,7 @@ public class AccountRepositoryImpl extends MongoRepository implements UserReposi
 
             Account foundAdmin = getClientCollection().aggregate(aggregate).first();
             if (foundAdmin == null) throw new AccountNotFoundException();
-            return UserMapper.toAdmin(foundAdmin);
+            return accountMapper.toAdmin(foundAdmin);
         } catch (MongoException exception) {
             throw new AccountNotFoundException(exception);
         }
@@ -271,7 +283,7 @@ public class AccountRepositoryImpl extends MongoRepository implements UserReposi
 
             Account foundStaffAccount = getClientCollection().aggregate(aggregate).first();
             if (foundStaffAccount == null) throw new AccountNotFoundException();
-            return UserMapper.toStaff(foundStaffAccount);
+            return accountMapper.toStaff(foundStaffAccount);
         } catch (MongoException exception) {
             throw new AccountNotFoundException(exception);
         }
@@ -283,7 +295,7 @@ public class AccountRepositoryImpl extends MongoRepository implements UserReposi
             clientSession.startTransaction();
             Bson filter = Filters.eq(UserConstants.USER_DISCRIMINATOR_NAME, UserConstants.CLIENT_DISCRIMINATOR);
             List<Account> accountClients = getClientCollection().find(filter).into(new ArrayList<>());
-            List<Client> clients = accountClients.stream().map(UserMapper::toClient).toList();
+            List<Client> clients = accountClients.stream().map(accountMapper::toClient).toList();
             clientSession.commitTransaction();
             return clients;
         } catch (MongoException exception) {
@@ -297,7 +309,7 @@ public class AccountRepositoryImpl extends MongoRepository implements UserReposi
             clientSession.startTransaction();
             Bson filter = Filters.eq(UserConstants.USER_DISCRIMINATOR_NAME, UserConstants.ADMIN_DISCRIMINATOR);
             List<Account> accountAdmins = getClientCollection().find(filter).into(new ArrayList<>());
-            List<Admin> admins = accountAdmins.stream().map(UserMapper::toAdmin).toList();
+            List<Admin> admins = accountAdmins.stream().map(accountMapper::toAdmin).toList();
             clientSession.commitTransaction();
             return admins;
         } catch (MongoException exception) {
@@ -311,7 +323,7 @@ public class AccountRepositoryImpl extends MongoRepository implements UserReposi
             clientSession.startTransaction();
             Bson filter = Filters.eq(UserConstants.USER_DISCRIMINATOR_NAME, UserConstants.STAFF_DISCRIMINATOR);
             List<Account> accountStaffs = getClientCollection().find(filter).into(new ArrayList<>());
-            List<Staff> staffs = accountStaffs.stream().map(UserMapper::toStaff).toList();
+            List<Staff> staffs = accountStaffs.stream().map(accountMapper::toStaff).toList();
             clientSession.commitTransaction();
             return staffs;
         } catch (MongoException exception) {
@@ -327,7 +339,7 @@ public class AccountRepositoryImpl extends MongoRepository implements UserReposi
 
             Account foundClient = getClientCollection().aggregate(listOfFilters).first();
             if (foundClient == null) throw new AccountNotFoundException();
-            return UserMapper.toClient(foundClient);
+            return accountMapper.toClient(foundClient);
         } catch (MongoException exception) {
             throw new AccountNotFoundException(exception);
         }
@@ -341,7 +353,7 @@ public class AccountRepositoryImpl extends MongoRepository implements UserReposi
 
             Account foundAdminAccount = getClientCollection().aggregate(listOfFilters).first();
             if (foundAdminAccount == null) throw new AccountNotFoundException();
-            return UserMapper.toAdmin(foundAdminAccount);
+            return accountMapper.toAdmin(foundAdminAccount);
         } catch (MongoException exception) {
             throw new AccountNotFoundException(exception);
         }
@@ -355,7 +367,7 @@ public class AccountRepositoryImpl extends MongoRepository implements UserReposi
 
             Account foundStaffAccount = getClientCollection().aggregate(listOfFilters).first();
             if (foundStaffAccount == null) throw new AccountNotFoundException();
-            return UserMapper.toStaff(foundStaffAccount);
+            return accountMapper.toStaff(foundStaffAccount);
         } catch (MongoException exception) {
             throw new AccountNotFoundException(exception);
         }
@@ -370,7 +382,7 @@ public class AccountRepositoryImpl extends MongoRepository implements UserReposi
                 Aggregates.match(Filters.regex(UserConstants.USER_LOGIN, "^" + login + ".*$")));
 
             List<Client> clients = getClientCollection().aggregate(listOfFilters).into(new ArrayList<>())
-                .stream().map(UserMapper::toClient).toList();
+                .stream().map(accountMapper::toClient).toList();
 
             clientSession.commitTransaction();
             return clients;
@@ -388,7 +400,7 @@ public class AccountRepositoryImpl extends MongoRepository implements UserReposi
                 Aggregates.match(Filters.regex(UserConstants.USER_LOGIN, "^" + login + ".*$")));
 
             List<Admin> admins = getClientCollection().aggregate(listOfFilters).into(new ArrayList<>())
-                .stream().map(UserMapper::toAdmin).toList();
+                .stream().map(accountMapper::toAdmin).toList();
 
             clientSession.commitTransaction();
             return admins;
@@ -406,7 +418,7 @@ public class AccountRepositoryImpl extends MongoRepository implements UserReposi
                 Aggregates.match(Filters.regex(UserConstants.USER_LOGIN, "^" + login + ".*$")));
 
             List<Staff> staffs = getClientCollection().aggregate(listOfFilters).into(new ArrayList<>())
-                .stream().map(UserMapper::toStaff).toList();
+                .stream().map(accountMapper::toStaff).toList();
 
             clientSession.commitTransaction();
             return staffs;
@@ -416,7 +428,11 @@ public class AccountRepositoryImpl extends MongoRepository implements UserReposi
     }
 
     public List<Ticket> getListOfTicketsForClient(UUID userId, String name) {
-        Bson clientFilter = Filters.eq(UserConstants.GENERAL_IDENTIFIER, userId);
+        Bson clientFilter = Filters.and(
+            Filters.eq(UserConstants.GENERAL_IDENTIFIER, userId),
+            Filters.eq(UserConstants.USER_DISCRIMINATOR_NAME, name)
+        );
+
         Document account = getClientCollectionWithoutType().find(clientFilter).first();
         if (account == null) throw new ClientNotFoundException();
         else if (account.getString(UserConstants.USER_DISCRIMINATOR_NAME).equals(name)) {
@@ -492,9 +508,9 @@ public class AccountRepositoryImpl extends MongoRepository implements UserReposi
 
     private void updateCertainUserBasedOnType(Account account, String name) {
         switch (name) {
-            case UserConstants.ADMIN_DISCRIMINATOR -> updateAdmin(UserMapper.toAdmin(account));
-            case UserConstants.STAFF_DISCRIMINATOR -> updateStaff(UserMapper.toStaff(account));
-            case UserConstants.CLIENT_DISCRIMINATOR -> updateClient(UserMapper.toClient(account));
+            case UserConstants.ADMIN_DISCRIMINATOR -> updateAdmin(accountMapper.toAdmin(account));
+            case UserConstants.STAFF_DISCRIMINATOR -> updateStaff(accountMapper.toStaff(account));
+            case UserConstants.CLIENT_DISCRIMINATOR -> updateClient(accountMapper.toClient(account));
             default -> throw new AccountActivationException();
         }
     }

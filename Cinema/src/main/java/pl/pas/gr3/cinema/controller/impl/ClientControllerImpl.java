@@ -6,12 +6,15 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.web.bind.annotation.RestController;
 import pl.pas.gr3.cinema.controller.api.ClientController;
 import pl.pas.gr3.cinema.exception.pre_condition.ApplicationDataIntegrityCompromisedException;
+import pl.pas.gr3.cinema.mapper.AccountMapper;
+import pl.pas.gr3.cinema.mapper.TicketMapper;
 import pl.pas.gr3.cinema.security.services.JWSService;
 import pl.pas.gr3.cinema.dto.auth.AccountResponse;
 import pl.pas.gr3.cinema.dto.auth.UpdateAccountRequest;
-import pl.pas.gr3.cinema.dto.output.TicketDTO;
+import pl.pas.gr3.cinema.dto.output.TicketResponse;
 import pl.pas.gr3.cinema.service.impl.ClientServiceImpl;
 import pl.pas.gr3.cinema.entity.Ticket;
 import pl.pas.gr3.cinema.entity.account.Client;
@@ -19,6 +22,7 @@ import pl.pas.gr3.cinema.entity.account.Client;
 import java.util.List;
 import java.util.UUID;
 
+@RestController
 @RequiredArgsConstructor
 public class ClientControllerImpl implements ClientController {
 
@@ -26,14 +30,14 @@ public class ClientControllerImpl implements ClientController {
     private final JWSService jwsService;
     private final PasswordEncoder passwordEncoder;
 
+    private final AccountMapper accountMapper;
+    private final TicketMapper ticketMapper;
+
     @PreAuthorize("hasAnyRole('STAFF', 'ADMIN')")
     @Override
     public ResponseEntity<List<AccountResponse>> findAll() {
         List<Client> foundClients = clientService.findAll();
-        List<AccountResponse> outputDtos = foundClients.stream().map(client ->
-            new AccountResponse(client.getId(), client.getLogin(), client.isActive())
-        ).toList();
-
+        List<AccountResponse> outputDtos = foundClients.stream().map(accountMapper::toResponse).toList();
         return outputDtos.isEmpty() ? ResponseEntity.noContent().build() : ResponseEntity.ok(outputDtos);
     }
 
@@ -41,7 +45,7 @@ public class ClientControllerImpl implements ClientController {
     @Override
     public ResponseEntity<AccountResponse> findById(UUID clientId) {
         Client client = clientService.findByUUID(clientId);
-        AccountResponse outputDto = new AccountResponse(client.getId(), client.getLogin(), client.isActive());
+        AccountResponse outputDto = accountMapper.toResponse(client);
         return ResponseEntity.ok(outputDto);
     }
 
@@ -49,7 +53,7 @@ public class ClientControllerImpl implements ClientController {
     @Override
     public ResponseEntity<AccountResponse> findByLogin(String clientLogin) {
         Client client = clientService.findByLogin(clientLogin);
-        AccountResponse outputDto = new AccountResponse(client.getId(), client.getLogin(), client.isActive());
+        AccountResponse outputDto = accountMapper.toResponse(client);
         return ResponseEntity.ok(outputDto);
     }
 
@@ -58,7 +62,7 @@ public class ClientControllerImpl implements ClientController {
     public ResponseEntity<AccountResponse> findSelfByLogin() {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         Client client = clientService.findByLogin(auth.getName());
-        AccountResponse outputDto = new AccountResponse(client.getId(), client.getLogin(), client.isActive());
+        AccountResponse outputDto = accountMapper.toResponse(client);
 
         String signature = jwsService.generateSignatureForUser(client);
         return ResponseEntity.ok().eTag(signature).body(outputDto);
@@ -68,34 +72,25 @@ public class ClientControllerImpl implements ClientController {
     @Override
     public ResponseEntity<List<AccountResponse>> findAllWithMatchingLogin(String clientLogin) {
         List<Client> clients = clientService.findAllMatchingLogin(clientLogin);
-        List<AccountResponse> outputDtos = clients.stream().map(client ->
-            new AccountResponse(client.getId(), client.getLogin(), client.isActive())
-        ).toList();
-
+        List<AccountResponse> outputDtos = clients.stream().map(accountMapper::toResponse).toList();
         return outputDtos.isEmpty() ? ResponseEntity.noContent().build() : ResponseEntity.ok(outputDtos);
     }
 
     @PreAuthorize("hasRole('STAFF')")
     @Override
-    public ResponseEntity<List<TicketDTO>> getTicketsForCertainUser(UUID clientId) {
+    public ResponseEntity<List<TicketResponse>> getTicketsForCertainUser(UUID clientId) {
         List<Ticket> clientTickets = clientService.getTicketsForClient(clientId);
-        List<TicketDTO> outputDtos = clientTickets.stream().map(ticket ->
-            new TicketDTO(ticket.getId(), ticket.getMovieTime(), ticket.getPrice(), ticket.getUserId(), ticket.getMovieId())
-        ).toList();
-
+        List<TicketResponse> outputDtos = clientTickets.stream().map(ticketMapper::toResponse).toList();
         return outputDtos.isEmpty() ? ResponseEntity.noContent().build() : ResponseEntity.ok(outputDtos);
     }
 
     @PreAuthorize("hasRole('CLIENT')")
     @Override
-    public ResponseEntity<List<TicketDTO>> getTicketsForCertainUser() {
+    public ResponseEntity<List<TicketResponse>> getTicketsForCertainUser() {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         Client client = clientService.findByLogin(auth.getName());
         List<Ticket> clientTickets = clientService.getTicketsForClient(client.getId());
-        List<TicketDTO> outputDtos = clientTickets.stream().map(ticket ->
-            new TicketDTO(ticket.getId(), ticket.getMovieTime(), ticket.getPrice(), ticket.getUserId(), ticket.getMovieId())
-        ).toList();
-
+        List<TicketResponse> outputDtos = clientTickets.stream().map(ticketMapper::toResponse).toList();
         return outputDtos.isEmpty() ? ResponseEntity.noContent().build() : ResponseEntity.ok(outputDtos);
     }
 

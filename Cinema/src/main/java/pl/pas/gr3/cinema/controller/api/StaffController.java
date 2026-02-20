@@ -1,9 +1,10 @@
 package pl.pas.gr3.cinema.controller.api;
 
-import jakarta.validation.Valid;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -12,15 +13,14 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
 import pl.pas.gr3.cinema.dto.auth.AccountResponse;
 import pl.pas.gr3.cinema.dto.auth.UpdateAccountRequest;
 
 import java.util.List;
 import java.util.UUID;
 
-@RestController
 @RequestMapping(path = "/api/v1/staffs")
+@Tag(name = "2. StaffController", description = "Manage staff accounts")
 public interface StaffController {
 
     /* READ */
@@ -44,7 +44,7 @@ public interface StaffController {
 
     @PutMapping(value = "/update", consumes = MediaType.APPLICATION_JSON_VALUE)
     ResponseEntity<Void> update(@RequestHeader(value = HttpHeaders.IF_MATCH) String ifMatch,
-                             @RequestBody @Valid UpdateAccountRequest userUpdateDTO);
+                             @RequestBody @Validated UpdateAccountRequest userUpdateDto);
 
     /* OTHER */
 

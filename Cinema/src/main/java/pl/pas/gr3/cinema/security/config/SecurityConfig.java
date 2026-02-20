@@ -31,14 +31,14 @@ public class SecurityConfig {
     private final JWTAuthenticationFilter jwtAuthenticationFilter;
 
     @Bean
-    public SecurityFilterChain securityFilterChain(HttpSecurity httpSecurity) throws Exception {
+    public SecurityFilterChain securityFilterChain(HttpSecurity httpSecurity) {
         httpSecurity
             .csrf(AbstractHttpConfigurer::disable)
             .cors(cors -> corsConfigurationSource())
             .sessionManagement(sessionManagement -> sessionManagement.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .authenticationProvider(authenticationProvider)
             .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
-            .authorizeHttpRequests((requests) -> requests
+            .authorizeHttpRequests(requests -> requests
                 .requestMatchers(
                     "/v3/api-docs/**",
                     "/swagger-ui/**",
@@ -68,7 +68,7 @@ public class SecurityConfig {
         corsConfiguration.setAllowedOriginPatterns(List.of("https://localhost:3000"));
         corsConfiguration.addExposedHeader("Access-Token");
         corsConfiguration.addExposedHeader("Uid");
-        corsConfiguration.addExposedHeader("ETag");
+        corsConfiguration.addExposedHeader(HttpHeaders.ETAG);
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", corsConfiguration);
         return source;

@@ -1,6 +1,6 @@
 package pl.pas.gr3.cinema.dto.messages;
 
-public class UserMessages {
+public class AccountMessages {
 
     public static final String NULL_IDENTIFIER = "Identifier of the user could not be null.";
 

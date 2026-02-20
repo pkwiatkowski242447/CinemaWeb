@@ -6,6 +6,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RestController;
 import pl.pas.gr3.cinema.controller.api.AuthenticationController;
 import pl.pas.gr3.cinema.dto.LoginResponse;
 import pl.pas.gr3.cinema.entity.account.Admin;
@@ -19,6 +20,7 @@ import pl.pas.gr3.cinema.dto.auth.AccountResponse;
 import java.net.URI;
 import java.text.MessageFormat;
 
+@RestController
 @RequiredArgsConstructor
 public class AuthenticationControllerImpl implements AuthenticationController {
     
@@ -36,8 +38,8 @@ public class AuthenticationControllerImpl implements AuthenticationController {
 
     @PreAuthorize("hasRole('ADMIN')")
     @Override
-    public ResponseEntity<AccountResponse> registerAdmin(@RequestBody LoginAccountRequest userInputDTO) {
-        Admin admin = authenticationService.registerAdmin(userInputDTO.login(), userInputDTO.password());
+    public ResponseEntity<AccountResponse> registerAdmin(@RequestBody LoginAccountRequest registerRequest) {
+        Admin admin = authenticationService.registerAdmin(registerRequest.login(), registerRequest.password());
         AccountResponse accountResponse = new AccountResponse(admin.getId(), admin.getLogin(), admin.isActive());
         String location = MessageFormat.format("http://localhost:8000/api/v1/admins/{0}", accountResponse.id());
         return ResponseEntity.created(URI.create(location)).body(accountResponse);

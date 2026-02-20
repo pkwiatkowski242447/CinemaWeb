@@ -12,7 +12,7 @@ import java.util.UUID;
 
 @Getter @Setter
 @NoArgsConstructor
-public class ClientDTO {
+public class AdminResponse {
 
     @JsonProperty("id")
     @JsonbProperty("id")
@@ -28,9 +28,9 @@ public class ClientDTO {
 
     @JsonCreator
     @JsonbCreator
-    public ClientDTO(@JsonProperty("id") @JsonbProperty("id") UUID id,
-                     @JsonProperty("login") @JsonbProperty("login") String login,
-                     @JsonProperty("status-active") @JsonbProperty("status-active") boolean active) {
+    public AdminResponse(@JsonProperty("id") @JsonbProperty("id") UUID id,
+                         @JsonProperty("login") @JsonbProperty("login") String login,
+                         @JsonProperty("status-active") @JsonbProperty("status-active") boolean active) {
         this.id = id;
         this.login = login;
         this.active = active;

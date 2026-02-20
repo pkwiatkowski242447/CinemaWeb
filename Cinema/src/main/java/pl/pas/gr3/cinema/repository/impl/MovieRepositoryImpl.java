@@ -78,11 +78,11 @@ public class MovieRepositoryImpl extends MongoRepository implements MovieReposit
         this.databaseName = "default";
         super.initDBConnection(databaseName);
 
-        mongoDatabase.getCollection(movieCollectionName).drop();
+        mongoDatabase.getCollection(MOVIES_COLLECTION_NAME).drop();
 
         boolean collectionExists = false;
         for (String collectionName : mongoDatabase.listCollectionNames()) {
-            if (collectionName.equals(movieCollectionName)) {
+            if (collectionName.equals(MOVIES_COLLECTION_NAME)) {
                 collectionExists = true;
                 break;
             }
@@ -90,7 +90,7 @@ public class MovieRepositoryImpl extends MongoRepository implements MovieReposit
 
         if (!collectionExists) {
             CreateCollectionOptions createCollectionOptions = new CreateCollectionOptions().validationOptions(validationOptions);
-            mongoDatabase.createCollection(movieCollectionName, createCollectionOptions);
+            mongoDatabase.createCollection(MOVIES_COLLECTION_NAME, createCollectionOptions);
         }
     }
 
@@ -125,9 +125,9 @@ public class MovieRepositoryImpl extends MongoRepository implements MovieReposit
     public MovieRepositoryImpl(String databaseName) {
         this.databaseName = databaseName;
         super.initDBConnection(this.databaseName);
-        mongoDatabase.getCollection(movieCollectionName).drop();
+        mongoDatabase.getCollection(MOVIES_COLLECTION_NAME).drop();
         CreateCollectionOptions createCollectionOptions = new CreateCollectionOptions().validationOptions(validationOptions);
-        mongoDatabase.createCollection(movieCollectionName, createCollectionOptions);
+        mongoDatabase.createCollection(MOVIES_COLLECTION_NAME, createCollectionOptions);
     }
 
     /* CREATE */
