@@ -13,9 +13,9 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
-import pl.pas.gr3.cinema.dto.auth.AccountResponse;
-import pl.pas.gr3.cinema.dto.auth.UpdateAccountRequest;
-import pl.pas.gr3.cinema.dto.output.TicketResponse;
+import pl.pas.gr3.cinema.dto.account.AccountResponse;
+import pl.pas.gr3.cinema.dto.account.UpdateAccountRequest;
+import pl.pas.gr3.cinema.dto.ticket.TicketResponse;
 
 import java.util.List;
 import java.util.UUID;
@@ -51,7 +51,7 @@ public interface ClientController {
 
     @PutMapping(value = "/update", consumes = MediaType.APPLICATION_JSON_VALUE)
     ResponseEntity<Void> update(@RequestHeader(value = HttpHeaders.IF_MATCH) String ifMatch,
-                             @RequestBody @Validated UpdateAccountRequest userUpdateDto);
+                             @RequestBody @Validated UpdateAccountRequest request);
 
     /* OTHER */
 

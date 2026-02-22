@@ -1,6 +1,5 @@
 package pl.pas.gr3.cinema.controller.impl;
 
-
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -12,10 +11,10 @@ import pl.pas.gr3.cinema.dto.LoginResponse;
 import pl.pas.gr3.cinema.entity.account.Admin;
 import pl.pas.gr3.cinema.entity.account.Client;
 import pl.pas.gr3.cinema.entity.account.Staff;
-import pl.pas.gr3.cinema.security.services.JWTService;
-import pl.pas.gr3.cinema.service.impl.AuthenticationServiceImpl;
-import pl.pas.gr3.cinema.dto.auth.LoginAccountRequest;
-import pl.pas.gr3.cinema.dto.auth.AccountResponse;
+import pl.pas.gr3.cinema.service.api.AuthenticationService;
+import pl.pas.gr3.cinema.service.impl.JWTService;
+import pl.pas.gr3.cinema.dto.account.LoginAccountRequest;
+import pl.pas.gr3.cinema.dto.account.AccountResponse;
 
 import java.net.URI;
 import java.text.MessageFormat;
@@ -24,7 +23,7 @@ import java.text.MessageFormat;
 @RequiredArgsConstructor
 public class AuthenticationControllerImpl implements AuthenticationController {
     
-    private final AuthenticationServiceImpl authenticationService;
+    private final AuthenticationService authenticationService;
     private final JWTService jwtService;
 
     @PreAuthorize("isAnonymous() or hasRole('ADMIN')")
@@ -32,7 +31,7 @@ public class AuthenticationControllerImpl implements AuthenticationController {
     public ResponseEntity<AccountResponse> registerClient(LoginAccountRequest registerRequest) {
         Client client = authenticationService.registerClient(registerRequest.login(), registerRequest.password());
         AccountResponse accountResponse = new AccountResponse(client.getId(), client.getLogin(), client.isActive());
-        String location = MessageFormat.format("http://localhost:8000/api/v1/clients/{0}", accountResponse.id());
+        String location = MessageFormat.format("http://localhost:8000/api/v1/clients/{0}", accountResponse.getId());
         return ResponseEntity.created(URI.create(location)).body(accountResponse);
     }
 
@@ -41,7 +40,7 @@ public class AuthenticationControllerImpl implements AuthenticationController {
     public ResponseEntity<AccountResponse> registerAdmin(@RequestBody LoginAccountRequest registerRequest) {
         Admin admin = authenticationService.registerAdmin(registerRequest.login(), registerRequest.password());
         AccountResponse accountResponse = new AccountResponse(admin.getId(), admin.getLogin(), admin.isActive());
-        String location = MessageFormat.format("http://localhost:8000/api/v1/admins/{0}", accountResponse.id());
+        String location = MessageFormat.format("http://localhost:8000/api/v1/admins/{0}", accountResponse.getId());
         return ResponseEntity.created(URI.create(location)).body(accountResponse);
     }
 
@@ -50,7 +49,7 @@ public class AuthenticationControllerImpl implements AuthenticationController {
     public ResponseEntity<AccountResponse> registerStaff(LoginAccountRequest registerRequest) {
         Staff staff = authenticationService.registerStaff(registerRequest.login(), registerRequest.password());
         AccountResponse accountResponse = new AccountResponse(staff.getId(), staff.getLogin(), staff.isActive());
-        String location = MessageFormat.format("http://localhost:8000/api/v1/staffs/{0}", accountResponse.id());
+        String location = MessageFormat.format("http://localhost:8000/api/v1/staffs/{0}", accountResponse.getId());
         return ResponseEntity.created(URI.create(location)).body(accountResponse);
     }
 

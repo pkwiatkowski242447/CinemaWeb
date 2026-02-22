@@ -24,9 +24,9 @@ import pl.pas.gr3.cinema.entity.account.Staff;
 import pl.pas.gr3.cinema.repository.impl.AccountRepositoryImpl;
 import pl.pas.gr3.cinema.service.impl.ClientServiceImpl;
 import pl.pas.gr3.cinema.entity.account.Client;
-import pl.pas.gr3.cinema.dto.auth.LoginAccountRequest;
-import pl.pas.gr3.cinema.dto.auth.AccountResponse;
-import pl.pas.gr3.cinema.dto.auth.UpdateAccountRequest;
+import pl.pas.gr3.cinema.dto.account.LoginAccountRequest;
+import pl.pas.gr3.cinema.dto.account.AccountResponse;
+import pl.pas.gr3.cinema.dto.account.UpdateAccountRequest;
 
 import java.net.URL;
 import java.util.List;
@@ -158,9 +158,9 @@ class ClientControllerTest {
 
         AccountResponse accountResponse = response.getBody().as(AccountResponse.class);
 
-        assertEquals(clientUserNo1.getId(), accountResponse.id());
-        assertEquals(clientUserNo1.getLogin(), accountResponse.login());
-        assertEquals(clientUserNo1.isActive(), accountResponse.active());
+        assertEquals(clientUserNo1.getId(), accountResponse.getId());
+        assertEquals(clientUserNo1.getLogin(), accountResponse.getLogin());
+        assertEquals(clientUserNo1.isActive(), accountResponse.isActive());
     }
 
     @Test
@@ -181,9 +181,9 @@ class ClientControllerTest {
 
         AccountResponse accountResponse = response.getBody().as(AccountResponse.class);
 
-        assertEquals(clientUserNo1.getId(), accountResponse.id());
-        assertEquals(clientUserNo1.getLogin(), accountResponse.login());
-        assertEquals(clientUserNo1.isActive(), accountResponse.active());
+        assertEquals(clientUserNo1.getId(), accountResponse.getId());
+        assertEquals(clientUserNo1.getLogin(), accountResponse.getLogin());
+        assertEquals(clientUserNo1.isActive(), accountResponse.isActive());
     }
 
     @Test
@@ -267,11 +267,11 @@ class ClientControllerTest {
 
         validatableResponse.statusCode(200);
 
-        AccountResponse userOutputDTO = response.getBody().as(AccountResponse.class);
+        AccountResponse accountResponse = response.getBody().as(AccountResponse.class);
 
-        assertEquals(clientUserNo1.getId(), userOutputDTO.id());
-        assertEquals(clientUserNo1.getLogin(), userOutputDTO.login());
-        assertEquals(clientUserNo1.isActive(), userOutputDTO.active());
+        assertEquals(clientUserNo1.getId(), accountResponse.getId());
+        assertEquals(clientUserNo1.getLogin(), accountResponse.getLogin());
+        assertEquals(clientUserNo1.isActive(), accountResponse.isActive());
     }
 
     @Test
@@ -290,11 +290,11 @@ class ClientControllerTest {
 
         validatableResponse.statusCode(200);
 
-        AccountResponse userOutputDTO = response.getBody().as(AccountResponse.class);
+        AccountResponse accountResponse = response.getBody().as(AccountResponse.class);
 
-        assertEquals(clientUserNo1.getId(), userOutputDTO.id());
-        assertEquals(clientUserNo1.getLogin(), userOutputDTO.login());
-        assertEquals(clientUserNo1.isActive(), userOutputDTO.active());
+        assertEquals(clientUserNo1.getId(), accountResponse.getId());
+        assertEquals(clientUserNo1.getLogin(), accountResponse.getLogin());
+        assertEquals(clientUserNo1.isActive(), accountResponse.isActive());
     }
 
     @Test
@@ -497,12 +497,17 @@ class ClientControllerTest {
 
         String newClientPassword = "SomeNewClientPasswordNo1";
 
-        UpdateAccountRequest userUpdateDTO = new UpdateAccountRequest(accountResponse.id(), accountResponse.login(), newClientPassword, accountResponse.active());
+        UpdateAccountRequest updateAccountRequest = UpdateAccountRequest.builder()
+            .id(accountResponse.getId())
+            .login(accountResponse.getLogin())
+            .password(newClientPassword)
+            .active(accountResponse.isActive())
+            .build();
 
         requestSpecification = RestAssured.given();
         requestSpecification.contentType(ContentType.JSON);
         requestSpecification.header(HttpHeaders.IF_MATCH, etagContent);
-        requestSpecification.body(userUpdateDTO);
+        requestSpecification.body(updateAccountRequest);
 
         response = requestSpecification.put(TestConstants.clientsURL + "/update");
         validatableResponse = response.then();
@@ -534,13 +539,18 @@ class ClientControllerTest {
 
         String newClientPassword = "SomeNewClientPasswordNo1";
 
-        UpdateAccountRequest userUpdateDTO = new UpdateAccountRequest(accountResponse.id(), accountResponse.login(), newClientPassword, accountResponse.active());
+        UpdateAccountRequest updateAccountRequest = UpdateAccountRequest.builder()
+            .id(accountResponse.getId())
+            .login(accountResponse.getLogin())
+            .password(newClientPassword)
+            .active(accountResponse.isActive())
+            .build();
 
         requestSpecification = RestAssured.given();
         requestSpecification.contentType(ContentType.JSON);
         requestSpecification.header(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken);
         requestSpecification.header(HttpHeaders.IF_MATCH, etagContent);
-        requestSpecification.body(userUpdateDTO);
+        requestSpecification.body(updateAccountRequest);
 
         response = requestSpecification.put(TestConstants.clientsURL + "/update");
         validatableResponse = response.then();
@@ -573,13 +583,18 @@ class ClientControllerTest {
         String clientPasswordBefore = clientUserNo1.getPassword();
         String newClientPassword = "SomeNewClientPasswordNo1";
 
-        UpdateAccountRequest userUpdateDTO = new UpdateAccountRequest(accountResponse.id(), accountResponse.login(), newClientPassword, accountResponse.active());
+        UpdateAccountRequest updateAccountRequest = UpdateAccountRequest.builder()
+            .id(accountResponse.getId())
+            .login(accountResponse.getLogin())
+            .password(newClientPassword)
+            .active(accountResponse.isActive())
+            .build();
 
         requestSpecification = RestAssured.given();
         requestSpecification.contentType(ContentType.JSON);
         requestSpecification.header(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken);
         requestSpecification.header(HttpHeaders.IF_MATCH, etagContent);
-        requestSpecification.body(userUpdateDTO);
+        requestSpecification.body(updateAccountRequest);
 
         response = requestSpecification.put(TestConstants.clientsURL + "/update");
         validatableResponse = response.then();
@@ -617,13 +632,18 @@ class ClientControllerTest {
         
         String newClientPassword = "SomeNewClientPasswordNo1";
 
-        UpdateAccountRequest userUpdateDTO = new UpdateAccountRequest(accountResponse.id(), accountResponse.login(), newClientPassword, accountResponse.active());
+        UpdateAccountRequest updateAccountRequest = UpdateAccountRequest.builder()
+            .id(accountResponse.getId())
+            .login(accountResponse.getLogin())
+            .password(newClientPassword)
+            .active(accountResponse.isActive())
+            .build();
 
         requestSpecification = RestAssured.given();
         requestSpecification.contentType(ContentType.JSON);
         requestSpecification.header(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken);
         requestSpecification.header(HttpHeaders.IF_MATCH, etagContent);
-        requestSpecification.body(userUpdateDTO);
+        requestSpecification.body(updateAccountRequest);
 
         response = requestSpecification.put(TestConstants.clientsURL + "/update");
         validatableResponse = response.then();
@@ -655,13 +675,18 @@ class ClientControllerTest {
         
         String newClientPassword = "SomeNewClientPasswordNo1";
 
-        UpdateAccountRequest userUpdateDTO = new UpdateAccountRequest(accountResponse.id(), accountResponse.login(), newClientPassword, accountResponse.active());
+        UpdateAccountRequest updateAccountRequest = UpdateAccountRequest.builder()
+            .id(accountResponse.getId())
+            .login(accountResponse.getLogin())
+            .password(newClientPassword)
+            .active(accountResponse.isActive())
+            .build();
 
         requestSpecification = RestAssured.given();
         requestSpecification.contentType(ContentType.JSON);
         requestSpecification.header(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken);
         requestSpecification.header(HttpHeaders.IF_MATCH, etagContent);
-        requestSpecification.body(userUpdateDTO);
+        requestSpecification.body(updateAccountRequest);
 
         response = requestSpecification.put(TestConstants.clientsURL + "/update");
         validatableResponse = response.then();
@@ -692,12 +717,17 @@ class ClientControllerTest {
         
         String newClientPassword = "SomeNewClientPasswordNo1";
 
-        UpdateAccountRequest userUpdateDTO = new UpdateAccountRequest(accountResponse.id(), accountResponse.login(), newClientPassword, accountResponse.active());
+        UpdateAccountRequest updateAccountRequest = UpdateAccountRequest.builder()
+            .id(accountResponse.getId())
+            .login(accountResponse.getLogin())
+            .password(newClientPassword)
+            .active(accountResponse.isActive())
+            .build();
 
         requestSpecification = RestAssured.given();
         requestSpecification.contentType(ContentType.JSON);
         requestSpecification.header(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken);
-        requestSpecification.body(userUpdateDTO);
+        requestSpecification.body(updateAccountRequest);
 
         response = requestSpecification.put(TestConstants.clientsURL + "/update");
         validatableResponse = response.then();
@@ -729,13 +759,18 @@ class ClientControllerTest {
 
         UUID newClientID = UUID.randomUUID();
 
-        UpdateAccountRequest userUpdateDTO = new UpdateAccountRequest(newClientID, accountResponse.login(), passwordNotHashed, accountResponse.active());
+        UpdateAccountRequest updateAccountRequest = UpdateAccountRequest.builder()
+            .id(newClientID)
+            .login(accountResponse.getLogin())
+            .password(passwordNotHashed)
+            .active(accountResponse.isActive())
+            .build();
 
         requestSpecification = RestAssured.given();
         requestSpecification.contentType(ContentType.JSON);
         requestSpecification.header(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken);
         requestSpecification.header(HttpHeaders.IF_MATCH, etagContent);
-        requestSpecification.body(userUpdateDTO);
+        requestSpecification.body(updateAccountRequest);
 
         response = requestSpecification.put(TestConstants.clientsURL + "/update");
         validatableResponse = response.then();
@@ -767,13 +802,18 @@ class ClientControllerTest {
 
         String newClientLogin = "SomeNewClientLogin";
 
-        UpdateAccountRequest userUpdateDTO = new UpdateAccountRequest(accountResponse.id(), newClientLogin, passwordNotHashed, accountResponse.active());
+        UpdateAccountRequest updateAccountRequest = UpdateAccountRequest.builder()
+            .id(accountResponse.getId())
+            .login(newClientLogin)
+            .password(passwordNotHashed)
+            .active(accountResponse.isActive())
+            .build();
 
         requestSpecification = RestAssured.given();
         requestSpecification.contentType(ContentType.JSON);
         requestSpecification.header(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken);
         requestSpecification.header(HttpHeaders.IF_MATCH, etagContent);
-        requestSpecification.body(userUpdateDTO);
+        requestSpecification.body(updateAccountRequest);
 
         response = requestSpecification.put(TestConstants.clientsURL + "/update");
         validatableResponse = response.then();
@@ -805,13 +845,18 @@ class ClientControllerTest {
 
         boolean newClientStatus = false;
 
-        UpdateAccountRequest userUpdateDTO = new UpdateAccountRequest(accountResponse.id(), accountResponse.login(), passwordNotHashed, newClientStatus);
+        UpdateAccountRequest updateAccountRequest = UpdateAccountRequest.builder()
+            .id(accountResponse.getId())
+            .login(accountResponse.getLogin())
+            .password(passwordNotHashed)
+            .active(newClientStatus)
+            .build();
 
         requestSpecification = RestAssured.given();
         requestSpecification.contentType(ContentType.JSON);
         requestSpecification.header(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken);
         requestSpecification.header(HttpHeaders.IF_MATCH, etagContent);
-        requestSpecification.body(userUpdateDTO);
+        requestSpecification.body(updateAccountRequest);
 
         response = requestSpecification.put(TestConstants.clientsURL + "/update");
         validatableResponse = response.then();
@@ -976,11 +1021,11 @@ class ClientControllerTest {
         validatableResponse.statusCode(400);
     }
 
-    private String loginToAccount(LoginAccountRequest loginDto, String loginURL) {
+    private String loginToAccount(LoginAccountRequest loginRequest, String loginURL) {
         RequestSpecification requestSpecification = RestAssured.given();
         requestSpecification.contentType(ContentType.JSON);
         requestSpecification.accept(ContentType.JSON);
-        requestSpecification.body(new LoginAccountRequest(loginDto.login(), loginDto.password()));
+        requestSpecification.body(new LoginAccountRequest(loginRequest.login(), loginRequest.password()));
 
         Response response = requestSpecification.post(loginURL);
         ValidatableResponse validatableResponse = response.then();

@@ -22,9 +22,9 @@ import pl.pas.gr3.cinema.entity.account.Client;
 import pl.pas.gr3.cinema.entity.account.Staff;
 import pl.pas.gr3.cinema.repository.impl.AccountRepositoryImpl;
 import pl.pas.gr3.cinema.service.impl.StaffServiceImpl;
-import pl.pas.gr3.cinema.dto.auth.LoginAccountRequest;
-import pl.pas.gr3.cinema.dto.auth.AccountResponse;
-import pl.pas.gr3.cinema.dto.auth.UpdateAccountRequest;
+import pl.pas.gr3.cinema.dto.account.LoginAccountRequest;
+import pl.pas.gr3.cinema.dto.account.AccountResponse;
+import pl.pas.gr3.cinema.dto.account.UpdateAccountRequest;
 
 import java.net.URL;
 import java.util.List;
@@ -157,9 +157,9 @@ class StaffControllerTest {
 
         AccountResponse accountResponse = response.getBody().as(AccountResponse.class);
 
-        assertEquals(staffUserNo1.getId(), accountResponse.id());
-        assertEquals(staffUserNo1.getLogin(), accountResponse.login());
-        assertEquals(staffUserNo1.isActive(), accountResponse.active());
+        assertEquals(staffUserNo1.getId(), accountResponse.getId());
+        assertEquals(staffUserNo1.getLogin(), accountResponse.getLogin());
+        assertEquals(staffUserNo1.isActive(), accountResponse.isActive());
     }
 
     @Test
@@ -178,11 +178,11 @@ class StaffControllerTest {
 
         validatableResponse.statusCode(200);
 
-        AccountResponse userOutputDTO = response.getBody().as(AccountResponse.class);
+        AccountResponse accountResponse = response.getBody().as(AccountResponse.class);
 
-        assertEquals(staffUserNo1.getId(), userOutputDTO.id());
-        assertEquals(staffUserNo1.getLogin(), userOutputDTO.login());
-        assertEquals(staffUserNo1.isActive(), userOutputDTO.active());
+        assertEquals(staffUserNo1.getId(), accountResponse.getId());
+        assertEquals(staffUserNo1.getLogin(), accountResponse.getLogin());
+        assertEquals(staffUserNo1.isActive(), accountResponse.isActive());
     }
 
     @Test
@@ -268,11 +268,11 @@ class StaffControllerTest {
 
         validatableResponse.statusCode(200);
 
-        AccountResponse userOutputDTO = response.getBody().as(AccountResponse.class);
+        AccountResponse accountResponse = response.getBody().as(AccountResponse.class);
 
-        assertEquals(staffUserNo1.getId(), userOutputDTO.id());
-        assertEquals(staffUserNo1.getLogin(), userOutputDTO.login());
-        assertEquals(staffUserNo1.isActive(), userOutputDTO.active());
+        assertEquals(staffUserNo1.getId(), accountResponse.getId());
+        assertEquals(staffUserNo1.getLogin(), accountResponse.getLogin());
+        assertEquals(staffUserNo1.isActive(), accountResponse.isActive());
     }
 
     @Test
@@ -291,11 +291,11 @@ class StaffControllerTest {
 
         validatableResponse.statusCode(200);
 
-        AccountResponse userOutputDTO = response.getBody().as(AccountResponse.class);
+        AccountResponse accountResponse = response.getBody().as(AccountResponse.class);
 
-        assertEquals(staffUserNo1.getId(), userOutputDTO.id());
-        assertEquals(staffUserNo1.getLogin(), userOutputDTO.login());
-        assertEquals(staffUserNo1.isActive(), userOutputDTO.active());
+        assertEquals(staffUserNo1.getId(), accountResponse.getId());
+        assertEquals(staffUserNo1.getLogin(), accountResponse.getLogin());
+        assertEquals(staffUserNo1.isActive(), accountResponse.isActive());
     }
 
     @Test
@@ -498,12 +498,17 @@ class StaffControllerTest {
 
         String newStaffPassword = "SomeNewStaffPasswordNo1";
 
-        UpdateAccountRequest userUpdateDTO = new UpdateAccountRequest(accountResponse.id(), accountResponse.login(), newStaffPassword, accountResponse.active());
+        UpdateAccountRequest updateAccountRequest = UpdateAccountRequest.builder()
+            .id(accountResponse.getId())
+            .login(accountResponse.getLogin())
+            .password(newStaffPassword)
+            .active(accountResponse.isActive())
+            .build();
 
         requestSpecification = RestAssured.given();
         requestSpecification.contentType(ContentType.JSON);
         requestSpecification.header(HttpHeaders.IF_MATCH, etagContent);
-        requestSpecification.body(userUpdateDTO);
+        requestSpecification.body(updateAccountRequest);
 
         response = requestSpecification.put(TestConstants.staffsURL + "/update");
         validatableResponse = response.then();
@@ -535,13 +540,18 @@ class StaffControllerTest {
 
         String newStaffPassword = "SomeNewStaffPasswordNo1";
 
-        UpdateAccountRequest userUpdateDTO = new UpdateAccountRequest(accountResponse.id(), accountResponse.login(), newStaffPassword, accountResponse.active());
+        UpdateAccountRequest updateAccountRequest = UpdateAccountRequest.builder()
+            .id(accountResponse.getId())
+            .login(accountResponse.getLogin())
+            .password(newStaffPassword)
+            .active(accountResponse.isActive())
+            .build();
 
         requestSpecification = RestAssured.given();
         requestSpecification.contentType(ContentType.JSON);
         requestSpecification.header(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken);
         requestSpecification.header(HttpHeaders.IF_MATCH, etagContent);
-        requestSpecification.body(userUpdateDTO);
+        requestSpecification.body(updateAccountRequest);
 
         response = requestSpecification.put(TestConstants.staffsURL + "/update");
         validatableResponse = response.then();
@@ -574,13 +584,18 @@ class StaffControllerTest {
         String staffPasswordBefore = staffUserNo1.getPassword();
         String newStaffPassword = "SomeNewStaffPasswordNo1";
 
-        UpdateAccountRequest userUpdateDTO = new UpdateAccountRequest(accountResponse.id(), accountResponse.login(), newStaffPassword, accountResponse.active());
+        UpdateAccountRequest updateAccountRequest = UpdateAccountRequest.builder()
+            .id(accountResponse.getId())
+            .login(accountResponse.getLogin())
+            .password(newStaffPassword)
+            .active(accountResponse.isActive())
+            .build();
 
         requestSpecification = RestAssured.given();
         requestSpecification.contentType(ContentType.JSON);
         requestSpecification.header(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken);
         requestSpecification.header(HttpHeaders.IF_MATCH, etagContent);
-        requestSpecification.body(userUpdateDTO);
+        requestSpecification.body(updateAccountRequest);
 
         response = requestSpecification.put(TestConstants.staffsURL + "/update");
         validatableResponse = response.then();
@@ -618,13 +633,18 @@ class StaffControllerTest {
 
         String newStaffPassword = "SomeNewStaffPasswordNo1";
 
-        UpdateAccountRequest userUpdateDTO = new UpdateAccountRequest(accountResponse.id(), accountResponse.login(), newStaffPassword, accountResponse.active());
+        UpdateAccountRequest updateAccountRequest = UpdateAccountRequest.builder()
+            .id(accountResponse.getId())
+            .login(accountResponse.getLogin())
+            .password(newStaffPassword)
+            .active(accountResponse.isActive())
+            .build();
 
         requestSpecification = RestAssured.given();
         requestSpecification.contentType(ContentType.JSON);
         requestSpecification.header(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken);
         requestSpecification.header(HttpHeaders.IF_MATCH, etagContent);
-        requestSpecification.body(userUpdateDTO);
+        requestSpecification.body(updateAccountRequest);
 
         response = requestSpecification.put(TestConstants.staffsURL + "/update");
         validatableResponse = response.then();
@@ -648,7 +668,7 @@ class StaffControllerTest {
 
         validatableResponse.statusCode(200);
 
-        AccountResponse userOutputDTO = response.getBody().as(AccountResponse.class);
+        AccountResponse accountResponse = response.getBody().as(AccountResponse.class);
         String etagContent = response.header(HttpHeaders.ETAG);
 
         // Login to admin (not owner) account
@@ -656,13 +676,18 @@ class StaffControllerTest {
         
         String newStaffPassword = "SomeNewStaffPasswordNo1";
 
-        UpdateAccountRequest userUpdateDTO = new UpdateAccountRequest(userOutputDTO.id(), userOutputDTO.login(), newStaffPassword, userOutputDTO.active());
+        UpdateAccountRequest updateAccountRequest = UpdateAccountRequest.builder()
+            .id(accountResponse.getId())
+            .login(accountResponse.getLogin())
+            .password(newStaffPassword)
+            .active(accountResponse.isActive())
+            .build();
 
         requestSpecification = RestAssured.given();
         requestSpecification.contentType(ContentType.JSON);
         requestSpecification.header(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken);
         requestSpecification.header(HttpHeaders.IF_MATCH, etagContent);
-        requestSpecification.body(userUpdateDTO);
+        requestSpecification.body(updateAccountRequest);
 
         response = requestSpecification.put(TestConstants.staffsURL + "/update");
         validatableResponse = response.then();
@@ -686,19 +711,24 @@ class StaffControllerTest {
 
         validatableResponse.statusCode(200);
 
-        AccountResponse userOutputDTO = response.getBody().as(AccountResponse.class);
+        AccountResponse accountResponse = response.getBody().as(AccountResponse.class);
 
         // Login to staff (owner) account
         accessToken = loginToAccount(new LoginAccountRequest(staffUserNo1.getLogin(), passwordNotHashed), TestConstants.staffLoginURL);
         
         String newStaffPassword = "SomeNewStaffPasswordNo1";
 
-        UpdateAccountRequest userUpdateDTO = new UpdateAccountRequest(userOutputDTO.id(), userOutputDTO.login(), newStaffPassword, userOutputDTO.active());
+        UpdateAccountRequest updateAccountRequest = UpdateAccountRequest.builder()
+            .id(accountResponse.getId())
+            .login(accountResponse.getLogin())
+            .password(newStaffPassword)
+            .active(accountResponse.isActive())
+            .build();
 
         requestSpecification = RestAssured.given();
         requestSpecification.contentType(ContentType.JSON);
         requestSpecification.header(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken);
-        requestSpecification.body(userUpdateDTO);
+        requestSpecification.body(updateAccountRequest);
 
         response = requestSpecification.put(TestConstants.staffsURL + "/update");
         validatableResponse = response.then();
@@ -730,13 +760,18 @@ class StaffControllerTest {
 
         UUID newStaffID = UUID.randomUUID();
 
-        UpdateAccountRequest userUpdateDTO = new UpdateAccountRequest(newStaffID, accountResponse.login(), passwordNotHashed, accountResponse.active());
+        UpdateAccountRequest updateAccountRequest = UpdateAccountRequest.builder()
+            .id(newStaffID)
+            .login(accountResponse.getLogin())
+            .password(passwordNotHashed)
+            .active(accountResponse.isActive())
+            .build();
 
         requestSpecification = RestAssured.given();
         requestSpecification.contentType(ContentType.JSON);
         requestSpecification.header(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken);
         requestSpecification.header(HttpHeaders.IF_MATCH, etagContent);
-        requestSpecification.body(userUpdateDTO);
+        requestSpecification.body(updateAccountRequest);
 
         response = requestSpecification.put(TestConstants.staffsURL + "/update");
         validatableResponse = response.then();
@@ -768,13 +803,18 @@ class StaffControllerTest {
 
         String newStaffLogin = "SomeNewStaffLogin";
 
-        UpdateAccountRequest userUpdateDTO = new UpdateAccountRequest(accountResponse.id(), newStaffLogin, newStaffLogin, accountResponse.active());
+        UpdateAccountRequest updateAccountRequest = UpdateAccountRequest.builder()
+            .id(accountResponse.getId())
+            .login(newStaffLogin)
+            .password(newStaffLogin)
+            .active(accountResponse.isActive())
+            .build();
 
         requestSpecification = RestAssured.given();
         requestSpecification.contentType(ContentType.JSON);
         requestSpecification.header(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken);
         requestSpecification.header(HttpHeaders.IF_MATCH, etagContent);
-        requestSpecification.body(userUpdateDTO);
+        requestSpecification.body(updateAccountRequest);
 
         response = requestSpecification.put(TestConstants.staffsURL + "/update");
         validatableResponse = response.then();
@@ -806,13 +846,18 @@ class StaffControllerTest {
 
         boolean newStaffStatus = false;
 
-        UpdateAccountRequest userUpdateDTO = new UpdateAccountRequest(accountResponse.id(), accountResponse.login(), passwordNotHashed, newStaffStatus);
+        UpdateAccountRequest updateAccountRequest = UpdateAccountRequest.builder()
+            .id(accountResponse.getId())
+            .login(accountResponse.getLogin())
+            .password(passwordNotHashed)
+            .active(newStaffStatus)
+            .build();
 
         requestSpecification = RestAssured.given();
         requestSpecification.contentType(ContentType.JSON);
         requestSpecification.header(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken);
         requestSpecification.header(HttpHeaders.IF_MATCH, etagContent);
-        requestSpecification.body(userUpdateDTO);
+        requestSpecification.body(updateAccountRequest);
 
         response = requestSpecification.put(TestConstants.staffsURL + "/update");
         validatableResponse = response.then();

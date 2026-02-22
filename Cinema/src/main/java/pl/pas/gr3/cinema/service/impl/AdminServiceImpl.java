@@ -2,11 +2,13 @@ package pl.pas.gr3.cinema.service.impl;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import pl.pas.gr3.cinema.entity.account.Account;
+import pl.pas.gr3.cinema.mapper.AccountMapper;
+import pl.pas.gr3.cinema.repository.api.AccountRepository;
 import pl.pas.gr3.cinema.util.consts.model.UserConstants;
 import pl.pas.gr3.cinema.service.api.AccountService;
 import pl.pas.gr3.cinema.entity.Ticket;
 import pl.pas.gr3.cinema.entity.account.Admin;
-import pl.pas.gr3.cinema.repository.impl.AccountRepositoryImpl;
 
 import java.util.List;
 import java.util.UUID;
@@ -15,7 +17,9 @@ import java.util.UUID;
 @RequiredArgsConstructor
 public class AdminServiceImpl implements AccountService<Admin> {
 
-    private final AccountRepositoryImpl accountRepository;
+    private final AccountRepository accountRepository;
+
+    private final AccountMapper accountMapper;
 
     @Override
     public Admin create(String login, String password) {
@@ -24,7 +28,8 @@ public class AdminServiceImpl implements AccountService<Admin> {
 
     @Override
     public Admin findByUUID(UUID accountId) {
-        return accountRepository.findAdminByUUID(accountId);
+        Account foundAccount = accountRepository.findByUUID(accountId);
+        return accountMapper.toAdmin(foundAccount);
     }
 
     @Override
@@ -49,13 +54,15 @@ public class AdminServiceImpl implements AccountService<Admin> {
 
     @Override
     public void activate(UUID accountId) {
-        Admin foundAdmin = accountRepository.findAdminByUUID(accountId);
+        Account foundAdminAccount = accountRepository.findByUUID(accountId);
+        Admin foundAdmin = accountMapper.toAdmin(foundAdminAccount);
         accountRepository.activate(foundAdmin, UserConstants.ADMIN_DISCRIMINATOR);
     }
 
     @Override
     public void deactivate(UUID accountId) {
-        Admin foundAdmin = accountRepository.findAdminByUUID(accountId);
+        Account foundAdminAccount = accountRepository.findByUUID(accountId);
+        Admin foundAdmin = accountMapper.toAdmin(foundAdminAccount);
         accountRepository.deactivate(foundAdmin, UserConstants.ADMIN_DISCRIMINATOR);
     }
 

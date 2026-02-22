@@ -21,8 +21,8 @@ import pl.pas.gr3.cinema.entity.account.Admin;
 import pl.pas.gr3.cinema.entity.account.Client;
 import pl.pas.gr3.cinema.entity.account.Staff;
 import pl.pas.gr3.cinema.repository.impl.AccountRepositoryImpl;
-import pl.pas.gr3.cinema.dto.auth.LoginAccountRequest;
-import pl.pas.gr3.cinema.dto.auth.AccountResponse;
+import pl.pas.gr3.cinema.dto.account.LoginAccountRequest;
+import pl.pas.gr3.cinema.dto.account.AccountResponse;
 
 import java.net.URL;
 import java.util.List;
@@ -117,7 +117,7 @@ class AuthenticationControllerTest {
 
         AccountResponse accountResponse = response.getBody().as(AccountResponse.class);
 
-        assertEquals(clientLogin, accountResponse.login());
+        assertEquals(clientLogin, accountResponse.getLogin());
     }
 
     @Test
@@ -251,7 +251,7 @@ class AuthenticationControllerTest {
 
         AccountResponse accountResponse = response.getBody().as(AccountResponse.class);
 
-        assertEquals(clientLogin, accountResponse.login());
+        assertEquals(clientLogin, accountResponse.getLogin());
     }
 
     @Test
@@ -273,7 +273,7 @@ class AuthenticationControllerTest {
 
         AccountResponse accountResponse = response.getBody().as(AccountResponse.class);
 
-        assertEquals(clientLogin, accountResponse.login());
+        assertEquals(clientLogin, accountResponse.getLogin());
     }
 
     @Test
@@ -338,7 +338,7 @@ class AuthenticationControllerTest {
 
         AccountResponse accountResponse = response.getBody().as(AccountResponse.class);
 
-        assertEquals(clientLogin, accountResponse.login());
+        assertEquals(clientLogin, accountResponse.getLogin());
     }
 
     @Test
@@ -493,7 +493,7 @@ class AuthenticationControllerTest {
 
         AccountResponse accountResponse = response.getBody().as(AccountResponse.class);
 
-        assertEquals(clientLogin, accountResponse.login());
+        assertEquals(clientLogin, accountResponse.getLogin());
     }
 
     @Test
@@ -518,7 +518,7 @@ class AuthenticationControllerTest {
 
         AccountResponse accountResponse = response.getBody().as(AccountResponse.class);
 
-        assertEquals(clientLogin, accountResponse.login());
+        assertEquals(clientLogin, accountResponse.getLogin());
     }
 
     @Test
@@ -589,7 +589,7 @@ class AuthenticationControllerTest {
 
         AccountResponse accountResponse = response.getBody().as(AccountResponse.class);
 
-        assertEquals(clientLogin, accountResponse.login());
+        assertEquals(clientLogin, accountResponse.getLogin());
     }
 
     @Test
@@ -744,7 +744,7 @@ class AuthenticationControllerTest {
 
         AccountResponse accountResponse = response.getBody().as(AccountResponse.class);
 
-        assertEquals(clientLogin, accountResponse.login());
+        assertEquals(clientLogin, accountResponse.getLogin());
     }
 
     @Test
@@ -769,7 +769,7 @@ class AuthenticationControllerTest {
 
         AccountResponse userOutputDTO = response.getBody().as(AccountResponse.class);
 
-        assertEquals(clientLogin, userOutputDTO.login());
+        assertEquals(clientLogin, userOutputDTO.getLogin());
     }
 
     @Test
@@ -840,7 +840,7 @@ class AuthenticationControllerTest {
 
         AccountResponse accountResponse = response.getBody().as(AccountResponse.class);
 
-        assertEquals(clientLogin, accountResponse.login());
+        assertEquals(clientLogin, accountResponse.getLogin());
     }
 
     @Test
@@ -865,7 +865,7 @@ class AuthenticationControllerTest {
 
         AccountResponse accountResponse = response.getBody().as(AccountResponse.class);
 
-        assertEquals(staffLogin, accountResponse.login());
+        assertEquals(staffLogin, accountResponse.getLogin());
     }
 
     @Test
@@ -890,7 +890,7 @@ class AuthenticationControllerTest {
 
         AccountResponse accountResponse = response.getBody().as(AccountResponse.class);
 
-        assertEquals(adminLogin, accountResponse.login());
+        assertEquals(adminLogin, accountResponse.getLogin());
     }
 
     // Data incorrect tests.
@@ -1005,7 +1005,7 @@ class AuthenticationControllerTest {
 
         AccountResponse accountResponse = response.getBody().as(AccountResponse.class);
 
-        assertEquals(clientLogin, accountResponse.login());
+        assertEquals(clientLogin, accountResponse.getLogin());
     }
 
     @Test
@@ -1030,7 +1030,7 @@ class AuthenticationControllerTest {
 
         AccountResponse accountResponse = response.getBody().as(AccountResponse.class);
 
-        assertEquals(clientLogin, accountResponse.login());
+        assertEquals(clientLogin, accountResponse.getLogin());
     }
 
     @Test
@@ -1183,7 +1183,7 @@ class AuthenticationControllerTest {
 
         AccountResponse accountResponse = response.getBody().as(AccountResponse.class);
 
-        assertEquals(staffLogin, accountResponse.login());
+        assertEquals(staffLogin, accountResponse.getLogin());
     }
 
     @Test
@@ -1208,7 +1208,7 @@ class AuthenticationControllerTest {
 
         AccountResponse accountResponse = response.getBody().as(AccountResponse.class);
 
-        assertEquals(staffLogin, accountResponse.login());
+        assertEquals(staffLogin, accountResponse.getLogin());
     }
 
     @Test
@@ -1361,7 +1361,7 @@ class AuthenticationControllerTest {
 
         AccountResponse accountResponse = response.getBody().as(AccountResponse.class);
 
-        assertEquals(adminLogin, accountResponse.login());
+        assertEquals(adminLogin, accountResponse.getLogin());
     }
 
     @Test
@@ -1386,7 +1386,7 @@ class AuthenticationControllerTest {
 
         AccountResponse accountResponse = response.getBody().as(AccountResponse.class);
 
-        assertEquals(adminLogin, accountResponse.login());
+        assertEquals(adminLogin, accountResponse.getLogin());
     }
 
     @Test

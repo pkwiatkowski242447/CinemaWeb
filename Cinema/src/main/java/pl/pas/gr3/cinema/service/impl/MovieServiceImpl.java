@@ -2,10 +2,10 @@ package pl.pas.gr3.cinema.service.impl;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import pl.pas.gr3.cinema.repository.api.MovieRepository;
 import pl.pas.gr3.cinema.service.api.MovieService;
 import pl.pas.gr3.cinema.entity.Movie;
 import pl.pas.gr3.cinema.entity.Ticket;
-import pl.pas.gr3.cinema.repository.impl.MovieRepositoryImpl;
 
 import java.util.List;
 import java.util.UUID;
@@ -14,7 +14,7 @@ import java.util.UUID;
 @RequiredArgsConstructor
 public class MovieServiceImpl implements MovieService {
 
-    private final MovieRepositoryImpl movieRepository;
+    private final MovieRepository movieRepository;
 
     @Override
     public Movie create(String movieTitle, double movieBasePrice, int scrRoomNumber, int numberOfAvailableSeats) {

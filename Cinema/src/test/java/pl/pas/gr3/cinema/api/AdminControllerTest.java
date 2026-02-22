@@ -21,9 +21,9 @@ import pl.pas.gr3.cinema.TestConstants;
 import pl.pas.gr3.cinema.util.consts.model.UserConstants;
 import pl.pas.gr3.cinema.entity.account.Client;
 import pl.pas.gr3.cinema.entity.account.Staff;
-import pl.pas.gr3.cinema.dto.auth.LoginAccountRequest;
-import pl.pas.gr3.cinema.dto.auth.AccountResponse;
-import pl.pas.gr3.cinema.dto.auth.UpdateAccountRequest;
+import pl.pas.gr3.cinema.dto.account.LoginAccountRequest;
+import pl.pas.gr3.cinema.dto.account.AccountResponse;
+import pl.pas.gr3.cinema.dto.account.UpdateAccountRequest;
 import pl.pas.gr3.cinema.service.impl.AdminServiceImpl;
 import pl.pas.gr3.cinema.entity.account.Admin;
 import pl.pas.gr3.cinema.repository.impl.AccountRepositoryImpl;
@@ -170,9 +170,9 @@ class AdminControllerTest {
 
         AccountResponse accountResponse = response.getBody().as(AccountResponse.class);
 
-        assertEquals(adminUserNo1.getId(), accountResponse.id());
-        assertEquals(adminUserNo1.getLogin(), accountResponse.login());
-        assertEquals(adminUserNo1.isActive(), accountResponse.active());
+        assertEquals(adminUserNo1.getId(), accountResponse.getId());
+        assertEquals(adminUserNo1.getLogin(), accountResponse.getLogin());
+        assertEquals(adminUserNo1.isActive(), accountResponse.isActive());
     }
 
     @Test
@@ -258,9 +258,9 @@ class AdminControllerTest {
 
         AccountResponse accountResponse = response.getBody().as(AccountResponse.class);
 
-        assertEquals(adminUserNo1.getId(), accountResponse.id());
-        assertEquals(adminUserNo1.getLogin(), accountResponse.login());
-        assertEquals(adminUserNo1.isActive(), accountResponse.active());
+        assertEquals(adminUserNo1.getId(), accountResponse.getId());
+        assertEquals(adminUserNo1.getLogin(), accountResponse.getLogin());
+        assertEquals(adminUserNo1.isActive(), accountResponse.isActive());
     }
 
     @Test
@@ -445,11 +445,17 @@ class AdminControllerTest {
         // Prepare user update
         String newAdminPassword = "SomeNewAdminPasswordNo1";
 
-        UpdateAccountRequest userUpdateDTO = new UpdateAccountRequest(accountResponse.id(), accountResponse.login(), newAdminPassword, accountResponse.active());
+        UpdateAccountRequest updateAccountRequest = UpdateAccountRequest.builder()
+            .id(accountResponse.getId())
+            .login(accountResponse.getLogin())
+            .password(newAdminPassword)
+            .active(accountResponse.isActive())
+            .build();
+
         requestSpecification = RestAssured.given();
-        requestSpecification.header("If-Match", eTag);
+        requestSpecification.header(HttpHeaders.IF_MATCH, eTag);
         requestSpecification.contentType(ContentType.JSON);
-        requestSpecification.body(userUpdateDTO);
+        requestSpecification.body(updateAccountRequest);
 
         response = requestSpecification.put(TestConstants.adminsURL + "/update");
         assertTrue(response.asString().isEmpty());
@@ -479,13 +485,19 @@ class AdminControllerTest {
 
         // Prepare user update
         String newAdminPassword = "SomeNewAdminPasswordNo1";
-
-        UpdateAccountRequest userUpdateDTO = new UpdateAccountRequest(accountResponse.id(), accountResponse.login(), newAdminPassword, accountResponse.active());
+        
+        UpdateAccountRequest updateAccountRequest = UpdateAccountRequest.builder()
+            .id(accountResponse.getId())
+            .login(accountResponse.getLogin())
+            .password(newAdminPassword)
+            .active(accountResponse.isActive())
+            .build();
+        
         requestSpecification = RestAssured.given();
         requestSpecification.header(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken);
-        requestSpecification.header("If-Match", eTag);
+        requestSpecification.header(HttpHeaders.IF_MATCH, eTag);
         requestSpecification.contentType(ContentType.JSON);
-        requestSpecification.body(userUpdateDTO);
+        requestSpecification.body(updateAccountRequest);
 
         response = requestSpecification.put(TestConstants.adminsURL + "/update");
         validatableResponse = response.then();
@@ -514,13 +526,19 @@ class AdminControllerTest {
 
         // Prepare user update
         String newAdminPassword = "SomeNewAdminPasswordNo1";
-
-        UpdateAccountRequest userUpdateDTO = new UpdateAccountRequest(accountResponse.id(), accountResponse.login(), newAdminPassword, accountResponse.active());
+        
+        UpdateAccountRequest updateAccountRequest = UpdateAccountRequest.builder()
+            .id(accountResponse.getId())
+            .login(accountResponse.getLogin())
+            .password(newAdminPassword)
+            .active(accountResponse.isActive())
+            .build();
+        
         requestSpecification = RestAssured.given();
         requestSpecification.header(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken);
-        requestSpecification.header("If-Match", eTag);
+        requestSpecification.header(HttpHeaders.IF_MATCH, eTag);
         requestSpecification.contentType(ContentType.JSON);
-        requestSpecification.body(userUpdateDTO);
+        requestSpecification.body(updateAccountRequest);
 
         response = requestSpecification.put(TestConstants.adminsURL + "/update");
         validatableResponse = response.then();
@@ -548,20 +566,26 @@ class AdminControllerTest {
 
         response = requestSpecification.get(TestConstants.adminsURL + "/login/self");
         String eTag = response.getHeader(HttpHeaders.ETAG);
-        AccountResponse userOutputDTO = response.getBody().as(AccountResponse.class);
+        AccountResponse accountResponse = response.getBody().as(AccountResponse.class);
 
         // Login to admin (not owner) account
         accessToken = loginToAccount(new LoginAccountRequest(adminUserNo2.getLogin(), passwordNotHashed), TestConstants.adminLoginURL);
 
         // Prepare user update
         String newAdminPassword = "SomeNewAdminPasswordNo1";
-
-        UpdateAccountRequest userUpdateDTO = new UpdateAccountRequest(userOutputDTO.id(), userOutputDTO.login(), newAdminPassword, userOutputDTO.active());
+        
+        UpdateAccountRequest updateAccountRequest = UpdateAccountRequest.builder()
+            .id(accountResponse.getId())
+            .login(accountResponse.getLogin())
+            .password(newAdminPassword)
+            .active(accountResponse.isActive())
+            .build();
+        
         requestSpecification = RestAssured.given();
         requestSpecification.header(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken);
-        requestSpecification.header("If-Match", eTag);
+        requestSpecification.header(HttpHeaders.IF_MATCH, eTag);
         requestSpecification.contentType(ContentType.JSON);
-        requestSpecification.body(userUpdateDTO);
+        requestSpecification.body(updateAccountRequest);
 
         response = requestSpecification.put(TestConstants.adminsURL + "/update");
         validatableResponse = response.then();
@@ -597,13 +621,19 @@ class AdminControllerTest {
         // Prepare user update
         String adminPasswordBefore = adminUserNo1.getPassword();
         String newAdminPassword = "SomeNewAdminPasswordNo1";
-
-        UpdateAccountRequest userUpdateDTO = new UpdateAccountRequest(accountResponse.id(), accountResponse.login(), newAdminPassword, accountResponse.active());
+        
+        UpdateAccountRequest updateAccountRequest = UpdateAccountRequest.builder()
+            .id(accountResponse.getId())
+            .login(accountResponse.getLogin())
+            .password(newAdminPassword)
+            .active(accountResponse.isActive())
+            .build();
+        
         requestSpecification = RestAssured.given();
         requestSpecification.header(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken);
-        requestSpecification.header("If-Match", eTag);
+        requestSpecification.header(HttpHeaders.IF_MATCH, eTag);
         requestSpecification.contentType(ContentType.JSON);
-        requestSpecification.body(userUpdateDTO);
+        requestSpecification.body(updateAccountRequest);
 
         response = requestSpecification.put(TestConstants.adminsURL + "/update");
         assertTrue(response.asString().isEmpty());
@@ -645,11 +675,17 @@ class AdminControllerTest {
         // Prepare user update
         String newAdminPassword = "SomeNewAdminPasswordNo1";
 
-        UpdateAccountRequest userUpdateDTO = new UpdateAccountRequest(accountResponse.id(), accountResponse.login(), newAdminPassword, accountResponse.active());
+        UpdateAccountRequest updateAccountRequest = UpdateAccountRequest.builder()
+            .id(accountResponse.getId())
+            .login(accountResponse.getLogin())
+            .password(newAdminPassword)
+            .active(accountResponse.isActive())
+            .build();
+        
         requestSpecification = RestAssured.given();
         requestSpecification.header(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken);
         requestSpecification.contentType(ContentType.JSON);
-        requestSpecification.body(userUpdateDTO);
+        requestSpecification.body(updateAccountRequest);
 
         response = requestSpecification.put(TestConstants.adminsURL + "/update");
         validatableResponse = response.then();
@@ -684,13 +720,18 @@ class AdminControllerTest {
 
         // Prepare user update
         UUID newAdminId = UUID.randomUUID();
-
-        UpdateAccountRequest userUpdateDTO = new UpdateAccountRequest(newAdminId, accountResponse.login(), adminUserNo1.getPassword(), accountResponse.active());
+        UpdateAccountRequest updateAccountRequest = UpdateAccountRequest.builder()
+            .id(newAdminId)
+            .login(accountResponse.getLogin())
+            .password(adminUserNo1.getPassword())
+            .active(accountResponse.isActive())
+            .build();
+        
         requestSpecification = RestAssured.given();
         requestSpecification.header(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken);
-        requestSpecification.header("If-Match", eTag);
+        requestSpecification.header(HttpHeaders.IF_MATCH, eTag);
         requestSpecification.contentType(ContentType.JSON);
-        requestSpecification.body(userUpdateDTO);
+        requestSpecification.body(updateAccountRequest);
 
         response = requestSpecification.put(TestConstants.adminsURL + "/update");
         validatableResponse = response.then();
@@ -725,13 +766,19 @@ class AdminControllerTest {
 
         // Prepare user update
         String newAdminLogin = "SomeOtherAdminLogin";
-
-        UpdateAccountRequest userUpdateDTO = new UpdateAccountRequest(accountResponse.id(), newAdminLogin, adminUserNo1.getPassword(), accountResponse.active());
+        
+        UpdateAccountRequest updateAccountRequest = UpdateAccountRequest.builder()
+            .id(accountResponse.getId())
+            .login(newAdminLogin)
+            .password(adminUserNo1.getPassword())
+            .active(accountResponse.isActive())
+            .build();
+        
         requestSpecification = RestAssured.given();
         requestSpecification.header(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken);
-        requestSpecification.header("If-Match", eTag);
+        requestSpecification.header(HttpHeaders.IF_MATCH, eTag);
         requestSpecification.contentType(ContentType.JSON);
-        requestSpecification.body(userUpdateDTO);
+        requestSpecification.body(updateAccountRequest);
 
         response = requestSpecification.put(TestConstants.adminsURL + "/update");
         validatableResponse = response.then();
@@ -766,13 +813,19 @@ class AdminControllerTest {
 
         // Prepare user update
         boolean newAdminStatusActive = false;
-
-        UpdateAccountRequest userUpdateDTO = new UpdateAccountRequest(accountResponse.id(), accountResponse.login(), adminUserNo1.getPassword(), newAdminStatusActive);
+        
+        UpdateAccountRequest updateAccountRequest = UpdateAccountRequest.builder()
+            .id(accountResponse.getId())
+            .login(accountResponse.getLogin())
+            .password(adminUserNo1.getPassword())
+            .active(newAdminStatusActive)
+            .build();
+        
         requestSpecification = RestAssured.given();
         requestSpecification.header(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken);
-        requestSpecification.header("If-Match", eTag);
+        requestSpecification.header(HttpHeaders.IF_MATCH, eTag);
         requestSpecification.contentType(ContentType.JSON);
-        requestSpecification.body(userUpdateDTO);
+        requestSpecification.body(updateAccountRequest);
 
         response = requestSpecification.put(TestConstants.adminsURL + "/update");
         validatableResponse = response.then();
@@ -807,13 +860,19 @@ class AdminControllerTest {
 
         // Prepare user update
         String newAdminPassword = null;
-
-        UpdateAccountRequest userUpdateDTO = new UpdateAccountRequest(accountResponse.id(), accountResponse.login(), newAdminPassword, accountResponse.active());
+        
+        UpdateAccountRequest updateAccountRequest = UpdateAccountRequest.builder()
+            .id(accountResponse.getId())
+            .login(accountResponse.getLogin())
+            .password(newAdminPassword)
+            .active(accountResponse.isActive())
+            .build();
+        
         requestSpecification = RestAssured.given();
         requestSpecification.header(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken);
-        requestSpecification.header("If-Match", eTag);
+        requestSpecification.header(HttpHeaders.IF_MATCH, eTag);
         requestSpecification.contentType(ContentType.JSON);
-        requestSpecification.body(userUpdateDTO);
+        requestSpecification.body(updateAccountRequest);
 
         response = requestSpecification.put(TestConstants.adminsURL + "/update");
         validatableResponse = response.then();
@@ -848,13 +907,19 @@ class AdminControllerTest {
 
         // Prepare user update
         String newAdminPassword = "";
-
-        UpdateAccountRequest userUpdateDTO = new UpdateAccountRequest(accountResponse.id(), accountResponse.login(), newAdminPassword, accountResponse.active());
+        
+        UpdateAccountRequest updateAccountRequest = UpdateAccountRequest.builder()
+            .id(accountResponse.getId())
+            .login(accountResponse.getLogin())
+            .password(newAdminPassword)
+            .active(accountResponse.isActive())
+            .build();
+        
         requestSpecification = RestAssured.given();
         requestSpecification.header(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken);
-        requestSpecification.header("If-Match", eTag);
+        requestSpecification.header(HttpHeaders.IF_MATCH, eTag);
         requestSpecification.contentType(ContentType.JSON);
-        requestSpecification.body(userUpdateDTO);
+        requestSpecification.body(updateAccountRequest);
 
         response = requestSpecification.put(TestConstants.adminsURL + "/update");
         validatableResponse = response.then();
@@ -1011,11 +1076,11 @@ class AdminControllerTest {
         validatableResponse.statusCode(400);
     }
 
-    private String loginToAccount(LoginAccountRequest loginDto, String loginURL) {
+    private String loginToAccount(LoginAccountRequest loginRequest, String loginURL) {
         RequestSpecification requestSpecification = RestAssured.given();
         requestSpecification.contentType(ContentType.JSON);
         requestSpecification.accept(ContentType.JSON);
-        requestSpecification.body(new LoginAccountRequest(loginDto.login(), loginDto.password()));
+        requestSpecification.body(new LoginAccountRequest(loginRequest.login(), loginRequest.password()));
 
         Response response = requestSpecification.post(loginURL);
         ValidatableResponse validatableResponse = response.then();

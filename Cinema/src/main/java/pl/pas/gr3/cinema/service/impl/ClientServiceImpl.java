@@ -2,8 +2,10 @@ package pl.pas.gr3.cinema.service.impl;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import pl.pas.gr3.cinema.entity.account.Account;
+import pl.pas.gr3.cinema.mapper.AccountMapper;
+import pl.pas.gr3.cinema.repository.api.AccountRepository;
 import pl.pas.gr3.cinema.util.consts.model.UserConstants;
-import pl.pas.gr3.cinema.repository.impl.AccountRepositoryImpl;
 import pl.pas.gr3.cinema.service.api.AccountService;
 import pl.pas.gr3.cinema.entity.Ticket;
 import pl.pas.gr3.cinema.entity.account.Client;
@@ -15,7 +17,9 @@ import java.util.UUID;
 @RequiredArgsConstructor
 public class ClientServiceImpl implements AccountService<Client> {
 
-    private final AccountRepositoryImpl accountRepository;
+    private final AccountRepository accountRepository;
+
+    private final AccountMapper accountMapper;
 
     @Override
     public Client create(String login, String password) {
@@ -24,7 +28,8 @@ public class ClientServiceImpl implements AccountService<Client> {
 
     @Override
     public Client findByUUID(UUID accountId) {
-        return accountRepository.findClientByUUID(accountId);
+        Account findClientAccount = accountRepository.findByUUID(accountId);
+        return accountMapper.toClient(findClientAccount);
     }
 
     @Override
@@ -49,13 +54,15 @@ public class ClientServiceImpl implements AccountService<Client> {
 
     @Override
     public void activate(UUID accountId) {
-        Client foundClient = accountRepository.findClientByUUID(accountId);
+        Account findClientAccount = accountRepository.findByUUID(accountId);
+        Client foundClient = accountMapper.toClient(findClientAccount);
         accountRepository.activate(foundClient, UserConstants.CLIENT_DISCRIMINATOR);
     }
 
     @Override
     public void deactivate(UUID accountId) {
-        Client foundClient = accountRepository.findClientByUUID(accountId);
+        Account findClientAccount = accountRepository.findByUUID(accountId);
+        Client foundClient = accountMapper.toClient(findClientAccount);
         accountRepository.deactivate(foundClient, UserConstants.CLIENT_DISCRIMINATOR);
     }
 

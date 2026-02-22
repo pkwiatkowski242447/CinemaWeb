@@ -23,9 +23,9 @@ import pl.pas.gr3.cinema.entity.account.Admin;
 import pl.pas.gr3.cinema.entity.account.Client;
 import pl.pas.gr3.cinema.entity.account.Staff;
 import pl.pas.gr3.cinema.repository.impl.AccountRepositoryImpl;
-import pl.pas.gr3.cinema.dto.auth.LoginAccountRequest;
-import pl.pas.gr3.cinema.dto.output.MovieResponse;
-import pl.pas.gr3.cinema.dto.input.CreateMovieRequest;
+import pl.pas.gr3.cinema.dto.account.LoginAccountRequest;
+import pl.pas.gr3.cinema.dto.movie.MovieResponse;
+import pl.pas.gr3.cinema.dto.movie.CreateMovieRequest;
 import pl.pas.gr3.cinema.service.impl.MovieServiceImpl;
 import pl.pas.gr3.cinema.entity.Movie;
 import pl.pas.gr3.cinema.repository.impl.MovieRepositoryImpl;
@@ -888,7 +888,7 @@ class MovieControllerTest {
         ValidatableResponse validatableResponse = response.then();
         validatableResponse.statusCode(200);
 
-        MovieResponse movieOutputDTO = response.getBody().as(MovieResponse.class);
+        MovieResponse movieResponse = response.getBody().as(MovieResponse.class);
         String etagContent = response.header(HttpHeaders.ETAG);
 
         String newMovieTitle = "SomeExampleMovieTitleNo1";
@@ -896,15 +896,15 @@ class MovieControllerTest {
         int newScrRoomNumber = 7;
         int newNumberOfAvailableSeats = 11;
 
-        movieOutputDTO.setTitle(newMovieTitle);
-        movieOutputDTO.setBasePrice(newMovieBasePrice);
-        movieOutputDTO.setScrRoomNumber(newScrRoomNumber);
-        movieOutputDTO.setAvailableSeats(newNumberOfAvailableSeats);
+        movieResponse.setTitle(newMovieTitle);
+        movieResponse.setBasePrice(newMovieBasePrice);
+        movieResponse.setScrRoomNumber(newScrRoomNumber);
+        movieResponse.setAvailableSeats(newNumberOfAvailableSeats);
 
         requestSpecification = RestAssured.given();
         requestSpecification.contentType(ContentType.JSON);
-        requestSpecification.header("If-Match", etagContent);
-        requestSpecification.body(movieOutputDTO);
+        requestSpecification.header(HttpHeaders.IF_MATCH, etagContent);
+        requestSpecification.body(movieResponse);
 
         response = requestSpecification.put(TestConstants.moviesURL + "/update");
 
@@ -924,7 +924,7 @@ class MovieControllerTest {
         ValidatableResponse validatableResponse = response.then();
         validatableResponse.statusCode(200);
 
-        MovieResponse movieOutputDTO = response.getBody().as(MovieResponse.class);
+        MovieResponse movieResponse = response.getBody().as(MovieResponse.class);
         String etagContent = response.header(HttpHeaders.ETAG);
 
         accessToken = loginToAccount(new LoginAccountRequest(clientUser.getLogin(), passwordNotHashed), TestConstants.clientLoginURL);
@@ -934,16 +934,16 @@ class MovieControllerTest {
         int newScrRoomNumber = 7;
         int newNumberOfAvailableSeats = 11;
 
-        movieOutputDTO.setTitle(newMovieTitle);
-        movieOutputDTO.setBasePrice(newMovieBasePrice);
-        movieOutputDTO.setScrRoomNumber(newScrRoomNumber);
-        movieOutputDTO.setAvailableSeats(newNumberOfAvailableSeats);
+        movieResponse.setTitle(newMovieTitle);
+        movieResponse.setBasePrice(newMovieBasePrice);
+        movieResponse.setScrRoomNumber(newScrRoomNumber);
+        movieResponse.setAvailableSeats(newNumberOfAvailableSeats);
 
         requestSpecification = RestAssured.given();
         requestSpecification.contentType(ContentType.JSON);
         requestSpecification.header(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken);
-        requestSpecification.header("If-Match", etagContent);
-        requestSpecification.body(movieOutputDTO);
+        requestSpecification.header(HttpHeaders.IF_MATCH, etagContent);
+        requestSpecification.body(movieResponse);
 
         response = requestSpecification.put(TestConstants.moviesURL + "/update");
 
@@ -963,7 +963,7 @@ class MovieControllerTest {
         ValidatableResponse validatableResponse = response.then();
         validatableResponse.statusCode(200);
 
-        MovieResponse movieOutputDTO = response.getBody().as(MovieResponse.class);
+        MovieResponse movieResponse = response.getBody().as(MovieResponse.class);
         String etagContent = response.header(HttpHeaders.ETAG);
 
         String movieTitleBefore = movieNo1.getTitle();
@@ -976,16 +976,16 @@ class MovieControllerTest {
         int newScrRoomNumber = 7;
         int newNumberOfAvailableSeats = 11;
 
-        movieOutputDTO.setTitle(newMovieTitle);
-        movieOutputDTO.setBasePrice(newMovieBasePrice);
-        movieOutputDTO.setScrRoomNumber(newScrRoomNumber);
-        movieOutputDTO.setAvailableSeats(newNumberOfAvailableSeats);
+        movieResponse.setTitle(newMovieTitle);
+        movieResponse.setBasePrice(newMovieBasePrice);
+        movieResponse.setScrRoomNumber(newScrRoomNumber);
+        movieResponse.setAvailableSeats(newNumberOfAvailableSeats);
 
         requestSpecification = RestAssured.given();
         requestSpecification.contentType(ContentType.JSON);
         requestSpecification.header(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken);
-        requestSpecification.header("If-Match", etagContent);
-        requestSpecification.body(movieOutputDTO);
+        requestSpecification.header(HttpHeaders.IF_MATCH, etagContent);
+        requestSpecification.body(movieResponse);
 
         response = requestSpecification.put(TestConstants.moviesURL + "/update");
 
@@ -1022,7 +1022,7 @@ class MovieControllerTest {
         ValidatableResponse validatableResponse = response.then();
         validatableResponse.statusCode(200);
 
-        MovieResponse movieOutputDTO = response.getBody().as(MovieResponse.class);
+        MovieResponse movieResponse = response.getBody().as(MovieResponse.class);
         String etagContent = response.header(HttpHeaders.ETAG);
 
         accessToken = loginToAccount(new LoginAccountRequest(adminUser.getLogin(), passwordNotHashed), TestConstants.adminLoginURL);
@@ -1032,16 +1032,16 @@ class MovieControllerTest {
         int newScrRoomNumber = 7;
         int newNumberOfAvailableSeats = 11;
 
-        movieOutputDTO.setTitle(newMovieTitle);
-        movieOutputDTO.setBasePrice(newMovieBasePrice);
-        movieOutputDTO.setScrRoomNumber(newScrRoomNumber);
-        movieOutputDTO.setAvailableSeats(newNumberOfAvailableSeats);
+        movieResponse.setTitle(newMovieTitle);
+        movieResponse.setBasePrice(newMovieBasePrice);
+        movieResponse.setScrRoomNumber(newScrRoomNumber);
+        movieResponse.setAvailableSeats(newNumberOfAvailableSeats);
 
         requestSpecification = RestAssured.given();
         requestSpecification.contentType(ContentType.JSON);
         requestSpecification.header(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken);
-        requestSpecification.header("If-Match", etagContent);
-        requestSpecification.body(movieOutputDTO);
+        requestSpecification.header(HttpHeaders.IF_MATCH, etagContent);
+        requestSpecification.body(movieResponse);
 
         response = requestSpecification.put(TestConstants.moviesURL + "/update");
 
@@ -1061,22 +1061,22 @@ class MovieControllerTest {
         ValidatableResponse validatableResponse = response.then();
         validatableResponse.statusCode(200);
 
-        MovieResponse movieOutputDTO = response.getBody().as(MovieResponse.class);
+        MovieResponse movieResponse = response.getBody().as(MovieResponse.class);
 
         String newMovieTitle = "SomeExampleMovieTitleNo1";
         double newMovieBasePrice = 45.27;
         int newScrRoomNumber = 7;
         int newNumberOfAvailableSeats = 11;
 
-        movieOutputDTO.setTitle(newMovieTitle);
-        movieOutputDTO.setBasePrice(newMovieBasePrice);
-        movieOutputDTO.setScrRoomNumber(newScrRoomNumber);
-        movieOutputDTO.setAvailableSeats(newNumberOfAvailableSeats);
+        movieResponse.setTitle(newMovieTitle);
+        movieResponse.setBasePrice(newMovieBasePrice);
+        movieResponse.setScrRoomNumber(newScrRoomNumber);
+        movieResponse.setAvailableSeats(newNumberOfAvailableSeats);
 
         requestSpecification = RestAssured.given();
         requestSpecification.contentType(ContentType.JSON);
         requestSpecification.header(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken);
-        requestSpecification.body(movieOutputDTO);
+        requestSpecification.body(movieResponse);
 
         response = requestSpecification.put(TestConstants.moviesURL + "/update");
 
@@ -1096,16 +1096,16 @@ class MovieControllerTest {
         ValidatableResponse validatableResponse = response.then();
         validatableResponse.statusCode(200);
 
-        MovieResponse movieOutputDTO = response.getBody().as(MovieResponse.class);
+        MovieResponse movieResponse = response.getBody().as(MovieResponse.class);
         String etagContent = response.header(HttpHeaders.ETAG);
 
-        movieOutputDTO.setId(UUID.randomUUID());
+        movieResponse.setId(UUID.randomUUID());
 
         requestSpecification = RestAssured.given();
         requestSpecification.contentType(ContentType.JSON);
         requestSpecification.header(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken);
-        requestSpecification.header("If-Match", etagContent);
-        requestSpecification.body(movieOutputDTO);
+        requestSpecification.header(HttpHeaders.IF_MATCH, etagContent);
+        requestSpecification.body(movieResponse);
 
         response = requestSpecification.put(TestConstants.moviesURL + "/update");
 
@@ -1125,7 +1125,7 @@ class MovieControllerTest {
         ValidatableResponse validatableResponse = response.then();
         validatableResponse.statusCode(200);
 
-        MovieResponse movieOutputDTO = response.getBody().as(MovieResponse.class);
+        MovieResponse movieResponse = response.getBody().as(MovieResponse.class);
         String etagContent = response.header(HttpHeaders.ETAG);
 
         String newMovieTitle = null;
@@ -1133,16 +1133,16 @@ class MovieControllerTest {
         int newScrRoomNumber = 7;
         int newNumberOfAvailableSeats = 11;
 
-        movieOutputDTO.setTitle(newMovieTitle);
-        movieOutputDTO.setBasePrice(newMovieBasePrice);
-        movieOutputDTO.setScrRoomNumber(newScrRoomNumber);
-        movieOutputDTO.setAvailableSeats(newNumberOfAvailableSeats);
+        movieResponse.setTitle(newMovieTitle);
+        movieResponse.setBasePrice(newMovieBasePrice);
+        movieResponse.setScrRoomNumber(newScrRoomNumber);
+        movieResponse.setAvailableSeats(newNumberOfAvailableSeats);
 
         requestSpecification = RestAssured.given();
         requestSpecification.contentType(ContentType.JSON);
         requestSpecification.header(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken);
-        requestSpecification.header("If-Match", etagContent);
-        requestSpecification.body(movieOutputDTO);
+        requestSpecification.header(HttpHeaders.IF_MATCH, etagContent);
+        requestSpecification.body(movieResponse);
 
         response = requestSpecification.put(TestConstants.moviesURL + "/update");
 
@@ -1162,7 +1162,7 @@ class MovieControllerTest {
         ValidatableResponse validatableResponse = response.then();
         validatableResponse.statusCode(200);
 
-        MovieResponse movieOutputDTO = response.getBody().as(MovieResponse.class);
+        MovieResponse movieResponse = response.getBody().as(MovieResponse.class);
         String etagContent = response.header(HttpHeaders.ETAG);
 
         String newMovieTitle = "";
@@ -1170,16 +1170,16 @@ class MovieControllerTest {
         int newScrRoomNumber = 7;
         int newNumberOfAvailableSeats = 11;
 
-        movieOutputDTO.setTitle(newMovieTitle);
-        movieOutputDTO.setBasePrice(newMovieBasePrice);
-        movieOutputDTO.setScrRoomNumber(newScrRoomNumber);
-        movieOutputDTO.setAvailableSeats(newNumberOfAvailableSeats);
+        movieResponse.setTitle(newMovieTitle);
+        movieResponse.setBasePrice(newMovieBasePrice);
+        movieResponse.setScrRoomNumber(newScrRoomNumber);
+        movieResponse.setAvailableSeats(newNumberOfAvailableSeats);
 
         requestSpecification = RestAssured.given();
         requestSpecification.contentType(ContentType.JSON);
         requestSpecification.header(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken);
-        requestSpecification.header("If-Match", etagContent);
-        requestSpecification.body(movieOutputDTO);
+        requestSpecification.header(HttpHeaders.IF_MATCH, etagContent);
+        requestSpecification.body(movieResponse);
 
         response = requestSpecification.put(TestConstants.moviesURL + "/update");
 
@@ -1199,7 +1199,7 @@ class MovieControllerTest {
         ValidatableResponse validatableResponse = response.then();
         validatableResponse.statusCode(200);
 
-        MovieResponse movieOutputDTO = response.getBody().as(MovieResponse.class);
+        MovieResponse movieResponse = response.getBody().as(MovieResponse.class);
         String etagContent = response.header(HttpHeaders.ETAG);
 
         String newMovieTitle = "";
@@ -1207,16 +1207,16 @@ class MovieControllerTest {
         int newScrRoomNumber = 7;
         int newNumberOfAvailableSeats = 11;
 
-        movieOutputDTO.setTitle(newMovieTitle);
-        movieOutputDTO.setBasePrice(newMovieBasePrice);
-        movieOutputDTO.setScrRoomNumber(newScrRoomNumber);
-        movieOutputDTO.setAvailableSeats(newNumberOfAvailableSeats);
+        movieResponse.setTitle(newMovieTitle);
+        movieResponse.setBasePrice(newMovieBasePrice);
+        movieResponse.setScrRoomNumber(newScrRoomNumber);
+        movieResponse.setAvailableSeats(newNumberOfAvailableSeats);
 
         requestSpecification = RestAssured.given();
         requestSpecification.contentType(ContentType.JSON);
         requestSpecification.header(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken);
-        requestSpecification.header("If-Match", etagContent);
-        requestSpecification.body(movieOutputDTO);
+        requestSpecification.header(HttpHeaders.IF_MATCH, etagContent);
+        requestSpecification.body(movieResponse);
 
         response = requestSpecification.put(TestConstants.moviesURL + "/update");
 
@@ -1236,7 +1236,7 @@ class MovieControllerTest {
         ValidatableResponse validatableResponse = response.then();
         validatableResponse.statusCode(200);
 
-        MovieResponse movieOutputDTO = response.getBody().as(MovieResponse.class);
+        MovieResponse movieResponse = response.getBody().as(MovieResponse.class);
         String etagContent = response.header(HttpHeaders.ETAG);
 
         String newMovieTitle = "ddddfddddfddddfddddfddddfddddfddddfddddfddddfddddfddddfddddfddddfddddfddddfddddfddddfddddfddddfddddfddddfddddfddddfddddfddddfddddfddddfddddfddddfddddfd";
@@ -1244,16 +1244,16 @@ class MovieControllerTest {
         int newScrRoomNumber = 7;
         int newNumberOfAvailableSeats = 11;
 
-        movieOutputDTO.setTitle(newMovieTitle);
-        movieOutputDTO.setBasePrice(newMovieBasePrice);
-        movieOutputDTO.setScrRoomNumber(newScrRoomNumber);
-        movieOutputDTO.setAvailableSeats(newNumberOfAvailableSeats);
+        movieResponse.setTitle(newMovieTitle);
+        movieResponse.setBasePrice(newMovieBasePrice);
+        movieResponse.setScrRoomNumber(newScrRoomNumber);
+        movieResponse.setAvailableSeats(newNumberOfAvailableSeats);
 
         requestSpecification = RestAssured.given();
         requestSpecification.contentType(ContentType.JSON);
         requestSpecification.header(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken);
-        requestSpecification.header("If-Match", etagContent);
-        requestSpecification.body(movieOutputDTO);
+        requestSpecification.header(HttpHeaders.IF_MATCH, etagContent);
+        requestSpecification.body(movieResponse);
 
         response = requestSpecification.put(TestConstants.moviesURL + "/update");
 
@@ -1273,7 +1273,7 @@ class MovieControllerTest {
         ValidatableResponse validatableResponse = response.then();
         validatableResponse.statusCode(200);
 
-        MovieResponse movieOutputDTO = response.getBody().as(MovieResponse.class);
+        MovieResponse movieResponse = response.getBody().as(MovieResponse.class);
         String etagContent = response.header(HttpHeaders.ETAG);
 
         String movieTitleBefore = movieNo1.getTitle();
@@ -1286,16 +1286,16 @@ class MovieControllerTest {
         int newScrRoomNumber = 7;
         int newNumberOfAvailableSeats = 11;
 
-        movieOutputDTO.setTitle(newMovieTitle);
-        movieOutputDTO.setBasePrice(newMovieBasePrice);
-        movieOutputDTO.setScrRoomNumber(newScrRoomNumber);
-        movieOutputDTO.setAvailableSeats(newNumberOfAvailableSeats);
+        movieResponse.setTitle(newMovieTitle);
+        movieResponse.setBasePrice(newMovieBasePrice);
+        movieResponse.setScrRoomNumber(newScrRoomNumber);
+        movieResponse.setAvailableSeats(newNumberOfAvailableSeats);
 
         requestSpecification = RestAssured.given();
         requestSpecification.contentType(ContentType.JSON);
         requestSpecification.header(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken);
-        requestSpecification.header("If-Match", etagContent);
-        requestSpecification.body(movieOutputDTO);
+        requestSpecification.header(HttpHeaders.IF_MATCH, etagContent);
+        requestSpecification.body(movieResponse);
 
         response = requestSpecification.put(TestConstants.moviesURL + "/update");
 
@@ -1332,7 +1332,7 @@ class MovieControllerTest {
         ValidatableResponse validatableResponse = response.then();
         validatableResponse.statusCode(200);
 
-        MovieResponse movieOutputDTO = response.getBody().as(MovieResponse.class);
+        MovieResponse movieResponse = response.getBody().as(MovieResponse.class);
         String etagContent = response.header(HttpHeaders.ETAG);
 
         String movieTitleBefore = movieNo1.getTitle();
@@ -1345,16 +1345,16 @@ class MovieControllerTest {
         int newScrRoomNumber = 7;
         int newNumberOfAvailableSeats = 11;
 
-        movieOutputDTO.setTitle(newMovieTitle);
-        movieOutputDTO.setBasePrice(newMovieBasePrice);
-        movieOutputDTO.setScrRoomNumber(newScrRoomNumber);
-        movieOutputDTO.setAvailableSeats(newNumberOfAvailableSeats);
+        movieResponse.setTitle(newMovieTitle);
+        movieResponse.setBasePrice(newMovieBasePrice);
+        movieResponse.setScrRoomNumber(newScrRoomNumber);
+        movieResponse.setAvailableSeats(newNumberOfAvailableSeats);
 
         requestSpecification = RestAssured.given();
         requestSpecification.contentType(ContentType.JSON);
         requestSpecification.header(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken);
-        requestSpecification.header("If-Match", etagContent);
-        requestSpecification.body(movieOutputDTO);
+        requestSpecification.header(HttpHeaders.IF_MATCH, etagContent);
+        requestSpecification.body(movieResponse);
 
         response = requestSpecification.put(TestConstants.moviesURL + "/update");
 
@@ -1391,7 +1391,7 @@ class MovieControllerTest {
         ValidatableResponse validatableResponse = response.then();
         validatableResponse.statusCode(200);
 
-        MovieResponse movieOutputDTO = response.getBody().as(MovieResponse.class);
+        MovieResponse movieResponse = response.getBody().as(MovieResponse.class);
         String etagContent = response.header(HttpHeaders.ETAG);
 
         String newMovieTitle = "OtherExampleMovieTitleNo1";
@@ -1399,16 +1399,16 @@ class MovieControllerTest {
         int newScrRoomNumber = 7;
         int newNumberOfAvailableSeats = 11;
 
-        movieOutputDTO.setTitle(newMovieTitle);
-        movieOutputDTO.setBasePrice(newMovieBasePrice);
-        movieOutputDTO.setScrRoomNumber(newScrRoomNumber);
-        movieOutputDTO.setAvailableSeats(newNumberOfAvailableSeats);
+        movieResponse.setTitle(newMovieTitle);
+        movieResponse.setBasePrice(newMovieBasePrice);
+        movieResponse.setScrRoomNumber(newScrRoomNumber);
+        movieResponse.setAvailableSeats(newNumberOfAvailableSeats);
 
         requestSpecification = RestAssured.given();
         requestSpecification.contentType(ContentType.JSON);
         requestSpecification.header(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken);
-        requestSpecification.header("If-Match", etagContent);
-        requestSpecification.body(movieOutputDTO);
+        requestSpecification.header(HttpHeaders.IF_MATCH, etagContent);
+        requestSpecification.body(movieResponse);
 
         response = requestSpecification.put(TestConstants.moviesURL + "/update");
 
@@ -1428,7 +1428,7 @@ class MovieControllerTest {
         ValidatableResponse validatableResponse = response.then();
         validatableResponse.statusCode(200);
 
-        MovieResponse movieOutputDTO = response.getBody().as(MovieResponse.class);
+        MovieResponse movieResponse = response.getBody().as(MovieResponse.class);
         String etagContent = response.header(HttpHeaders.ETAG);
 
         String newMovieTitle = "OtherExampleMovieTitleNo1";
@@ -1436,16 +1436,16 @@ class MovieControllerTest {
         int newScrRoomNumber = 7;
         int newNumberOfAvailableSeats = 11;
 
-        movieOutputDTO.setTitle(newMovieTitle);
-        movieOutputDTO.setBasePrice(newMovieBasePrice);
-        movieOutputDTO.setScrRoomNumber(newScrRoomNumber);
-        movieOutputDTO.setAvailableSeats(newNumberOfAvailableSeats);
+        movieResponse.setTitle(newMovieTitle);
+        movieResponse.setBasePrice(newMovieBasePrice);
+        movieResponse.setScrRoomNumber(newScrRoomNumber);
+        movieResponse.setAvailableSeats(newNumberOfAvailableSeats);
 
         requestSpecification = RestAssured.given();
         requestSpecification.contentType(ContentType.JSON);
         requestSpecification.header(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken);
-        requestSpecification.header("If-Match", etagContent);
-        requestSpecification.body(movieOutputDTO);
+        requestSpecification.header(HttpHeaders.IF_MATCH, etagContent);
+        requestSpecification.body(movieResponse);
 
         response = requestSpecification.put(TestConstants.moviesURL + "/update");
 
@@ -1465,7 +1465,7 @@ class MovieControllerTest {
         ValidatableResponse validatableResponse = response.then();
         validatableResponse.statusCode(200);
 
-        MovieResponse movieOutputDTO = response.getBody().as(MovieResponse.class);
+        MovieResponse movieResponse = response.getBody().as(MovieResponse.class);
         String etagContent = response.header(HttpHeaders.ETAG);
 
         String movieTitleBefore = movieNo1.getTitle();
@@ -1478,16 +1478,16 @@ class MovieControllerTest {
         int newScrRoomNumber = 7;
         int newNumberOfAvailableSeats = 11;
 
-        movieOutputDTO.setTitle(newMovieTitle);
-        movieOutputDTO.setBasePrice(newMovieBasePrice);
-        movieOutputDTO.setScrRoomNumber(newScrRoomNumber);
-        movieOutputDTO.setAvailableSeats(newNumberOfAvailableSeats);
+        movieResponse.setTitle(newMovieTitle);
+        movieResponse.setBasePrice(newMovieBasePrice);
+        movieResponse.setScrRoomNumber(newScrRoomNumber);
+        movieResponse.setAvailableSeats(newNumberOfAvailableSeats);
 
         requestSpecification = RestAssured.given();
         requestSpecification.contentType(ContentType.JSON);
         requestSpecification.header(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken);
-        requestSpecification.header("If-Match", etagContent);
-        requestSpecification.body(movieOutputDTO);
+        requestSpecification.header(HttpHeaders.IF_MATCH, etagContent);
+        requestSpecification.body(movieResponse);
 
         response = requestSpecification.put(TestConstants.moviesURL + "/update");
 
@@ -1524,7 +1524,7 @@ class MovieControllerTest {
         ValidatableResponse validatableResponse = response.then();
         validatableResponse.statusCode(200);
 
-        MovieResponse movieOutputDTO = response.getBody().as(MovieResponse.class);
+        MovieResponse movieResponse = response.getBody().as(MovieResponse.class);
         String etagContent = response.header(HttpHeaders.ETAG);
 
         String movieTitleBefore = movieNo1.getTitle();
@@ -1537,16 +1537,16 @@ class MovieControllerTest {
         int newScrRoomNumber = 7;
         int newNumberOfAvailableSeats = 11;
 
-        movieOutputDTO.setTitle(newMovieTitle);
-        movieOutputDTO.setBasePrice(newMovieBasePrice);
-        movieOutputDTO.setScrRoomNumber(newScrRoomNumber);
-        movieOutputDTO.setAvailableSeats(newNumberOfAvailableSeats);
+        movieResponse.setTitle(newMovieTitle);
+        movieResponse.setBasePrice(newMovieBasePrice);
+        movieResponse.setScrRoomNumber(newScrRoomNumber);
+        movieResponse.setAvailableSeats(newNumberOfAvailableSeats);
 
         requestSpecification = RestAssured.given();
         requestSpecification.contentType(ContentType.JSON);
         requestSpecification.header(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken);
-        requestSpecification.header("If-Match", etagContent);
-        requestSpecification.body(movieOutputDTO);
+        requestSpecification.header(HttpHeaders.IF_MATCH, etagContent);
+        requestSpecification.body(movieResponse);
 
         response = requestSpecification.put(TestConstants.moviesURL + "/update");
 
@@ -1583,7 +1583,7 @@ class MovieControllerTest {
         ValidatableResponse validatableResponse = response.then();
         validatableResponse.statusCode(200);
 
-        MovieResponse movieOutputDTO = response.getBody().as(MovieResponse.class);
+        MovieResponse movieResponse = response.getBody().as(MovieResponse.class);
         String etagContent = response.header(HttpHeaders.ETAG);
 
         String newMovieTitle = "OtherExampleMovieTitleNo1";
@@ -1591,16 +1591,16 @@ class MovieControllerTest {
         int newScrRoomNumber = 0;
         int newNumberOfAvailableSeats = 11;
 
-        movieOutputDTO.setTitle(newMovieTitle);
-        movieOutputDTO.setBasePrice(newMovieBasePrice);
-        movieOutputDTO.setScrRoomNumber(newScrRoomNumber);
-        movieOutputDTO.setAvailableSeats(newNumberOfAvailableSeats);
+        movieResponse.setTitle(newMovieTitle);
+        movieResponse.setBasePrice(newMovieBasePrice);
+        movieResponse.setScrRoomNumber(newScrRoomNumber);
+        movieResponse.setAvailableSeats(newNumberOfAvailableSeats);
 
         requestSpecification = RestAssured.given();
         requestSpecification.contentType(ContentType.JSON);
         requestSpecification.header(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken);
-        requestSpecification.header("If-Match", etagContent);
-        requestSpecification.body(movieOutputDTO);
+        requestSpecification.header(HttpHeaders.IF_MATCH, etagContent);
+        requestSpecification.body(movieResponse);
 
         response = requestSpecification.put(TestConstants.moviesURL + "/update");
 
@@ -1620,7 +1620,7 @@ class MovieControllerTest {
         ValidatableResponse validatableResponse = response.then();
         validatableResponse.statusCode(200);
 
-        MovieResponse movieOutputDTO = response.getBody().as(MovieResponse.class);
+        MovieResponse movieResponse = response.getBody().as(MovieResponse.class);
         String etagContent = response.header(HttpHeaders.ETAG);
 
         String newMovieTitle = "OtherExampleMovieTitleNo1";
@@ -1628,16 +1628,16 @@ class MovieControllerTest {
         int newScrRoomNumber = 31;
         int newNumberOfAvailableSeats = 11;
 
-        movieOutputDTO.setTitle(newMovieTitle);
-        movieOutputDTO.setBasePrice(newMovieBasePrice);
-        movieOutputDTO.setScrRoomNumber(newScrRoomNumber);
-        movieOutputDTO.setAvailableSeats(newNumberOfAvailableSeats);
+        movieResponse.setTitle(newMovieTitle);
+        movieResponse.setBasePrice(newMovieBasePrice);
+        movieResponse.setScrRoomNumber(newScrRoomNumber);
+        movieResponse.setAvailableSeats(newNumberOfAvailableSeats);
 
         requestSpecification = RestAssured.given();
         requestSpecification.contentType(ContentType.JSON);
         requestSpecification.header(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken);
-        requestSpecification.header("If-Match", etagContent);
-        requestSpecification.body(movieOutputDTO);
+        requestSpecification.header(HttpHeaders.IF_MATCH, etagContent);
+        requestSpecification.body(movieResponse);
 
         response = requestSpecification.put(TestConstants.moviesURL + "/update");
 
@@ -1657,7 +1657,7 @@ class MovieControllerTest {
         ValidatableResponse validatableResponse = response.then();
         validatableResponse.statusCode(200);
 
-        MovieResponse movieOutputDTO = response.getBody().as(MovieResponse.class);
+        MovieResponse movieResponse = response.getBody().as(MovieResponse.class);
         String etagContent = response.header(HttpHeaders.ETAG);
 
         String movieTitleBefore = movieNo1.getTitle();
@@ -1670,16 +1670,16 @@ class MovieControllerTest {
         int newScrRoomNumber = 1;
         int newNumberOfAvailableSeats = 11;
 
-        movieOutputDTO.setTitle(newMovieTitle);
-        movieOutputDTO.setBasePrice(newMovieBasePrice);
-        movieOutputDTO.setScrRoomNumber(newScrRoomNumber);
-        movieOutputDTO.setAvailableSeats(newNumberOfAvailableSeats);
+        movieResponse.setTitle(newMovieTitle);
+        movieResponse.setBasePrice(newMovieBasePrice);
+        movieResponse.setScrRoomNumber(newScrRoomNumber);
+        movieResponse.setAvailableSeats(newNumberOfAvailableSeats);
 
         requestSpecification = RestAssured.given();
         requestSpecification.contentType(ContentType.JSON);
         requestSpecification.header(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken);
-        requestSpecification.header("If-Match", etagContent);
-        requestSpecification.body(movieOutputDTO);
+        requestSpecification.header(HttpHeaders.IF_MATCH, etagContent);
+        requestSpecification.body(movieResponse);
 
         response = requestSpecification.put(TestConstants.moviesURL + "/update");
 
@@ -1716,7 +1716,7 @@ class MovieControllerTest {
         ValidatableResponse validatableResponse = response.then();
         validatableResponse.statusCode(200);
 
-        MovieResponse movieOutputDTO = response.getBody().as(MovieResponse.class);
+        MovieResponse movieResponse = response.getBody().as(MovieResponse.class);
         String etagContent = response.header(HttpHeaders.ETAG);
 
         String movieTitleBefore = movieNo1.getTitle();
@@ -1729,16 +1729,16 @@ class MovieControllerTest {
         int newScrRoomNumber = 30;
         int newNumberOfAvailableSeats = 11;
 
-        movieOutputDTO.setTitle(newMovieTitle);
-        movieOutputDTO.setBasePrice(newMovieBasePrice);
-        movieOutputDTO.setScrRoomNumber(newScrRoomNumber);
-        movieOutputDTO.setAvailableSeats(newNumberOfAvailableSeats);
+        movieResponse.setTitle(newMovieTitle);
+        movieResponse.setBasePrice(newMovieBasePrice);
+        movieResponse.setScrRoomNumber(newScrRoomNumber);
+        movieResponse.setAvailableSeats(newNumberOfAvailableSeats);
 
         requestSpecification = RestAssured.given();
         requestSpecification.contentType(ContentType.JSON);
         requestSpecification.header(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken);
-        requestSpecification.header("If-Match", etagContent);
-        requestSpecification.body(movieOutputDTO);
+        requestSpecification.header(HttpHeaders.IF_MATCH, etagContent);
+        requestSpecification.body(movieResponse);
 
         response = requestSpecification.put(TestConstants.moviesURL + "/update");
 
@@ -1775,7 +1775,7 @@ class MovieControllerTest {
         ValidatableResponse validatableResponse = response.then();
         validatableResponse.statusCode(200);
 
-        MovieResponse movieOutputDTO = response.getBody().as(MovieResponse.class);
+        MovieResponse movieResponse = response.getBody().as(MovieResponse.class);
         String etagContent = response.header(HttpHeaders.ETAG);
 
         String newMovieTitle = "OtherExampleMovieTitleNo1";
@@ -1783,16 +1783,16 @@ class MovieControllerTest {
         int newScrRoomNumber = 7;
         int newNumberOfAvailableSeats = -1;
 
-        movieOutputDTO.setTitle(newMovieTitle);
-        movieOutputDTO.setBasePrice(newMovieBasePrice);
-        movieOutputDTO.setScrRoomNumber(newScrRoomNumber);
-        movieOutputDTO.setAvailableSeats(newNumberOfAvailableSeats);
+        movieResponse.setTitle(newMovieTitle);
+        movieResponse.setBasePrice(newMovieBasePrice);
+        movieResponse.setScrRoomNumber(newScrRoomNumber);
+        movieResponse.setAvailableSeats(newNumberOfAvailableSeats);
 
         requestSpecification = RestAssured.given();
         requestSpecification.contentType(ContentType.JSON);
         requestSpecification.header(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken);
-        requestSpecification.header("If-Match", etagContent);
-        requestSpecification.body(movieOutputDTO);
+        requestSpecification.header(HttpHeaders.IF_MATCH, etagContent);
+        requestSpecification.body(movieResponse);
 
         response = requestSpecification.put(TestConstants.moviesURL + "/update");
 
@@ -1812,7 +1812,7 @@ class MovieControllerTest {
         ValidatableResponse validatableResponse = response.then();
         validatableResponse.statusCode(200);
 
-        MovieResponse movieOutputDTO = response.getBody().as(MovieResponse.class);
+        MovieResponse movieResponse = response.getBody().as(MovieResponse.class);
         String etagContent = response.header(HttpHeaders.ETAG);
 
         String newMovieTitle = "OtherExampleMovieTitleNo1";
@@ -1820,16 +1820,16 @@ class MovieControllerTest {
         int newScrRoomNumber = 7;
         int newNumberOfAvailableSeats = 121;
 
-        movieOutputDTO.setTitle(newMovieTitle);
-        movieOutputDTO.setBasePrice(newMovieBasePrice);
-        movieOutputDTO.setScrRoomNumber(newScrRoomNumber);
-        movieOutputDTO.setAvailableSeats(newNumberOfAvailableSeats);
+        movieResponse.setTitle(newMovieTitle);
+        movieResponse.setBasePrice(newMovieBasePrice);
+        movieResponse.setScrRoomNumber(newScrRoomNumber);
+        movieResponse.setAvailableSeats(newNumberOfAvailableSeats);
 
         requestSpecification = RestAssured.given();
         requestSpecification.contentType(ContentType.JSON);
         requestSpecification.header(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken);
-        requestSpecification.header("If-Match", etagContent);
-        requestSpecification.body(movieOutputDTO);
+        requestSpecification.header(HttpHeaders.IF_MATCH, etagContent);
+        requestSpecification.body(movieResponse);
 
         response = requestSpecification.put(TestConstants.moviesURL + "/update");
 
@@ -1849,7 +1849,7 @@ class MovieControllerTest {
         ValidatableResponse validatableResponse = response.then();
         validatableResponse.statusCode(200);
 
-        MovieResponse movieOutputDTO = response.getBody().as(MovieResponse.class);
+        MovieResponse movieResponse = response.getBody().as(MovieResponse.class);
         String etagContent = response.header(HttpHeaders.ETAG);
 
         String movieTitleBefore = movieNo1.getTitle();
@@ -1862,16 +1862,16 @@ class MovieControllerTest {
         int newScrRoomNumber = 7;
         int newNumberOfAvailableSeats = 0;
 
-        movieOutputDTO.setTitle(newMovieTitle);
-        movieOutputDTO.setBasePrice(newMovieBasePrice);
-        movieOutputDTO.setScrRoomNumber(newScrRoomNumber);
-        movieOutputDTO.setAvailableSeats(newNumberOfAvailableSeats);
+        movieResponse.setTitle(newMovieTitle);
+        movieResponse.setBasePrice(newMovieBasePrice);
+        movieResponse.setScrRoomNumber(newScrRoomNumber);
+        movieResponse.setAvailableSeats(newNumberOfAvailableSeats);
 
         requestSpecification = RestAssured.given();
         requestSpecification.contentType(ContentType.JSON);
         requestSpecification.header(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken);
-        requestSpecification.header("If-Match", etagContent);
-        requestSpecification.body(movieOutputDTO);
+        requestSpecification.header(HttpHeaders.IF_MATCH, etagContent);
+        requestSpecification.body(movieResponse);
 
         response = requestSpecification.put(TestConstants.moviesURL + "/update");
 
@@ -1908,7 +1908,7 @@ class MovieControllerTest {
         ValidatableResponse validatableResponse = response.then();
         validatableResponse.statusCode(200);
 
-        MovieResponse movieOutputDTO = response.getBody().as(MovieResponse.class);
+        MovieResponse movieResponse = response.getBody().as(MovieResponse.class);
         String etagContent = response.header(HttpHeaders.ETAG);
 
         String movieTitleBefore = movieNo1.getTitle();
@@ -1921,16 +1921,16 @@ class MovieControllerTest {
         int newScrRoomNumber = 7;
         int newNumberOfAvailableSeats = 120;
 
-        movieOutputDTO.setTitle(newMovieTitle);
-        movieOutputDTO.setBasePrice(newMovieBasePrice);
-        movieOutputDTO.setScrRoomNumber(newScrRoomNumber);
-        movieOutputDTO.setAvailableSeats(newNumberOfAvailableSeats);
+        movieResponse.setTitle(newMovieTitle);
+        movieResponse.setBasePrice(newMovieBasePrice);
+        movieResponse.setScrRoomNumber(newScrRoomNumber);
+        movieResponse.setAvailableSeats(newNumberOfAvailableSeats);
 
         requestSpecification = RestAssured.given();
         requestSpecification.contentType(ContentType.JSON);
         requestSpecification.header(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken);
-        requestSpecification.header("If-Match", etagContent);
-        requestSpecification.body(movieOutputDTO);
+        requestSpecification.header(HttpHeaders.IF_MATCH, etagContent);
+        requestSpecification.body(movieResponse);
 
         response = requestSpecification.put(TestConstants.moviesURL + "/update");
 
@@ -2061,11 +2061,11 @@ class MovieControllerTest {
         validatableResponse.statusCode(400);
     }
 
-    private String loginToAccount(LoginAccountRequest loginDto, String loginURL) {
+    private String loginToAccount(LoginAccountRequest loginRequest, String loginURL) {
         RequestSpecification requestSpecification = RestAssured.given();
         requestSpecification.contentType(ContentType.JSON);
         requestSpecification.accept(ContentType.JSON);
-        requestSpecification.body(new LoginAccountRequest(loginDto.login(), loginDto.password()));
+        requestSpecification.body(new LoginAccountRequest(loginRequest.login(), loginRequest.password()));
 
         Response response = requestSpecification.post(loginURL);
         ValidatableResponse validatableResponse = response.then();

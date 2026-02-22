@@ -11,12 +11,12 @@ import pl.pas.gr3.cinema.exception.forbidden.AccessDeniedException;
 import pl.pas.gr3.cinema.exception.pre_condition.ApplicationDataIntegrityCompromisedException;
 import pl.pas.gr3.cinema.entity.account.Client;
 import pl.pas.gr3.cinema.mapper.TicketMapper;
-import pl.pas.gr3.cinema.security.services.JWSService;
+import pl.pas.gr3.cinema.service.impl.JWSService;
 import pl.pas.gr3.cinema.service.api.AccountService;
 import pl.pas.gr3.cinema.service.api.TicketService;
-import pl.pas.gr3.cinema.dto.input.CreateOwnTicketRequest;
-import pl.pas.gr3.cinema.dto.output.TicketResponse;
-import pl.pas.gr3.cinema.dto.input.CreateTicketRequest;
+import pl.pas.gr3.cinema.dto.ticket.CreateOwnTicketRequest;
+import pl.pas.gr3.cinema.dto.ticket.TicketResponse;
+import pl.pas.gr3.cinema.dto.ticket.CreateTicketRequest;
 import pl.pas.gr3.cinema.entity.Ticket;
 import pl.pas.gr3.cinema.controller.api.TicketController;
 
@@ -38,8 +38,8 @@ public class TicketControllerImpl implements TicketController {
     @PreAuthorize("hasRole('STAFF')")
     @Override
     public ResponseEntity<TicketResponse> create(CreateTicketRequest createTicketRequest) {
-        Client client = clientService.findByUUID(createTicketRequest.getClientId());
-        Ticket ticket = ticketService.create(createTicketRequest.getMovieTime(), client.getId(), createTicketRequest.getMovieId());
+        Client client = clientService.findByUUID(createTicketRequest.clientId());
+        Ticket ticket = ticketService.create(createTicketRequest.movieTime(), client.getId(), createTicketRequest.movieId());
         TicketResponse ticketResponse = ticketMapper.toResponse(ticket);
 
         String location = MessageFormat.format("http://localhost:8000/api/v1/tickets/{0}", ticketResponse.getId());
@@ -53,7 +53,7 @@ public class TicketControllerImpl implements TicketController {
         if (auth == null) throw new AccessDeniedException();
 
         Client client = clientService.findByLogin(auth.getName());
-        Ticket ticket = ticketService.create(createOwnTicketRequest.getMovieTime(), client.getId(), createOwnTicketRequest.getMovieId());
+        Ticket ticket = ticketService.create(createOwnTicketRequest.movieTime(), client.getId(), createOwnTicketRequest.movieId());
         TicketResponse ticketResponse = ticketMapper.toResponse(ticket);
 
         String location = MessageFormat.format("http://localhost:8000/api/v1/tickets/{0}", ticketResponse.getId());
@@ -68,7 +68,7 @@ public class TicketControllerImpl implements TicketController {
 
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         if (auth != null && auth.getAuthorities().contains(new SimpleGrantedAuthority("CLIENT"))) {
-            String signature = jwsService.generateSignatureForTicket(ticket);
+            String signature = jwsService.generateSignature(ticketResponse);
             return ResponseEntity.ok().eTag(signature).body(ticketResponse);
         }
 
@@ -79,21 +79,17 @@ public class TicketControllerImpl implements TicketController {
     @Override
     public ResponseEntity<List<TicketResponse>> findAll() {
         List<Ticket> listOfFoundTickets = this.ticketService.findAll();
-        List<TicketResponse> outputDtos = listOfFoundTickets.stream().map(ticketMapper::toResponse).toList();
-        return outputDtos.isEmpty() ? ResponseEntity.noContent().build() : ResponseEntity.ok(outputDtos);
+        List<TicketResponse> ticketResponses = listOfFoundTickets.stream().map(ticketMapper::toResponse).toList();
+        return ticketResponses.isEmpty() ? ResponseEntity.noContent().build() : ResponseEntity.ok(ticketResponses);
     }
 
     @PreAuthorize("hasRole('CLIENT')")
     @Override
     public ResponseEntity<Void> update(String ifMatch, TicketResponse ticketResponse) {
+        String signature = jwsService.generateSignature(ticketResponse);
+        if (!signature.equals(ifMatch)) throw new ApplicationDataIntegrityCompromisedException();
+
         Ticket ticket = ticketService.findByUUID(ticketResponse.getId());
-
-        String ifMatchContent = ifMatch.replace("\"", "");
-        if (!jwsService.verifyTicketSignature(ifMatchContent, ticket))
-            throw new ApplicationDataIntegrityCompromisedException();
-
-        ticket.setMovieTime(ticketResponse.getMovieTime());
-
         ticketService.update(ticket);
         return ResponseEntity.noContent().build();
     }

@@ -32,22 +32,20 @@ import pl.pas.gr3.cinema.entity.Ticket;
 import pl.pas.gr3.cinema.entity.account.Admin;
 import pl.pas.gr3.cinema.entity.account.Client;
 import pl.pas.gr3.cinema.entity.account.Staff;
-import pl.pas.gr3.cinema.repository.api.UserRepository;
+import pl.pas.gr3.cinema.repository.api.AccountRepository;
 import pl.pas.gr3.cinema.mapper.AccountMapper;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
-import java.util.logging.Filter;
 
 @Repository
-public class AccountRepositoryImpl extends MongoRepository implements UserRepository {
+public class AccountRepositoryImpl extends MongoRepository implements AccountRepository {
 
     @Autowired
     private AccountMapper accountMapper;
 
     private final String databaseName;
-    private static final Logger logger = LoggerFactory.getLogger(AccountRepositoryImpl.class);
     private final ValidationOptions validationOptions = new ValidationOptions().validator(
         Document.parse("""
             {
@@ -103,64 +101,6 @@ public class AccountRepositoryImpl extends MongoRepository implements UserReposi
             IndexOptions indexOptions = new IndexOptions().unique(true);
             mongoDatabase.getCollection(USERS_COLLECTION_NAME).createIndex(Indexes.ascending(UserConstants.USER_LOGIN), indexOptions);
         }
-    }
-
-    @PostConstruct
-    public void initializeDatabaseState() {
-        UUID clientIdNo1 = UUID.fromString("26c4727c-c791-4170-ab9d-faf7392e80b2");
-        UUID clientIdNo2 = UUID.fromString("0b08f526-b018-4d23-8baa-93f0fb884edf");
-        UUID clientIdNo3 = UUID.fromString("30392328-2cae-4e76-abb8-b1aa8f58a9e4");
-
-        UUID adminIdNo1 = UUID.fromString("17dad3c7-7605-4808-bec5-d6f46abd23b8");
-        UUID adminIdNo2 = UUID.fromString("ca857499-cdd5-4de3-a8d2-1ba7afcec2ef");
-        UUID adminIdNo3 = UUID.fromString("07f97385-a2a3-474e-af61-f53d14a64198");
-
-        UUID staffIdNo1 = UUID.fromString("67a85b0f-d063-4c9b-b223-fcc606c00f2f");
-        UUID staffIdNo2 = UUID.fromString("3d8ef63c-f99d-445c-85d0-4b14e68fc5a1");
-        UUID staffIdNo3 = UUID.fromString("86e394dd-e192-4390-b4e4-76029c879857");
-
-        Client clientNo1 = new Client(clientIdNo1, "NewClientLogin1", "$2a$10$DbYLnx7YVVEtyJUOd7dFP.qUPAswrfNu6RVU0vB/Ti8us8AqaoKzS");
-        Client clientNo2 = new Client(clientIdNo2, "NewClientLogin2", "$2a$10$DbYLnx7YVVEtyJUOd7dFP.qUPAswrfNu6RVU0vB/Ti8us8AqaoKzS");
-        Client clientNo3 = new Client(clientIdNo3, "NewClientLogin3", "$2a$10$DbYLnx7YVVEtyJUOd7dFP.qUPAswrfNu6RVU0vB/Ti8us8AqaoKzS");
-
-        Admin adminNo1 = new Admin(adminIdNo1, "NewAdminLogin1", "$2a$10$DbYLnx7YVVEtyJUOd7dFP.qUPAswrfNu6RVU0vB/Ti8us8AqaoKzS");
-        Admin adminNo2 = new Admin(adminIdNo2, "NewAdminLogin2", "$2a$10$DbYLnx7YVVEtyJUOd7dFP.qUPAswrfNu6RVU0vB/Ti8us8AqaoKzS");
-        Admin adminNo3 = new Admin(adminIdNo3, "NewAdminLogin3", "$2a$10$DbYLnx7YVVEtyJUOd7dFP.qUPAswrfNu6RVU0vB/Ti8us8AqaoKzS");
-
-        Staff staffNo1 = new Staff(staffIdNo1, "NewStaffLogin1", "$2a$10$DbYLnx7YVVEtyJUOd7dFP.qUPAswrfNu6RVU0vB/Ti8us8AqaoKzS");
-        Staff staffNo2 = new Staff(staffIdNo2, "NewStaffLogin2", "$2a$10$DbYLnx7YVVEtyJUOd7dFP.qUPAswrfNu6RVU0vB/Ti8us8AqaoKzS");
-        Staff staffNo3 = new Staff(staffIdNo3, "NewStaffLogin3", "$2a$10$DbYLnx7YVVEtyJUOd7dFP.qUPAswrfNu6RVU0vB/Ti8us8AqaoKzS");
-
-        List<Account> accounts = List.of(clientNo1, clientNo2, clientNo3, adminNo1, adminNo2, adminNo3, staffNo1, staffNo2, staffNo3);
-        for (Account account : accounts) {
-            Bson filter = Filters.eq(UserConstants.GENERAL_IDENTIFIER, account.getId());
-            if (getClientCollection().find(filter).first() == null &&
-                account.getClass().equals(Client.class)) getClientCollection().insertOne(account);
-
-            else if (getClientCollection().find(filter).first() == null &&
-                account.getClass().equals(Admin.class)) this.getClientCollection().insertOne(account);
-
-            else if (getClientCollection().find(filter).first() == null &&
-                account.getClass().equals(Staff.class)) this.getClientCollection().insertOne(account);
-        }
-    }
-
-    @PreDestroy
-    public void restoreDatabaseState() {
-        try {
-            List<Client> clients = findAllClients();
-            clients.forEach(client -> delete(client.getId(), UserConstants.CLIENT_DISCRIMINATOR));
-
-            List<Admin> admins = findAllAdmins();
-            admins.forEach(admin -> delete(admin.getId(), UserConstants.ADMIN_DISCRIMINATOR));
-
-            List<Staff> listOfStaffs = findAllStaffs();
-            listOfStaffs.forEach(staff -> delete(staff.getId(), UserConstants.STAFF_DISCRIMINATOR));
-        } catch (Exception exception) {
-            logger.debug(exception.getMessage());
-        }
-
-        close();
     }
 
     public AccountRepositoryImpl(String databaseName) {

@@ -13,9 +13,10 @@ import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
-import pl.pas.gr3.cinema.dto.input.CreateMovieRequest;
-import pl.pas.gr3.cinema.dto.output.MovieResponse;
-import pl.pas.gr3.cinema.dto.output.TicketResponse;
+import pl.pas.gr3.cinema.dto.movie.CreateMovieRequest;
+import pl.pas.gr3.cinema.dto.movie.MovieResponse;
+import pl.pas.gr3.cinema.dto.movie.UpdateMovieRequest;
+import pl.pas.gr3.cinema.dto.ticket.TicketResponse;
 
 import java.util.List;
 import java.util.UUID;
@@ -27,7 +28,7 @@ public interface MovieIController {
     /* CREATE */
 
     @PostMapping(consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
-    ResponseEntity<MovieResponse> create(@RequestBody CreateMovieRequest createMovieRequest);
+    ResponseEntity<MovieResponse> create(@RequestBody CreateMovieRequest request);
 
     /* READ */
 
@@ -44,7 +45,7 @@ public interface MovieIController {
 
     @PutMapping(path = "/update", consumes = MediaType.APPLICATION_JSON_VALUE)
     ResponseEntity<Void> update(@RequestHeader(value = HttpHeaders.IF_MATCH) String ifMatch,
-                                @RequestBody @Validated MovieResponse movieResponse);
+                                @RequestBody @Validated UpdateMovieRequest request);
 
     /* DELETE */
 

@@ -8,10 +8,10 @@ import org.springframework.stereotype.Service;
 import pl.pas.gr3.cinema.entity.account.Client;
 import pl.pas.gr3.cinema.exception.bad_request.TicketCreateException;
 import pl.pas.gr3.cinema.exception.forbidden.AccessDeniedException;
-import pl.pas.gr3.cinema.repository.impl.AccountRepositoryImpl;
+import pl.pas.gr3.cinema.repository.api.AccountRepository;
+import pl.pas.gr3.cinema.repository.api.TicketRepository;
 import pl.pas.gr3.cinema.service.api.TicketService;
 import pl.pas.gr3.cinema.entity.Ticket;
-import pl.pas.gr3.cinema.repository.impl.TicketRepositoryImpl;
 
 import java.time.LocalDateTime;
 import java.time.format.DateTimeParseException;
@@ -22,8 +22,8 @@ import java.util.UUID;
 @RequiredArgsConstructor
 public class TicketServiceImpl implements TicketService {
 
-    private final AccountRepositoryImpl accountRepository;
-    private final TicketRepositoryImpl ticketRepository;
+    private final AccountRepository accountRepository;
+    private final TicketRepository ticketRepository;
 
     @Override
     public Ticket create(String movieTime, UUID clientId, UUID movieId) {

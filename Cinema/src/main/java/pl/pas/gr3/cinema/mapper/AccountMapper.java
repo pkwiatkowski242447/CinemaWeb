@@ -1,13 +1,13 @@
 package pl.pas.gr3.cinema.mapper;
 
 import org.mapstruct.Mapper;
-import pl.pas.gr3.cinema.dto.auth.AccountResponse;
+import pl.pas.gr3.cinema.dto.account.AccountResponse;
 import pl.pas.gr3.cinema.entity.account.Account;
 import pl.pas.gr3.cinema.entity.account.Admin;
 import pl.pas.gr3.cinema.entity.account.Staff;
 import pl.pas.gr3.cinema.entity.account.Client;
 
-@Mapper
+@Mapper(componentModel = "spring")
 public interface AccountMapper {
 
     default Client toClient(Account account) {

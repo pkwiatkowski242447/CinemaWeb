@@ -8,8 +8,8 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import pl.pas.gr3.cinema.dto.LoginResponse;
-import pl.pas.gr3.cinema.dto.auth.AccountResponse;
-import pl.pas.gr3.cinema.dto.auth.LoginAccountRequest;
+import pl.pas.gr3.cinema.dto.account.AccountResponse;
+import pl.pas.gr3.cinema.dto.account.LoginAccountRequest;
 
 @RequestMapping(path = "/api/v1/auth")
 @Tag(name = "4. AuthenticationController", description = "Manage account registration & authentication")

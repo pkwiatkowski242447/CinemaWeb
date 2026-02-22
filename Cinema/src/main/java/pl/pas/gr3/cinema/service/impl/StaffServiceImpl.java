@@ -2,8 +2,10 @@ package pl.pas.gr3.cinema.service.impl;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import pl.pas.gr3.cinema.entity.account.Account;
+import pl.pas.gr3.cinema.mapper.AccountMapper;
+import pl.pas.gr3.cinema.repository.api.AccountRepository;
 import pl.pas.gr3.cinema.util.consts.model.UserConstants;
-import pl.pas.gr3.cinema.repository.impl.AccountRepositoryImpl;
 import pl.pas.gr3.cinema.service.api.AccountService;
 import pl.pas.gr3.cinema.entity.Ticket;
 import pl.pas.gr3.cinema.entity.account.Staff;
@@ -15,7 +17,9 @@ import java.util.UUID;
 @RequiredArgsConstructor
 public class StaffServiceImpl implements AccountService<Staff> {
 
-    private final AccountRepositoryImpl accountRepository;
+    private final AccountRepository accountRepository;
+
+    private final AccountMapper accountMapper;
 
     @Override
     public Staff create(String login, String password) {
@@ -24,7 +28,8 @@ public class StaffServiceImpl implements AccountService<Staff> {
 
     @Override
     public Staff findByUUID(UUID accountId) {
-        return accountRepository.findStaffByUUID(accountId);
+        Account foundStaffAccount = accountRepository.findByUUID(accountId);
+        return accountMapper.toStaff(foundStaffAccount);
     }
 
     @Override
@@ -49,13 +54,15 @@ public class StaffServiceImpl implements AccountService<Staff> {
 
     @Override
     public void activate(UUID accountId) {
-        Staff foundStaff = accountRepository.findStaffByUUID(accountId);
+        Account foundStaffAccount = accountRepository.findByUUID(accountId);
+        Staff foundStaff = accountMapper.toStaff(foundStaffAccount);
         accountRepository.activate(foundStaff, UserConstants.STAFF_DISCRIMINATOR);
     }
 
     @Override
     public void deactivate(UUID accountId) {
-        Staff foundStaff = accountRepository.findStaffByUUID(accountId);
+        Account foundStaffAccount = accountRepository.findByUUID(accountId);
+        Staff foundStaff = accountMapper.toStaff(foundStaffAccount);
         accountRepository.deactivate(foundStaff, UserConstants.STAFF_DISCRIMINATOR);
     }
 
